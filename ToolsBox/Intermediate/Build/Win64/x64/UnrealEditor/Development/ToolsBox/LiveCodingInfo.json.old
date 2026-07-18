@@ -1,0 +1,13 @@
+{
+	"RemapUnityFiles": 
+	{
+		"Module.ToolsBox.cpp.obj": [
+			"PerModuleInline.gen.cpp.obj",
+			"OpenToolsBox_Command.cpp.obj",
+			"FIconStyle.cpp.obj",
+			"SlateAssistBuildFunctionLibrary.cpp.obj",
+			"ToolsBox.cpp.obj",
+			"Tools.cpp.obj"
+		]
+	}
+}
