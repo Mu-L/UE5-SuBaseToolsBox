@@ -8,6 +8,7 @@
 			"SlateAssistBuildFunctionLibrary.cpp.obj",
 			"ToolsBox.cpp.obj",
 			"Cleaner.cpp.obj",
+			"Import_MM.cpp.obj",
 			"Tools.cpp.obj"
 		]
 	}

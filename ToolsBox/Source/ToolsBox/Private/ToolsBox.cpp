@@ -102,7 +102,7 @@ TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& Sp
 
 void FToolsBoxModule::OnButtonClick()
 {
-	// 按钮被点后：消除隐藏状态，把 ID 叫 "ToolsBox" 的窗口呼唤出来
+	// 打开工具箱
 	FGlobalTabmanager::Get()->TryInvokeTab(FTabId("ToolsBox"));
 }
 
@@ -120,7 +120,7 @@ TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolTab(const FSpawnTabArgs& SpawnT
 
 void FToolsBoxModule::ShutdownModule()
 {
-	// 所有的注册都要反向注销掉，保持编辑器干净
+	
 	UToolMenus::UnRegisterStartupCallback(this);
 	UToolMenus::UnregisterOwner(this);
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner("ToolsBox");

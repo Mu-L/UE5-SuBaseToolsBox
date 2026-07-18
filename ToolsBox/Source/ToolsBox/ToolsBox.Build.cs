@@ -32,7 +32,11 @@ public class ToolsBox : ModuleRules
 				"EditorStyle",
 				"Projects",
 				"UnrealEd",
-				"LevelEditor"
+				"LevelEditor",
+				"AssetTools", 
+				"AssetRegistry", 
+				"MaterialEditor", 
+				"DesktopPlatform" 
 			}
 			);
 			

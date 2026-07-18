@@ -36,6 +36,7 @@
 /FUNCTIONPADMIN:6
 /NOIMPLIB
 /NOEXP
+/NATVIS:"../Intermediate/Build/Win64/x64/UnrealEditor/Development/AssetRegistry/AssetRegistry.natvis"
 "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Intermediate/Build/Win64/x64/SuBaseToolsBoxEditor/Development/UnrealEd/SharedPCH.UnrealEd.Project.ValApi.ValExpApi.Cpp20.h.obj"
 "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/x64/UnrealEditor/Development/ToolsBox/Module.ToolsBox.cpp.obj"
 "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/x64/UnrealEditor/Development/ToolsBox/OpenToolsBox_Command.cpp.obj"
@@ -44,6 +45,7 @@
 "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/x64/UnrealEditor/Development/ToolsBox/SlateAssistBuildFunctionLibrary.cpp.obj"
 "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/x64/UnrealEditor/Development/ToolsBox/Tools.cpp.obj"
 "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/x64/UnrealEditor/Development/ToolsBox/Cleaner.cpp.obj"
+"F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/x64/UnrealEditor/Development/ToolsBox/Import_MM.cpp.obj"
 "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/x64/UnrealEditor/Development/ToolsBox/Default.rc2.res"
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/CoreUObject/UnrealEditor-CoreUObject.lib"
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/Engine/UnrealEditor-Engine.lib"
@@ -55,6 +57,10 @@
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/Projects/UnrealEditor-Projects.lib"
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/UnrealEd/UnrealEditor-UnrealEd.lib"
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/LevelEditor/UnrealEditor-LevelEditor.lib"
+"../Intermediate/Build/Win64/x64/UnrealEditor/Development/AssetTools/UnrealEditor-AssetTools.lib"
+"../Intermediate/Build/Win64/x64/UnrealEditor/Development/AssetRegistry/UnrealEditor-AssetRegistry.lib"
+"../Intermediate/Build/Win64/x64/UnrealEditor/Development/MaterialEditor/UnrealEditor-MaterialEditor.lib"
+"../Intermediate/Build/Win64/x64/UnrealEditor/Development/DesktopPlatform/UnrealEditor-DesktopPlatform.lib"
 "delayimp.lib"
 "wininet.lib"
 "rpcrt4.lib"
