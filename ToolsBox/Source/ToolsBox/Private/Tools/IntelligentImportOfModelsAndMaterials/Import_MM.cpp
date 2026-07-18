@@ -52,7 +52,7 @@ void SImport_MM::Construct(const FArguments& InArgs)
             [
                 SNew(STextBlock)
                 .Text(LOCTEXT("ImportTitle", "智能模型与材质导入工具"))
-                .Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
+                .Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
             ]
             + SVerticalBox::Slot().AutoHeight().Padding(0, 5)
             [
@@ -61,6 +61,13 @@ void SImport_MM::Construct(const FArguments& InArgs)
                 .AutoWrapText(true)
                 .ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.7f))
             ]
+            + SVerticalBox::Slot().AutoHeight().Padding(0, 10)
+           [
+               SNew(STextBlock)
+               .Text(LOCTEXT("ImportSteps", ""))
+               .AutoWrapText(true)
+               .ColorAndOpacity(FLinearColor::Red)
+           ]
         ]
 
         // --- 2. 教程区：占位图 ---
@@ -135,9 +142,8 @@ FReply SImport_MM::OnBrowseClicked()
     {
         IMainFrameModule& MainFrameModule = FModuleManager::LoadModuleChecked<IMainFrameModule>(TEXT("MainFrame"));
         void* ParentHandle = MainFrameModule.GetParentWindow().IsValid() ? MainFrameModule.GetParentWindow()->GetNativeWindow()->GetOSWindowHandle() : nullptr;
- 
         FString FolderPath;
-        if (DesktopPlatform->OpenDirectoryDialog(ParentHandle, TEXT("选择目录"), TEXT(""), FolderPath))
+        if (DesktopPlatform->OpenDirectoryDialog(ParentHandle, TEXT("选择导入目录"), TEXT(""), FolderPath))
         {
             SelectedFolderPath = FolderPath;
             PathTextBox->SetText(FText::FromString(SelectedFolderPath));
@@ -145,140 +151,201 @@ FReply SImport_MM::OnBrowseClicked()
     }
     return FReply::Handled();
 }
-
+ 
 FReply SImport_MM::OnStartImportClicked()
 {
     if (SelectedFolderPath.IsEmpty()) return FReply::Handled();
- 
     IFileManager& FileManager = IFileManager::Get();
-	
-    // 辅助 Lambda 函数：扫描指定目录并执行导入
-    auto TryProcessFolder = [&](const FString& InPath, const FString& FolderName)
-    {
+ 
+    // 定义合法的贴图关键词白名单
+    TArray<FString> ValidKeywords = { 
+        TEXT("base"), TEXT("albedo"), TEXT("col"),      // BaseColor
+        TEXT("normal"), TEXT("nrm"),                   // Normal
+        TEXT("rough"), TEXT("metal"), TEXT("met"),     // ORM/PBR
+        TEXT("occ"), TEXT("ao")                        // Ambient Occlusion
+    };
+ 
+    auto ScanAndRun = [&](const FString& Path, const FString& Name) {
         FImportFolderTask Task;
-        Task.FolderName = FolderName;
+        Task.FolderName = Name;
         TArray<FString> Files;
-        FileManager.FindFiles(Files, *InPath, nullptr);
+        FileManager.FindFiles(Files, *Path, nullptr);
  
-        for (const FString& FileName : Files)
+        for (const FString& F : Files)
         {
-            FString Ext = FPaths::GetExtension(FileName).ToLower();
-            FString AbsPath = InPath / FileName;
+            FString E = FPaths::GetExtension(F).ToLower();
+            FString LowName = F.ToLower();
  
-            if (Ext == TEXT("fbx")) Task.MeshPath = AbsPath;
-            else if (Ext == TEXT("png") || Ext == TEXT("tga") || Ext == TEXT("jpg"))
+            // 1. 识别 FBX
+            if (E == TEXT("fbx")) 
             {
-                FString Lower = FileName.ToLower();
-                if (Lower.Contains(TEXT("base")) || Lower.Contains(TEXT("albedo")) || Lower.Contains(TEXT("col"))) Task.TextureMap.Add(TEXT("BaseColor"), AbsPath);
-                else if (Lower.Contains(TEXT("normal")) || Lower.Contains(TEXT("nrm"))) Task.TextureMap.Add(TEXT("Normal"), AbsPath);
-                else if (Lower.Contains(TEXT("rough"))) Task.TextureMap.Add(TEXT("Roughness"), AbsPath);
-                else if (Lower.Contains(TEXT("metal"))) Task.TextureMap.Add(TEXT("Metallic"), AbsPath);
+                Task.MeshPath = Path / F;
+            }
+            // 2. 识别贴图（核心：只有包含白名单关键词的才被加入 Task.TextureMap）
+            else if (E == TEXT("png") || E == TEXT("tga") || E == TEXT("jpg") || E == TEXT("tif"))
+            {
+                bool bIsValidTexture = false;
+                for (const FString& Key : ValidKeywords)
+                {
+                    if (LowName.Contains(Key))
+                    {
+                        bIsValidTexture = true;
+                        break;
+                    }
+                }
+ 
+                if (bIsValidTexture)
+                {
+                    // 只有符合条件的贴图路径才会存入 Task，不符合的直接“取消资格”
+                    Task.TextureMap.Add(F, Path / F);
+                }
             }
         }
  
-        if (!Task.MeshPath.IsEmpty())
+        if (!Task.MeshPath.IsEmpty()) 
         {
             ExecuteImportTask(Task);
-            return true;
         }
-        return false;
     };
  
-    // 1. 先尝试导入当前选中的根目录 (处理“只想导一个文件夹”的情况)
-    TryProcessFolder(SelectedFolderPath, FPaths::GetBaseFilename(SelectedFolderPath));
- 
-    // 2. 再尝试导入所有子文件夹 (处理批量导入)
-    TArray<FString> SubFolders;
-    FileManager.FindFiles(SubFolders, *(SelectedFolderPath / TEXT("*")), false, true);
- 
-    for (const FString& FolderName : SubFolders)
-    {
-        TryProcessFolder(SelectedFolderPath / FolderName, FolderName);
-    }
+    // 执行根目录和子目录扫描
+    ScanAndRun(SelectedFolderPath, FPaths::GetBaseFilename(SelectedFolderPath));
+    TArray<FString> Subs;
+    FileManager.FindFiles(Subs, *(SelectedFolderPath / TEXT("*")), false, true);
+    for (const FString& S : Subs) ScanAndRun(SelectedFolderPath / S, S);
  
     return FReply::Handled();
 }
-
+ 
 void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task)
 {
     IAssetTools& AssetTools = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
     FString TargetPath = TEXT("/Game/BatchImport/") + Task.FolderName;
  
-    // --- 1. 导入模型：修复缩放和报错的关键设置 ---
-    UFbxFactory* FbxFactory = NewObject<UFbxFactory>();
-    FbxFactory->ImportUI->bIsObjImport = false;
-    FbxFactory->ImportUI->MeshTypeToImport = FBXIT_StaticMesh;
-    FbxFactory->ImportUI->bImportMaterials = false;
-    FbxFactory->ImportUI->bImportTextures = false;
- 
-    // 修复尺寸的核心：保持 1.0 缩放并强制转换场景单位
-    FbxFactory->ImportUI->StaticMeshImportData->ImportUniformScale = 1.0f;
-    FbxFactory->ImportUI->StaticMeshImportData->bConvertScene = true;      // 关键：将 DCC 坐标转为 UE 坐标
-    FbxFactory->ImportUI->StaticMeshImportData->bRemoveDegenerates = false; // 消除退化报错
-    FbxFactory->ImportUI->StaticMeshImportData->bCombineMeshes = false;
- 
-    TArray<FString> MeshFiles;
-    MeshFiles.Add(Task.MeshPath);
-    TArray<UObject*> ImportedMeshes = AssetTools.ImportAssets(MeshFiles, TargetPath, FbxFactory);
- 
-    // --- 2. 导入贴图 (分批导入以确保 Factory 识别正确) ---
-    TArray<FString> TexFiles;
-    for (auto& Pair : Task.TextureMap) TexFiles.Add(Pair.Value);
-    TArray<UObject*> ImportedTexturesRaw = AssetTools.ImportAssets(TexFiles, TargetPath);
- 
-    // --- 3. 整理资产并自动连材质 (逻辑同前，保持稳定) ---
-    TArray<UStaticMesh*> AllMeshes;
-    for (UObject* Obj : ImportedMeshes) if (UStaticMesh* M = Cast<UStaticMesh>(Obj)) AllMeshes.Add(M);
- 
-    TMap<FString, UTexture2D*> ValidTextures;
-    for (UObject* Obj : ImportedTexturesRaw)
+    // --- 1. 建立精准的【功能 -> 路径】映射，不符合要求的直接不进这个 Map ---
+    TMap<FString, FString> ValidTexturePaths; // Key: 功能(Base/Normal/ORM), Value: 磁盘绝对路径
+    
+    for (auto& Pair : Task.TextureMap) // Task.TextureMap 是你在扫描阶段初步筛选的图片
     {
-        if (UTexture2D* Tex = Cast<UTexture2D>(Obj))
-        {
-            FString Name = Tex->GetName().ToLower();
-            if (Name.Contains(TEXT("normal")) || Name.Contains(TEXT("nrm")))
-            {
-                Tex->CompressionSettings = TextureCompressionSettings::TC_Normalmap;
-                Tex->SRGB = false;
-                Tex->PostEditChange();
-                ValidTextures.Add(TEXT("Normal"), Tex);
-            }
-            else if (Name.Contains(TEXT("base")) || Name.Contains(TEXT("albedo"))) ValidTextures.Add(TEXT("BaseColor"), Tex);
-            else if (Name.Contains(TEXT("rough"))) ValidTextures.Add(TEXT("Roughness"), Tex);
-            else if (Name.Contains(TEXT("metal"))) ValidTextures.Add(TEXT("Metallic"), Tex);
-        }
+        FString FileName = Pair.Key.ToLower();
+        if (FileName.Contains(TEXT("base")) || FileName.Contains(TEXT("albedo")) || FileName.Contains(TEXT("col")))
+            ValidTexturePaths.Add(TEXT("Base"), Pair.Value);
+        else if (FileName.Contains(TEXT("normal")) || FileName.Contains(TEXT("nrm")))
+            ValidTexturePaths.Add(TEXT("Normal"), Pair.Value);
+        else if (FileName.Contains(TEXT("rough")) || FileName.Contains(TEXT("metal")) || FileName.Contains(TEXT("occ")) || FileName.Contains(TEXT("ao")))
+            ValidTexturePaths.Add(TEXT("ORM"), Pair.Value);
     }
  
-    // --- 4. 材质赋予所有部件 ---
-    if (AllMeshes.Num() > 0)
+    // --- 2. 导入模型 ---
+    UFbxFactory* FbxFact = NewObject<UFbxFactory>();
+    FbxFact->ImportUI->MeshTypeToImport = FBXIT_StaticMesh;
+    FbxFact->ImportUI->bImportMaterials = false;
+    FbxFact->ImportUI->bImportTextures = false;
+    FbxFact->ImportUI->StaticMeshImportData->bConvertScene = true;
+    
+    AssetTools.ImportAssets({Task.MeshPath}, TargetPath, FbxFact);
+ 
+    // --- 3. 导入选中的贴图 ---
+    TArray<FString> FinalPathsToImport;
+    ValidTexturePaths.GenerateValueArray(FinalPathsToImport);
+    AssetTools.ImportAssets(FinalPathsToImport, TargetPath, nullptr);
+ 
+    // --- 4. 生成材质逻辑（严格基于功能映射，不再遍历导入结果数组） ---
+    // 先获取导入后的模型（为了后续赋材质）
+    TArray<UStaticMesh*> ImportedMeshes;
+    TArray<FAssetData> MeshAssets;
+    FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+    AssetRegistryModule.Get().GetAssetsByPath(FName(*TargetPath), MeshAssets);
+    for (auto& Asset : MeshAssets) if (UStaticMesh* M = Cast<UStaticMesh>(Asset.GetAsset())) ImportedMeshes.Add(M);
+ 
+    if (ImportedMeshes.Num() > 0)
     {
         UMaterialFactoryNew* MatFact = NewObject<UMaterialFactoryNew>();
         UMaterial* NewMat = Cast<UMaterial>(AssetTools.CreateAsset(TEXT("M_") + Task.FolderName, TargetPath, UMaterial::StaticClass(), MatFact));
  
         if (NewMat)
         {
-            for (auto& Entry : ValidTextures)
-            {
-                auto* Sample = Cast<UMaterialExpressionTextureSample>(UMaterialEditingLibrary::CreateMaterialExpression(NewMat, UMaterialExpressionTextureSample::StaticClass()));
-                Sample->Texture = Entry.Value;
-                EMaterialProperty Prop = EMaterialProperty::MP_BaseColor;
-                if (Entry.Key == "Normal") { Prop = EMaterialProperty::MP_Normal; Sample->SamplerType = SAMPLERTYPE_Normal; }
-                else if (Entry.Key == "Roughness") Prop = EMaterialProperty::MP_Roughness;
-                else if (Entry.Key == "Metallic") Prop = EMaterialProperty::MP_Metallic;
-                UMaterialEditingLibrary::ConnectMaterialProperty(Sample, TEXT(""), Prop);
-            }
-            UMaterialEditingLibrary::RecompileMaterial(NewMat);
+            int32 YOffset = 0;
             
-            for (UStaticMesh* Mesh : AllMeshes)
+            // 重点：遍历我们自己定义的“三类”功能关键词，而不是遍历资产数组
+            TArray<FString> Categories = { TEXT("Base"), TEXT("Normal"), TEXT("ORM") };
+            
+            for (const FString& Category : Categories)
             {
-                Mesh->GetStaticMaterials().Empty();
-                Mesh->GetStaticMaterials().Add(FStaticMaterial(NewMat));
-                for (int32 i = 0; i < 16; ++i) { Mesh->SetMaterial(i, NewMat); }
+                if (!ValidTexturePaths.Contains(Category)) continue;
+ 
+                // 根据文件名获取导入后的 Texture 对象
+                FString DiskPath = ValidTexturePaths[Category];
+                FString AssetName = FPaths::GetBaseFilename(DiskPath);
+                FString FullObjectPath = TargetPath + TEXT("/") + AssetName + TEXT(".") + AssetName;
+                
+                UTexture2D* Tex = Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), nullptr, *FullObjectPath));
+                if (!Tex) continue;
+ 
+                // --- 确定连线意图 ---
+                struct FConn { FString Pin; EMaterialProperty Prop; };
+                TArray<FConn> Intents;
+                TextureCompressionSettings Comp = TextureCompressionSettings::TC_Default;
+ 
+                if (Category == TEXT("Base"))
+                {
+                    Intents.Add({ TEXT(""), EMaterialProperty::MP_BaseColor });
+                }
+                else if (Category == TEXT("Normal"))
+                {
+                    Comp = TextureCompressionSettings::TC_Normalmap;
+                    Intents.Add({ TEXT(""), EMaterialProperty::MP_Normal });
+                }
+                else if (Category == TEXT("ORM"))
+                {
+                    // ORM 通道排序逻辑
+                    FString LowName = AssetName.ToLower();
+                    TArray<FChannelMapping> Found;
+                    auto Check = [&](FString K, EMaterialProperty P) {
+                        int32 Idx = LowName.Find(K);
+                        if (Idx != INDEX_NONE) Found.Add({ K, Idx, P });
+                    };
+                    Check(TEXT("rough"), EMaterialProperty::MP_Roughness);
+                    Check(TEXT("metal"), EMaterialProperty::MP_Metallic);
+                    Check(TEXT("occ"), EMaterialProperty::MP_AmbientOcclusion);
+                    Check(TEXT("ao"), EMaterialProperty::MP_AmbientOcclusion);
+                    
+                    Found.Sort();
+                    Comp = TextureCompressionSettings::TC_Masks;
+                    FString RGB[] = { TEXT("R"), TEXT("G"), TEXT("B") };
+                    for (int32 i = 0; i < Found.Num() && i < 3; ++i) Intents.Add({ RGB[i], Found[i].TargetProp });
+                }
+ 
+                // --- 此时才真正创建节点：保证一个 Category 只创建一个节点 ---
+                if (Intents.Num() > 0)
+                {
+                    // 应用贴图设置
+                    Tex->CompressionSettings = Comp;
+                    Tex->SRGB = (Comp == TextureCompressionSettings::TC_Normalmap || Comp == TextureCompressionSettings::TC_Masks) ? false : true;
+                    Tex->PostEditChange();
+ 
+                    auto* Sample = Cast<UMaterialExpressionTextureSample>(UMaterialEditingLibrary::CreateMaterialExpression(NewMat, UMaterialExpressionTextureSample::StaticClass()));
+                    Sample->Texture = Tex;
+                    Sample->MaterialExpressionEditorX = -600;
+                    Sample->MaterialExpressionEditorY = YOffset;
+                    YOffset += 280;
+ 
+                    if (Comp == TextureCompressionSettings::TC_Normalmap) Sample->SamplerType = SAMPLERTYPE_Normal;
+                    else if (Comp == TextureCompressionSettings::TC_Masks) Sample->SamplerType = SAMPLERTYPE_Masks;
+ 
+                    for (auto& Int : Intents) UMaterialEditingLibrary::ConnectMaterialProperty(Sample, Int.Pin, Int.Prop);
+                }
+            }
+ 
+            UMaterialEditingLibrary::RecompileMaterial(NewMat);
+ 
+            for (UStaticMesh* Mesh : ImportedMeshes)
+            {
+                for (int32 i = 0; i < 16; ++i) Mesh->SetMaterial(i, NewMat);
                 Mesh->PostEditChange();
             }
         }
     }
 }
  
-
 #undef LOCTEXT_NAMESPACE

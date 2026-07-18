@@ -7,6 +7,8 @@
         "Includes": [
             "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\toolsbox\\definitions.toolsbox.h",
             "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\source\\toolsbox\\public\\tools\\intelligentimportofmodelsandmaterials\\import_mm.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\engine\\public\\materials\\materialircommon.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\engine\\public\\materials\\materialirutils.h",
             "f:\\ue_5.8\\engine\\source\\developer\\assettools\\public\\assettoolsmodule.h",
             "f:\\ue_5.8\\engine\\source\\developer\\assettools\\public\\iassettools.h",
             "f:\\ue_5.8\\engine\\source\\developer\\assettools\\public\\assettypecategories.h",
