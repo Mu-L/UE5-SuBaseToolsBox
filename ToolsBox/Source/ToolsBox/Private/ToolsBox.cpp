@@ -40,7 +40,7 @@ void FToolsBoxModule::StartupModule()
 	{
 		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(
 			Tool.ToolTabID, 
-			FOnSpawnTab::CreateRaw(this, &FToolsBoxModule::OnSpawnToolTab, Tool.ToolTabID) // 绑定 Payload 参数
+			FOnSpawnTab::CreateRaw(this, &FToolsBoxModule::OnSpawnToolTab, Tool.WidgetFactory) // 绑定 Payload 参数
 		)
 		.SetDisplayName(FText::FromName(Tool.ToolName))
 		.SetMenuType(ETabSpawnerMenuType::Hidden);
@@ -106,20 +106,15 @@ void FToolsBoxModule::OnButtonClick()
 	FGlobalTabmanager::Get()->TryInvokeTab(FTabId("ToolsBox"));
 }
 
-TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolTab(const FSpawnTabArgs& SpawnTabArgs, FName TabID)
+TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolTab(const FSpawnTabArgs& SpawnTabArgs, TFunction<TSharedRef<SWidget>()> NewToolTab)
 {
-	TSharedPtr<SWidget> Content = SNullWidget::NullWidget;
- 
-	// 匹配数据里定义的 ToolTabID
-	if (TabID == TEXT("CleanerTab")) {
-		Content = SNew(SCleaner);
-	}
 	
+	TSharedRef<SWidget> Content = NewToolTab ? NewToolTab() : SNullWidget::NullWidget;
  
 	return SNew(SDockTab)
 		.TabRole(ETabRole::NomadTab)
 		[
-			Content.ToSharedRef()
+			Content
 		];
 }
 

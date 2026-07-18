@@ -20,7 +20,7 @@ public:
 	{
 		ChildSlot
 		[
-			SNew(STextBlock).Text("这是清理工具的独立界面")
+			SNew(STextBlock).Text(NSLOCTEXT("SCleaner", "这是清理工具的独立界面", "这是清理工具的独立界面"))
 			// 在这里编写该工具复杂的 UI 排布
 		];
 	}

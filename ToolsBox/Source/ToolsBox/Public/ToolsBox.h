@@ -23,6 +23,7 @@ public:
 
 
 	//生成工具详情按钮
-	TSharedRef<SDockTab> OnSpawnToolTab(const FSpawnTabArgs& SpawnTabArgs, FName TabID);
+	//第二个参数传入的是要生成的对应的Tool面板类
+	TSharedRef<SDockTab> OnSpawnToolTab(const FSpawnTabArgs& SpawnTabArgs, TFunction<TSharedRef<SWidget>()> NewToolTab);
 	
 };

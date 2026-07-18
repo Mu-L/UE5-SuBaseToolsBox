@@ -3,6 +3,7 @@
 #define LOCTEXT_NAMESPACE "Tools"
 #include "Internationalization/Text.h"
 #include "UObject/NameTypes.h"
+#include "Widgets/SWidget.h"
 
 struct FTool
 {
@@ -13,9 +14,10 @@ struct FTool
 	FName ToolTabID; 
     
 
-	FTool(FName InName, const FText& InDesc, FName InImage, FName InTabID)
-		: ToolName(InName), ToolDescription(InDesc), ToolImage(InImage), ToolTabID(InTabID) {}
-
+	TFunction<TSharedRef<SWidget>()> WidgetFactory;
+ 
+	FTool(FName InName, const FText& InDesc, FName InImage, FName InTabID, TFunction<TSharedRef<SWidget>()> InFactory)
+		: ToolName(InName), ToolDescription(InDesc), ToolImage(InImage), ToolTabID(InTabID), WidgetFactory(InFactory) {}
 	
 	bool operator==(const FTool& Other) const
 	{
