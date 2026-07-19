@@ -12,17 +12,13 @@
  */
 struct FChannelMapping
 {
-	FString KeyName;
 	int32 FoundIndex;
 	EMaterialProperty TargetProp;
- 
-	// 必须重载小于号，以便 FoundChannels.Sort() 正常工作
 	bool operator<(const FChannelMapping& Other) const
 	{
 		return FoundIndex < Other.FoundIndex;
 	}
 };
-
 struct FChannelKeyword
 {
 	FString Key; // "Roughness", "Metallic", "AmbientOcclusion"

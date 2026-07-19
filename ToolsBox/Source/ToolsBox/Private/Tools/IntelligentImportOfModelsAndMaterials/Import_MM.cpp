@@ -158,19 +158,14 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, bool bFirst)
             ValidTexturePaths.Add(TEXT("ORM"), Pair.Value);
     }
  
-    // --- 2. 配置 FBX 导入 (增强自适应与稳定性) ---
+    // --- 2. 模型导入 (含自适应缩放与原点对齐) ---
     UFbxFactory* FbxFact = NewObject<UFbxFactory>();
     FbxFact->ImportUI->MeshTypeToImport = FBXIT_StaticMesh;
     FbxFact->ImportUI->bImportMaterials = false;
     FbxFact->ImportUI->bImportTextures = false;
-    
-    // 关键配置
     FbxFact->ImportUI->StaticMeshImportData->bTransformVertexToAbsolute = true;
     FbxFact->ImportUI->StaticMeshImportData->bConvertSceneUnit = true;
     FbxFact->ImportUI->StaticMeshImportData->ImportUniformScale = 1.0f;
-    
-    // 如果你希望多个子模型合并为一个资产，取消下面这行的注释：
-    // FbxFact->ImportUI->StaticMeshImportData->bCombineMeshes = true;
  
     UAssetImportTask* MeshTask = NewObject<UAssetImportTask>();
     MeshTask->Filename = Task.MeshPath;
@@ -180,104 +175,115 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, bool bFirst)
  
     AssetTools.ImportAssetTasks({ MeshTask });
  
-    // --- 3. 核心修复：扫描并获取文件夹内所有的模型 ---
+    // 同步扫描
     FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-    TArray<FString> PathsToScan; PathsToScan.Add(TargetPath);
-    AssetRegistryModule.Get().ScanPathsSynchronous(PathsToScan);
+    AssetRegistryModule.Get().ScanPathsSynchronous({TargetPath});
  
+    // 获取所有导入的模型 (解决多物体导入问题)
     TArray<FAssetData> FoundMeshAssets;
-    // 获取当前文件夹下所有的静态网格体
     AssetRegistryModule.Get().GetAssetsByPath(FName(*TargetPath), FoundMeshAssets);
- 
     TArray<UStaticMesh*> ImportedMeshes;
-    for (const FAssetData& AssetData : FoundMeshAssets)
-    {
-        if (UStaticMesh* Mesh = Cast<UStaticMesh>(AssetData.GetAsset()))
-        {
-            ImportedMeshes.Add(Mesh);
-        }
-    }
+    for (const FAssetData& Ad : FoundMeshAssets) if (UStaticMesh* M = Cast<UStaticMesh>(Ad.GetAsset())) ImportedMeshes.Add(M);
  
-    if (ImportedMeshes.Num() == 0) return; // 没模型就直接退出
+    if (ImportedMeshes.Num() == 0) return;
  
-    // --- 4. 检查第一个模型的缩放 (自适应校准) ---
-    UStaticMesh* FirstMesh = ImportedMeshes[0];
-    float MaxDim = FirstMesh->GetBounds().GetBox().GetSize().GetMax();
-    if (MaxDim > 0.0f && MaxDim < 2.0f)
-    {
+    // 缩放校准
+    if (ImportedMeshes[0]->GetBounds().GetBox().GetSize().GetMax() < 2.0f) {
         FbxFact->ImportUI->StaticMeshImportData->ImportUniformScale = 100.0f;
-        AssetTools.ImportAssetTasks({ MeshTask }); // 重新导入
-        AssetRegistryModule.Get().ScanPathsSynchronous(PathsToScan);
-        // 重新获取资产
-        ImportedMeshes.Empty();
-        AssetRegistryModule.Get().GetAssetsByPath(FName(*TargetPath), FoundMeshAssets);
-        for (const FAssetData& Ad : FoundMeshAssets) if (UStaticMesh* M = Cast<UStaticMesh>(Ad.GetAsset())) ImportedMeshes.Add(M);
+        AssetTools.ImportAssetTasks({ MeshTask });
+        AssetRegistryModule.Get().ScanPathsSynchronous({TargetPath});
     }
  
-    // --- 5. 导入贴图 ---
+    // --- 3. 贴图导入 ---
     TArray<FString> TextureFiles;
     ValidTexturePaths.GenerateValueArray(TextureFiles);
-    if (TextureFiles.Num() > 0)
-    {
+    if (TextureFiles.Num() > 0) {
         AssetTools.ImportAssets(TextureFiles, TargetPath, nullptr);
-        AssetRegistryModule.Get().ScanPathsSynchronous(PathsToScan);
+        AssetRegistryModule.Get().ScanPathsSynchronous({TargetPath});
     }
  
-    // --- 6. 创建材质并绑定到所有找到的模型上 ---
+    // --- 4. 智能材质生成与自适应通道连接 ---
     UMaterialFactoryNew* MatFact = NewObject<UMaterialFactoryNew>();
-    FString MatName = TEXT("M_") + Task.FolderName;
-    UMaterial* NewMat = Cast<UMaterial>(AssetTools.CreateAsset(MatName, TargetPath, UMaterial::StaticClass(), MatFact));
+    UMaterial* NewMat = Cast<UMaterial>(AssetTools.CreateAsset(TEXT("M_") + Task.FolderName, TargetPath, UMaterial::StaticClass(), MatFact));
  
     if (NewMat)
     {
         int32 YOffset = 0;
         TArray<FString> Categories = { TEXT("Base"), TEXT("Normal"), TEXT("ORM") };
+        
         for (const FString& Category : Categories)
         {
             if (!ValidTexturePaths.Contains(Category)) continue;
  
             FString DiskPath = ValidTexturePaths[Category];
-            FString TexName = FPaths::GetBaseFilename(DiskPath);
-            FString FullTexPath = TargetPath + TEXT("/") + TexName + TEXT(".") + TexName;
-            
+            FString TexAssetName = FPaths::GetBaseFilename(DiskPath);
+            FString FullTexPath = TargetPath + TEXT("/") + TexAssetName + TEXT(".") + TexAssetName;
             UTexture2D* Tex = LoadObject<UTexture2D>(nullptr, *FullTexPath);
             if (!Tex) continue;
  
-            // 贴图设置与连线逻辑
-            TextureCompressionSettings Comp = TextureCompressionSettings::TC_Default;
-            if (Category == TEXT("Normal")) Comp = TextureCompressionSettings::TC_Normalmap;
-            else if (Category == TEXT("ORM")) Comp = TextureCompressionSettings::TC_Masks;
- 
-            Tex->CompressionSettings = Comp;
-            Tex->SRGB = (Comp == TextureCompressionSettings::TC_Default);
+            // 设置贴图压缩与SRGB
+            bool bIsNormal = (Category == TEXT("Normal"));
+            bool bIsORM = (Category == TEXT("ORM"));
+            Tex->CompressionSettings = bIsNormal ? TC_Normalmap : (bIsORM ? TC_Masks : TC_Default);
+            Tex->SRGB = !bIsNormal && !bIsORM;
             Tex->PostEditChange();
  
+            // 创建材质表达式
             auto* Sample = Cast<UMaterialExpressionTextureSample>(UMaterialEditingLibrary::CreateMaterialExpression(NewMat, UMaterialExpressionTextureSample::StaticClass()));
             Sample->Texture = Tex;
-            Sample->MaterialExpressionEditorY = YOffset; YOffset += 280;
+            Sample->MaterialExpressionEditorY = YOffset; YOffset += 300;
+            if (bIsNormal) Sample->SamplerType = SAMPLERTYPE_Normal;
+            else if (bIsORM) Sample->SamplerType = SAMPLERTYPE_Masks;
  
-            if (Category == TEXT("Base")) UMaterialEditingLibrary::ConnectMaterialProperty(Sample, TEXT(""), EMaterialProperty::MP_BaseColor);
+            // --- 核心修复：自适应通道连线逻辑 ---
+            if (Category == TEXT("Base")) {
+                UMaterialEditingLibrary::ConnectMaterialProperty(Sample, TEXT(""), EMaterialProperty::MP_BaseColor);
+            }
             else if (Category == TEXT("Normal")) {
-                Sample->SamplerType = SAMPLERTYPE_Normal;
                 UMaterialEditingLibrary::ConnectMaterialProperty(Sample, TEXT(""), EMaterialProperty::MP_Normal);
             }
             else if (Category == TEXT("ORM")) {
-                Sample->SamplerType = SAMPLERTYPE_Masks;
-                UMaterialEditingLibrary::ConnectMaterialProperty(Sample, TEXT("R"), EMaterialProperty::MP_Roughness);
-                UMaterialEditingLibrary::ConnectMaterialProperty(Sample, TEXT("G"), EMaterialProperty::MP_Metallic);
-                UMaterialEditingLibrary::ConnectMaterialProperty(Sample, TEXT("B"), EMaterialProperty::MP_AmbientOcclusion);
+                // 定义结构体用于排序
+                struct FChannelMapping {
+                    int32 Index;
+                    EMaterialProperty Property;
+                    bool operator<(const FChannelMapping& Other) const { return Index < Other.Index; }
+                };
+ 
+                TArray<FChannelMapping> FoundMappings;
+                FString LowName = TexAssetName.ToLower();
+ 
+                // 查找关键字在文件名中的位置
+                auto CheckKeyword = [&](TArray<FString> Keywords, EMaterialProperty TargetProp) {
+                    for (const FString& K : Keywords) {
+                        int32 FoundPos = LowName.Find(K);
+                        if (FoundPos != INDEX_NONE) {
+                            FoundMappings.Add({FoundPos, TargetProp});
+                            break;
+                        }
+                    }
+                };
+ 
+                // 注入识别关键字
+                CheckKeyword({TEXT("occlusion"), TEXT("ao"), TEXT("occ")}, EMaterialProperty::MP_AmbientOcclusion);
+                CheckKeyword({TEXT("roughness"), TEXT("rough")}, EMaterialProperty::MP_Roughness);
+                CheckKeyword({TEXT("metallic"), TEXT("metal"), TEXT("met")}, EMaterialProperty::MP_Metallic);
+ 
+                // 根据在文件名中出现的先后顺序排序 (例如 O-R-M 顺序)
+                FoundMappings.Sort();
+ 
+                // 按照排序后的顺序分配 R, G, B 通道
+                FString Channels[] = { TEXT("R"), TEXT("G"), TEXT("B") };
+                for (int32 i = 0; i < FoundMappings.Num() && i < 3; ++i) {
+                    UMaterialEditingLibrary::ConnectMaterialProperty(Sample, Channels[i], FoundMappings[i].Property);
+                }
             }
         }
         UMaterialEditingLibrary::RecompileMaterial(NewMat);
  
-        // --- 核心修复：为所有子物体赋予材质 ---
-        for (UStaticMesh* Mesh : ImportedMeshes)
-        {
-            int32 NumSlots = Mesh->GetStaticMaterials().Num();
-            for (int32 i = 0; i < NumSlots; ++i)
-            {
-                Mesh->SetMaterial(i, NewMat);
-            }
+        // 赋予所有子物体材质
+        for (UStaticMesh* Mesh : ImportedMeshes) {
+            for (int32 i = 0; i < Mesh->GetStaticMaterials().Num(); ++i) Mesh->SetMaterial(i, NewMat);
             Mesh->PostEditChange();
         }
     }
