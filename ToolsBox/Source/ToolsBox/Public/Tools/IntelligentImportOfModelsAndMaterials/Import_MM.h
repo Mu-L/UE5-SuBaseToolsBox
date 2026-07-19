@@ -63,7 +63,7 @@ public:
 	FReply OnStartImportClicked();
  
 	/** 核心逻辑：将单个任务导入引擎并自动化设置材质 */
-	void ExecuteImportTask(const FImportFolderTask& Task);
+	void ExecuteImportTask(const FImportFolderTask& Task, bool bShowUI);
 	
 
 
