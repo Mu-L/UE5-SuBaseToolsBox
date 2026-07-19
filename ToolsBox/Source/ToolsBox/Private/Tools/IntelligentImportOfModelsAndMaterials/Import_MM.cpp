@@ -32,31 +32,52 @@
 
 void SImport_MM::Construct(const FArguments& InArgs)
 {
-     // Initialize a Marshaller that allows inline color formatting
     TArray<TSharedRef<ITextDecorator>> Decorators;
-    RichTextMarshaller = FRichTextLayoutMarshaller::Create(Decorators, &FAppStyle::Get());
+
+    TSharedPtr<FRichTextLayoutMarshaller> LocalMarshaller = FRichTextLayoutMarshaller::Create(Decorators, &FAppStyle::Get());
  
     ChildSlot
     [
         SNew(SVerticalBox)
         + SVerticalBox::Slot().AutoHeight().Padding(10)
         [
-            SNew(STextBlock).Text(LOCTEXT("Title", "智能自动化导入工具 V5.6")).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
+            SNew(STextBlock).Text(LOCTEXT("Title", "批量导入工具 V1")).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
         ]
         + SVerticalBox::Slot().AutoHeight().Padding(10, 5)
         [
             SNew(SVerticalBox)
             + SVerticalBox::Slot().AutoHeight().Padding(0, 2) [
                 SNew(SHorizontalBox)
-                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center) [ SNew(STextBlock).Text(LOCTEXT("Src", "源文件夹: ")).MinDesiredWidth(80) ]
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center) [ SNew(STextBlock).Text(LOCTEXT("Src", "源文件夹: ")).MinDesiredWidth(100) ]
                 + SHorizontalBox::Slot().FillWidth(1.0f) [ SAssignNew(SourcePathBox, SEditableTextBox).IsReadOnly(true) ]
                 + SHorizontalBox::Slot().AutoWidth() [ SNew(SButton).Text(LOCTEXT("B1", "浏览")).OnClicked(this, &SImport_MM::OnBrowseSourceClicked) ]
             ]
             + SVerticalBox::Slot().AutoHeight().Padding(0, 2) [
                 SNew(SHorizontalBox)
-                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center) [ SNew(STextBlock).Text(LOCTEXT("Dst", "目标位置: ")).MinDesiredWidth(80) ]
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center) [ SNew(STextBlock).Text(LOCTEXT("Dst", "保存位置: ")).MinDesiredWidth(100) ]
                 + SHorizontalBox::Slot().FillWidth(1.0f) [ SAssignNew(DestPathBox, SEditableTextBox).HintText(LOCTEXT("Hint", "/Game/BatchImport/")) ]
-                + SHorizontalBox::Slot().AutoWidth() [ SNew(SButton).Text(LOCTEXT("B2", "项目目录")).OnClicked(this, &SImport_MM::OnBrowseDestClicked) ]
+                + SHorizontalBox::Slot().AutoWidth() [ SNew(SButton).Text(LOCTEXT("B2", "选择路径")).OnClicked(this, &SImport_MM::OnBrowseDestClicked) ]
+            ]
+            +SVerticalBox::Slot()
+            .Padding(1,20,1,1)
+            [
+                SNew(STextBlock)
+                .Text(LOCTEXT("Tip", "如果纹理贴图不与模型同一层级下，而是处于同级的文件夹内，请输入统一的此文件夹名称。留空则默认贴图与模型同级。 "))
+                .AutoWrapText(true)
+               
+            ]
+            + SVerticalBox::Slot().AutoHeight().Padding(0, 2) [
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot()
+                .AutoWidth()
+                .VAlign(VAlign_Center)
+                [
+                    
+                    SNew(STextBlock)
+                    .Text(LOCTEXT("TexFolder", "贴图子文件夹名: ")).MinDesiredWidth(100)
+                    
+                ]
+                + SHorizontalBox::Slot().FillWidth(1.0f) [ SAssignNew(TexSubFolderNameBox, SEditableTextBox).HintText(LOCTEXT("TexHint", "留空则在模型同级目录找贴图")) ]
             ]
         ]
         + SVerticalBox::Slot().AutoHeight().Padding(10, 10)
@@ -76,7 +97,7 @@ void SImport_MM::Construct(const FArguments& InArgs)
                     SAssignNew(LogScrollBox, SScrollBox)
                     + SScrollBox::Slot() [
                         SAssignNew(LogBox, SMultiLineEditableText)
-                        .Marshaller(RichTextMarshaller) // This enables rich text color parsing
+                        .Marshaller(LocalMarshaller)
                         .IsReadOnly(true)
                         .AutoWrapText(true)
                     ]
@@ -90,14 +111,9 @@ void SImport_MM::AddLog(const FString& Message, FLinearColor Color)
 {
     FString TimeStr = FDateTime::Now().ToString(TEXT("[%H:%M:%S] "));
     FString ColorHex = Color.ToFColor(true).ToHex();
-    
-    // 构建富文本颜色标签
     FString FormattedMessage = FString::Printf(TEXT("<RichTextBlock.Color=\"#%s\">%s%s</>\n"), *ColorHex, *TimeStr, *Message);
-    
     FText Current = LogBox->GetText();
-    FString NewContentStr = Current.ToString() + FormattedMessage;
-    
-    LogBox->SetText(FText::FromString(NewContentStr));
+    LogBox->SetText(FText::FromString(Current.ToString() + FormattedMessage));
     LogScrollBox->ScrollToEnd();
 }
  
@@ -138,22 +154,50 @@ FReply SImport_MM::OnStartImportClicked()
 {
     if (SourceFolderPath.IsEmpty()) return FReply::Handled();
     FString FinalDest = DestPathBox->GetText().ToString().IsEmpty() ? TEXT("/Game/BatchImport") : DestPathBox->GetText().ToString();
+    FString TexSubFolderName = TexSubFolderNameBox->GetText().ToString();
  
+    AddLog(TEXT("--- 开始执行层级递归导入 ---"), FLinearColor::White);
     IFileManager& FM = IFileManager::Get();
-    auto Scan = [&](const FString& Path, const FString& Name) {
-        FImportFolderTask Task; Task.FolderName = Name; TArray<FString> Files; FM.FindFiles(Files, *Path, nullptr);
-        for (const FString& F : Files) {
-            FString Ext = FPaths::GetExtension(F).ToLower();
-            // --- 核心修改：同时支持 fbx 和 obj ---
-            if (Ext == TEXT("fbx") || Ext == TEXT("obj")) Task.MeshPath = Path / F;
-            else if (Ext == TEXT("png") || Ext == TEXT("tga") || Ext == TEXT("jpg")) Task.TextureMap.Add(F, Path / F);
+    
+    TFunction<void(const FString&)> RecursiveScan;
+    RecursiveScan = [&](const FString& CurrentDirPath) {
+        TArray<FString> LocalFiles;
+        FM.FindFiles(LocalFiles, *(CurrentDirPath / TEXT("*")), true, false);
+ 
+        FString RelativePath = CurrentDirPath == SourceFolderPath ? TEXT("") : CurrentDirPath.RightChop(SourceFolderPath.Len() + 1);
+ 
+        for (const FString& FileName : LocalFiles) {
+            FString Ext = FPaths::GetExtension(FileName).ToLower();
+            if (Ext == TEXT("fbx") || Ext == TEXT("obj")) {
+                FImportFolderTask Task;
+                Task.MeshPath = CurrentDirPath / FileName;
+                Task.FolderName = RelativePath.IsEmpty() ? FPaths::GetBaseFilename(SourceFolderPath) : RelativePath;
+                
+                FString TexSearchPath = TexSubFolderName.IsEmpty() ? CurrentDirPath : (CurrentDirPath / TexSubFolderName);
+ 
+                TArray<FString> TexFiles;
+                FM.FindFiles(TexFiles, *(TexSearchPath / TEXT("*")), true, false);
+                for (const FString& TF : TexFiles) {
+                    FString TExt = FPaths::GetExtension(TF).ToLower();
+                    if (TExt == TEXT("png") || TExt == TEXT("tga") || TExt == TEXT("jpg")) {
+                        Task.TextureMap.Add(TF, TexSearchPath / TF);
+                    }
+                }
+                ExecuteImportTask(Task, FinalDest);
+            }
         }
-        if (!Task.MeshPath.IsEmpty()) ExecuteImportTask(Task, FinalDest);
+ 
+        TArray<FString> SubDirs;
+        FM.FindFiles(SubDirs, *(CurrentDirPath / TEXT("*")), false, true);
+        for (const FString& SubDirName : SubDirs) {
+            // 排除指定的贴图子目录，避免扫描其内部的模型
+            if (!TexSubFolderName.IsEmpty() && SubDirName.Equals(TexSubFolderName, ESearchCase::IgnoreCase)) continue;
+            RecursiveScan(CurrentDirPath / SubDirName);
+        }
     };
  
-    Scan(SourceFolderPath, FPaths::GetBaseFilename(SourceFolderPath));
-    TArray<FString> Subs; FM.FindFiles(Subs, *(SourceFolderPath / TEXT("*")), false, true);
-    for (const FString& S : Subs) Scan(SourceFolderPath / S, S);
+    RecursiveScan(SourceFolderPath);
+    AddLog(TEXT("--- 所有导入任务已结束 ---"), FLinearColor::White);
     return FReply::Handled();
 }
  
@@ -161,11 +205,12 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, const FString&
 {
     IAssetTools& AT = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
     FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+    
     FString FinalPath = BaseDestPath / Task.FolderName;
     FString MeshBaseName = FPaths::GetBaseFilename(Task.MeshPath);
-    FString MeshPrefix = MeshBaseName + TEXT("_"); // 剥离前缀
+    FString MeshPrefix = MeshBaseName + TEXT("_");
  
-    // 1. 模型导入（UFbxFactory 支持 FBX/OBJ 为静态网格）
+    // 1. 模型导入配置
     UFbxFactory* Fact = NewObject<UFbxFactory>();
     Fact->ImportUI->MeshTypeToImport = FBXIT_StaticMesh;
     Fact->ImportUI->bImportMaterials = Fact->ImportUI->bImportTextures = false;
@@ -174,8 +219,10 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, const FString&
     Fact->ImportUI->StaticMeshImportData->ImportUniformScale = 1.0f;
  
     UAssetImportTask* MTask = NewObject<UAssetImportTask>();
-    MTask->Filename = Task.MeshPath; MTask->DestinationPath = FinalPath;
-    MTask->Factory = Fact; MTask->bAutomated = true; // 消除弹窗
+    MTask->Filename = Task.MeshPath; 
+    MTask->DestinationPath = FinalPath;
+    MTask->Factory = Fact; 
+    MTask->bAutomated = true;
     AT.ImportAssetTasks({ MTask });
  
     // 2. 贴图导入
@@ -183,25 +230,20 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, const FString&
     if (TPaths.Num() > 0) AT.ImportAssets(TPaths, FinalPath, nullptr);
     ARM.Get().ScanPathsSynchronous({ FinalPath });
  
-    // 3. 获取模型资产并检查自适应缩放
+    // 3. 获取并过滤当前任务生成的 Mesh
     TArray<FAssetData> MeshDatas; ARM.Get().GetAssetsByPath(FName(*FinalPath), MeshDatas);
     TArray<UStaticMesh*> Meshes;
-    for (const FAssetData& Ad : MeshDatas) if (UStaticMesh* M = Cast<UStaticMesh>(Ad.GetAsset())) Meshes.Add(M);
+    for (const FAssetData& Ad : MeshDatas) {
+        UStaticMesh* M = Cast<UStaticMesh>(Ad.GetAsset());
+        // 确保是该文件生成的 Mesh，防止被 FinalPath 下的其他模型污染
+        if (M && M->GetName().Contains(MeshBaseName)) Meshes.Add(M);
+    }
     if (Meshes.Num() == 0) return;
  
-    if (Meshes[0]->GetBounds().GetBox().GetSize().GetMax() < 2.0f) {
-        Fact->ImportUI->StaticMeshImportData->ImportUniformScale = 100.0f;
-        AT.ImportAssetTasks({ MTask });
-        ARM.Get().ScanPathsSynchronous({ FinalPath });
-        Meshes.Empty(); ARM.Get().GetAssetsByPath(FName(*FinalPath), MeshDatas);
-        for (const FAssetData& Ad : MeshDatas) if (UStaticMesh* M = Cast<UStaticMesh>(Ad.GetAsset())) Meshes.Add(M);
-    }
- 
-    // 4. 创建材质集
+    // 4. 分析贴图并创建材质
     TMap<FString, UMaterial*> CreatedMaterials;
     UMaterial* SingleFallbackMat = nullptr;
     int32 BaseColorCount = 0;
- 
     TArray<FString> BaseColorFileNames;
     for (auto& TP : Task.TextureMap) {
         FString LN = TP.Key.ToLower();
@@ -219,28 +261,27 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, const FString&
         CreatedMaterials.Add(BCName, NewMat);
  
         int32 YPos = 0;
-        TArray<FString> Cats = { TEXT("BC"), TEXT("N"), TEXT("ORM"), TEXT("OP"), TEXT("SP"), TEXT("EM"), TEXT("WPO") };
         TMap<FString, UTexture2D*> LocalMatch;
- 
         for (auto& TP : Task.TextureMap) {
             FString TN = FPaths::GetBaseFilename(TP.Key);
+            // 多贴图集时执行前缀过滤
             if (BaseColorCount > 1 && !TN.Contains(BCName.Replace(TEXT("_BaseColor"), TEXT(""), ESearchCase::IgnoreCase))) continue;
             UTexture2D* Tex = LoadObject<UTexture2D>(nullptr, *(FinalPath / TN + TEXT(".") + TN));
             if (!Tex) continue;
+ 
             FString L = TN.ToLower();
-            if (L.Contains(TEXT("base")) || L.Contains(TEXT("albedo")) || L.Contains(TEXT("col"))) LocalMatch.Add(TEXT("BC"), Tex);
-            else if (L.Contains(TEXT("normal")) || L.Contains(TEXT("nrm"))) LocalMatch.Add(TEXT("N"), Tex);
+            if (L.Contains(TEXT("base")) || L.Contains(TEXT("albedo"))) LocalMatch.Add(TEXT("BC"), Tex);
+            else if (L.Contains(TEXT("normal"))) LocalMatch.Add(TEXT("N"), Tex);
             else if (L.Contains(TEXT("rough")) || L.Contains(TEXT("metal")) || L.Contains(TEXT("occ")) || L.Contains(TEXT("ao"))) LocalMatch.Add(TEXT("ORM"), Tex);
-            else if (L.Contains(TEXT("opacity")) || L.Contains(TEXT("alpha"))) LocalMatch.Add(TEXT("OP"), Tex);
+            else if (L.Contains(TEXT("opacity"))) LocalMatch.Add(TEXT("OP"), Tex);
             else if (L.Contains(TEXT("specular"))) LocalMatch.Add(TEXT("SP"), Tex);
             else if (L.Contains(TEXT("emissive"))) LocalMatch.Add(TEXT("EM"), Tex);
             else if (L.Contains(TEXT("wpo"))) LocalMatch.Add(TEXT("WPO"), Tex);
         }
  
         if (LocalMatch.Contains(TEXT("OP"))) NewMat->BlendMode = BLEND_Translucent;
-        for (const FString& K : Cats) {
-            if (!LocalMatch.Contains(K)) continue;
-            UTexture2D* T = LocalMatch[K];
+        for (auto& Pair : LocalMatch) {
+            UTexture2D* T = Pair.Value; FString K = Pair.Key;
             bool bN = (K == TEXT("N")), bM = (K == TEXT("ORM") || K == TEXT("OP") || K == TEXT("SP"));
             T->CompressionSettings = bN ? TC_Normalmap : (bM ? TC_Masks : TC_Default);
             T->SRGB = !bN && !bM; T->PostEditChange();
@@ -267,11 +308,10 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, const FString&
         UMaterialEditingLibrary::RecompileMaterial(NewMat);
     }
  
-    // 5. 分配材质并按总模型记录日志
+    // 5. 分配材质与汇总日志
     bool bHasNamingError = false;
     for (UStaticMesh* SM : Meshes) {
-        FString FullName = SM->GetName();
-        FString Clean = FullName.StartsWith(MeshPrefix) ? FullName.RightChop(MeshPrefix.Len()) : FullName;
+        FString Clean = SM->GetName().StartsWith(MeshPrefix) ? SM->GetName().RightChop(MeshPrefix.Len()) : SM->GetName();
         bool bAssigned = false;
         for (auto& MatPair : CreatedMaterials) {
             if (MatPair.Key.Contains(Clean, ESearchCase::IgnoreCase) || Clean.Contains(MatPair.Key, ESearchCase::IgnoreCase)) {
@@ -283,14 +323,11 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, const FString&
             if (BaseColorCount == 1 && SingleFallbackMat) {
                 for (int32 i=0; i<SM->GetStaticMaterials().Num(); ++i) SM->SetMaterial(i, SingleFallbackMat);
                 SM->PostEditChange();
-                AddLog(FString::Printf(TEXT("模型 [%s] 已检测到拆分出的单独模型中部分或全部模型命名不规范，且现有纹理贴图仅能生成一个材质球。所以将此唯一材质球赋予全部模型。"), *FullName), FLinearColor::Yellow);
-            } else {
-                bHasNamingError = true;
-            }
+                AddLog(FString::Printf(TEXT("模型 [%s] 已检测到拆分出的单独模型中部分或全部模型命名不规范，且现有纹理贴图仅能生成一个材质球。所以将此唯一材质球赋予全部模型。"), *SM->GetName()), FLinearColor::Yellow);
+            } else bHasNamingError = true;
         }
     }
  
-    // 只有当该 FBX/OBJ 整体存在匹配失败时，按原始文件名汇总打印一次红色日志
     if (bHasNamingError) {
         AddLog(FString::Printf(TEXT("错误：模型 [%s] (路径:%s) 无法自动匹配贴图！已生成材质但未赋予。"), *MeshBaseName, *FinalPath), FLinearColor::Red);
     }
