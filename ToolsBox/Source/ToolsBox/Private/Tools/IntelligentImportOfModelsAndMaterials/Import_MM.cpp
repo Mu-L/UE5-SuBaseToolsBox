@@ -142,10 +142,10 @@ FReply SImport_MM::OnStartImportClicked()
  
 void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, bool bFirst)
 {
-     IAssetTools& AssetTools = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
+    IAssetTools& AssetTools = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
     FString TargetPath = TEXT("/Game/BatchImport/") + Task.FolderName;
  
-    // --- 1. 识别并归类贴图 (统一变量名: ValidTexturePaths) ---
+    // --- 1. 贴图分类 (逻辑保持) ---
     TMap<FString, FString> ValidTexturePaths; 
     for (auto& Pair : Task.TextureMap)
     {
@@ -158,93 +158,127 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, bool bFirst)
             ValidTexturePaths.Add(TEXT("ORM"), Pair.Value);
     }
  
-    // --- 2. FBX 导入 (使用 Task 屏蔽 UI) ---
+    // --- 2. 配置 FBX 导入 (增强自适应与稳定性) ---
     UFbxFactory* FbxFact = NewObject<UFbxFactory>();
     FbxFact->ImportUI->MeshTypeToImport = FBXIT_StaticMesh;
     FbxFact->ImportUI->bImportMaterials = false;
     FbxFact->ImportUI->bImportTextures = false;
-    FbxFact->ImportUI->StaticMeshImportData->bConvertScene = true;
+    
+    // 关键配置
+    FbxFact->ImportUI->StaticMeshImportData->bTransformVertexToAbsolute = true;
+    FbxFact->ImportUI->StaticMeshImportData->bConvertSceneUnit = true;
+    FbxFact->ImportUI->StaticMeshImportData->ImportUniformScale = 1.0f;
+    
+    // 如果你希望多个子模型合并为一个资产，取消下面这行的注释：
+    // FbxFact->ImportUI->StaticMeshImportData->bCombineMeshes = true;
  
     UAssetImportTask* MeshTask = NewObject<UAssetImportTask>();
     MeshTask->Filename = Task.MeshPath;
     MeshTask->DestinationPath = TargetPath;
     MeshTask->Factory = FbxFact;
-    
-    // 关键修复：直接使用 bAutomated。当其为 true 时，UE5 会自动消除除第一个模型外的弹窗。
-    // 如果你的 UE5 版本识别不到 bShowImportOptions，只写这一个变量就够了。
-    MeshTask->bAutomated = !bFirst; 
+    MeshTask->bAutomated = true; // 消除弹窗
  
     AssetTools.ImportAssetTasks({ MeshTask });
  
-    // --- 3. 贴图导入 ---
+    // --- 3. 核心修复：扫描并获取文件夹内所有的模型 ---
+    FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+    TArray<FString> PathsToScan; PathsToScan.Add(TargetPath);
+    AssetRegistryModule.Get().ScanPathsSynchronous(PathsToScan);
+ 
+    TArray<FAssetData> FoundMeshAssets;
+    // 获取当前文件夹下所有的静态网格体
+    AssetRegistryModule.Get().GetAssetsByPath(FName(*TargetPath), FoundMeshAssets);
+ 
+    TArray<UStaticMesh*> ImportedMeshes;
+    for (const FAssetData& AssetData : FoundMeshAssets)
+    {
+        if (UStaticMesh* Mesh = Cast<UStaticMesh>(AssetData.GetAsset()))
+        {
+            ImportedMeshes.Add(Mesh);
+        }
+    }
+ 
+    if (ImportedMeshes.Num() == 0) return; // 没模型就直接退出
+ 
+    // --- 4. 检查第一个模型的缩放 (自适应校准) ---
+    UStaticMesh* FirstMesh = ImportedMeshes[0];
+    float MaxDim = FirstMesh->GetBounds().GetBox().GetSize().GetMax();
+    if (MaxDim > 0.0f && MaxDim < 2.0f)
+    {
+        FbxFact->ImportUI->StaticMeshImportData->ImportUniformScale = 100.0f;
+        AssetTools.ImportAssetTasks({ MeshTask }); // 重新导入
+        AssetRegistryModule.Get().ScanPathsSynchronous(PathsToScan);
+        // 重新获取资产
+        ImportedMeshes.Empty();
+        AssetRegistryModule.Get().GetAssetsByPath(FName(*TargetPath), FoundMeshAssets);
+        for (const FAssetData& Ad : FoundMeshAssets) if (UStaticMesh* M = Cast<UStaticMesh>(Ad.GetAsset())) ImportedMeshes.Add(M);
+    }
+ 
+    // --- 5. 导入贴图 ---
     TArray<FString> TextureFiles;
     ValidTexturePaths.GenerateValueArray(TextureFiles);
     if (TextureFiles.Num() > 0)
     {
         AssetTools.ImportAssets(TextureFiles, TargetPath, nullptr);
+        AssetRegistryModule.Get().ScanPathsSynchronous(PathsToScan);
     }
  
-    // --- 4. 生成材质逻辑 ---
-    TArray<UStaticMesh*> ImportedMeshes;
-    TArray<FAssetData> MeshAssets;
-    FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-    AssetRegistryModule.Get().GetAssetsByPath(FName(*TargetPath), MeshAssets);
-    for (auto& Asset : MeshAssets) if (UStaticMesh* M = Cast<UStaticMesh>(Asset.GetAsset())) ImportedMeshes.Add(M);
+    // --- 6. 创建材质并绑定到所有找到的模型上 ---
+    UMaterialFactoryNew* MatFact = NewObject<UMaterialFactoryNew>();
+    FString MatName = TEXT("M_") + Task.FolderName;
+    UMaterial* NewMat = Cast<UMaterial>(AssetTools.CreateAsset(MatName, TargetPath, UMaterial::StaticClass(), MatFact));
  
-    if (ImportedMeshes.Num() > 0)
+    if (NewMat)
     {
-        UMaterialFactoryNew* MatFact = NewObject<UMaterialFactoryNew>();
-        UMaterial* NewMat = Cast<UMaterial>(AssetTools.CreateAsset(TEXT("M_") + Task.FolderName, TargetPath, UMaterial::StaticClass(), MatFact));
- 
-        if (NewMat)
+        int32 YOffset = 0;
+        TArray<FString> Categories = { TEXT("Base"), TEXT("Normal"), TEXT("ORM") };
+        for (const FString& Category : Categories)
         {
-            int32 YOffset = 0;
-            TArray<FString> Categories = { TEXT("Base"), TEXT("Normal"), TEXT("ORM") };
+            if (!ValidTexturePaths.Contains(Category)) continue;
+ 
+            FString DiskPath = ValidTexturePaths[Category];
+            FString TexName = FPaths::GetBaseFilename(DiskPath);
+            FString FullTexPath = TargetPath + TEXT("/") + TexName + TEXT(".") + TexName;
             
-            for (const FString& Category : Categories)
-            {
-                if (!ValidTexturePaths.Contains(Category)) continue;
+            UTexture2D* Tex = LoadObject<UTexture2D>(nullptr, *FullTexPath);
+            if (!Tex) continue;
  
-                FString DiskPath = ValidTexturePaths[Category];
-                FString AssetName = FPaths::GetBaseFilename(DiskPath);
-                FString FullObjectPath = TargetPath + TEXT("/") + AssetName + TEXT(".") + AssetName;
-                
-                UTexture2D* Tex = Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), nullptr, *FullObjectPath));
-                if (!Tex) continue;
+            // 贴图设置与连线逻辑
+            TextureCompressionSettings Comp = TextureCompressionSettings::TC_Default;
+            if (Category == TEXT("Normal")) Comp = TextureCompressionSettings::TC_Normalmap;
+            else if (Category == TEXT("ORM")) Comp = TextureCompressionSettings::TC_Masks;
  
-                TextureCompressionSettings Comp = TextureCompressionSettings::TC_Default;
-                struct FConn { FString Pin; EMaterialProperty Prop; };
-                TArray<FConn> Intents;
+            Tex->CompressionSettings = Comp;
+            Tex->SRGB = (Comp == TextureCompressionSettings::TC_Default);
+            Tex->PostEditChange();
  
-                if (Category == TEXT("Base")) { Intents.Add({ TEXT(""), EMaterialProperty::MP_BaseColor }); }
-                else if (Category == TEXT("Normal")) { Comp = TextureCompressionSettings::TC_Normalmap; Intents.Add({ TEXT(""), EMaterialProperty::MP_Normal }); }
-                else if (Category == TEXT("ORM"))
-                {
-                    Comp = TextureCompressionSettings::TC_Masks;
-                    FString LowName = AssetName.ToLower();
-                    if (LowName.Find(TEXT("rough")) != INDEX_NONE) Intents.Add({ TEXT("R"), EMaterialProperty::MP_Roughness });
-                    if (LowName.Find(TEXT("metal")) != INDEX_NONE) Intents.Add({ TEXT("G"), EMaterialProperty::MP_Metallic });
-                    if (LowName.Find(TEXT("ao")) != INDEX_NONE || LowName.Find(TEXT("occ")) != INDEX_NONE) Intents.Add({ TEXT("B"), EMaterialProperty::MP_AmbientOcclusion });
-                }
+            auto* Sample = Cast<UMaterialExpressionTextureSample>(UMaterialEditingLibrary::CreateMaterialExpression(NewMat, UMaterialExpressionTextureSample::StaticClass()));
+            Sample->Texture = Tex;
+            Sample->MaterialExpressionEditorY = YOffset; YOffset += 280;
  
-                if (Intents.Num() > 0)
-                {
-                    Tex->CompressionSettings = Comp;
-                    Tex->SRGB = (Comp == TextureCompressionSettings::TC_Normalmap || Comp == TextureCompressionSettings::TC_Masks) ? false : true;
-                    Tex->PostEditChange();
- 
-                    auto* Sample = Cast<UMaterialExpressionTextureSample>(UMaterialEditingLibrary::CreateMaterialExpression(NewMat, UMaterialExpressionTextureSample::StaticClass()));
-                    Sample->Texture = Tex;
-                    Sample->MaterialExpressionEditorY = YOffset; YOffset += 280;
- 
-                    if (Comp == TextureCompressionSettings::TC_Normalmap) Sample->SamplerType = SAMPLERTYPE_Normal;
-                    else if (Comp == TextureCompressionSettings::TC_Masks) Sample->SamplerType = SAMPLERTYPE_Masks;
- 
-                    for (auto& Int : Intents) UMaterialEditingLibrary::ConnectMaterialProperty(Sample, Int.Pin, Int.Prop);
-                }
+            if (Category == TEXT("Base")) UMaterialEditingLibrary::ConnectMaterialProperty(Sample, TEXT(""), EMaterialProperty::MP_BaseColor);
+            else if (Category == TEXT("Normal")) {
+                Sample->SamplerType = SAMPLERTYPE_Normal;
+                UMaterialEditingLibrary::ConnectMaterialProperty(Sample, TEXT(""), EMaterialProperty::MP_Normal);
             }
-            UMaterialEditingLibrary::RecompileMaterial(NewMat);
-            for (UStaticMesh* Mesh : ImportedMeshes) { for (int32 i = 0; i < 8; ++i) Mesh->SetMaterial(i, NewMat); Mesh->PostEditChange(); }
+            else if (Category == TEXT("ORM")) {
+                Sample->SamplerType = SAMPLERTYPE_Masks;
+                UMaterialEditingLibrary::ConnectMaterialProperty(Sample, TEXT("R"), EMaterialProperty::MP_Roughness);
+                UMaterialEditingLibrary::ConnectMaterialProperty(Sample, TEXT("G"), EMaterialProperty::MP_Metallic);
+                UMaterialEditingLibrary::ConnectMaterialProperty(Sample, TEXT("B"), EMaterialProperty::MP_AmbientOcclusion);
+            }
+        }
+        UMaterialEditingLibrary::RecompileMaterial(NewMat);
+ 
+        // --- 核心修复：为所有子物体赋予材质 ---
+        for (UStaticMesh* Mesh : ImportedMeshes)
+        {
+            int32 NumSlots = Mesh->GetStaticMaterials().Num();
+            for (int32 i = 0; i < NumSlots; ++i)
+            {
+                Mesh->SetMaterial(i, NewMat);
+            }
+            Mesh->PostEditChange();
         }
     }
 }
