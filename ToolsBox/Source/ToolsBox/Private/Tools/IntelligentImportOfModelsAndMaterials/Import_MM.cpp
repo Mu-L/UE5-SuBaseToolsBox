@@ -146,31 +146,28 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, bool bFirst)
     FString TargetPath = TEXT("/Game/BatchImport/") + Task.FolderName;
     FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
  
-    // --- 1. 获取 FBX 文件名前缀（用于后续剥离） ---
+    // --- 1. 获取 FBX 文件名前缀（用于剥离） ---
     FString FBXBaseName = FPaths::GetBaseFilename(Task.MeshPath);
     FString FBXPrefix = FBXBaseName + TEXT("_");
  
-    // --- 2. 配置 FBX Factory ---
+    // --- 2. 导入模型 ---
     UFbxFactory* FbxFact = NewObject<UFbxFactory>();
     FbxFact->ImportUI->MeshTypeToImport = FBXIT_StaticMesh;
     FbxFact->ImportUI->bImportMaterials = false;
     FbxFact->ImportUI->bImportTextures = false;
-    
-    // 基础配置：顶点对齐原点、转换单位、初始缩放1.0
     FbxFact->ImportUI->StaticMeshImportData->bTransformVertexToAbsolute = true;
     FbxFact->ImportUI->StaticMeshImportData->bConvertSceneUnit = true;
     FbxFact->ImportUI->StaticMeshImportData->ImportUniformScale = 1.0f;
-    FbxFact->ImportUI->StaticMeshImportData->bConvertScene = true;
  
     UAssetImportTask* MeshTask = NewObject<UAssetImportTask>();
     MeshTask->Filename = Task.MeshPath;
     MeshTask->DestinationPath = TargetPath;
     MeshTask->Factory = FbxFact;
-    MeshTask->bAutomated = true; // 强制静默，消除弹窗
+    MeshTask->bAutomated = true; // 消除弹窗
  
     AssetTools.ImportAssetTasks({ MeshTask });
  
-    // --- 3. 导入贴图并刷新注册表 ---
+    // --- 3. 导入贴图并刷新 ---
     TArray<FString> AllTexPaths;
     Task.TextureMap.GenerateValueArray(AllTexPaths);
     if (AllTexPaths.Num() > 0)
@@ -179,7 +176,7 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, bool bFirst)
     }
     AssetRegistryModule.Get().ScanPathsSynchronous({TargetPath});
  
-    // --- 4. 获取所有导入的模型并处理自适应缩放 ---
+    // --- 4. 获取导入的模型资产 ---
     TArray<FAssetData> FoundMeshAssets;
     AssetRegistryModule.Get().GetAssetsByPath(FName(*TargetPath), FoundMeshAssets);
     TArray<UStaticMesh*> ImportedMeshes;
@@ -187,80 +184,96 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, bool bFirst)
  
     if (ImportedMeshes.Num() == 0) return;
  
-    // 自适应检测：如果第一个模型太小，放大100倍重导
-    float MaxDim = ImportedMeshes[0]->GetBounds().GetBox().GetSize().GetMax();
-    if (MaxDim > 0.0f && MaxDim < 2.0f) 
-    {
-        FbxFact->ImportUI->StaticMeshImportData->ImportUniformScale = 100.0f;
-        AssetTools.ImportAssetTasks({ MeshTask });
-        AssetRegistryModule.Get().ScanPathsSynchronous({TargetPath});
-        ImportedMeshes.Empty();
-        AssetRegistryModule.Get().GetAssetsByPath(FName(*TargetPath), FoundMeshAssets);
-        for (const FAssetData& Ad : FoundMeshAssets) if (UStaticMesh* M = Cast<UStaticMesh>(Ad.GetAsset())) ImportedMeshes.Add(M);
-    }
- 
-    // --- 5. 为每个子模型匹配贴图并生成独立材质 ---
+    // --- 5. 针对每个子模型处理材质与贴图匹配 ---
     for (UStaticMesh* MeshAsset : ImportedMeshes)
     {
         FString FullName = MeshAsset->GetName();
-        // 剥离 FBX 前缀，例如 "Car_Door" 变为 "Door"
         FString CleanName = FullName.StartsWith(FBXPrefix) ? FullName.RightChop(FBXPrefix.Len()) : FullName;
  
-        TMap<FString, UTexture2D*> MatPartTextures;
+        TMap<FString, UTexture2D*> PartTextures;
         for (auto& TexPair : Task.TextureMap)
         {
             FString TexFileName = FPaths::GetBaseFilename(TexPair.Value);
-            // 双向模糊匹配模型名与贴图名
             if (TexFileName.Contains(CleanName, ESearchCase::IgnoreCase) || CleanName.Contains(TexFileName, ESearchCase::IgnoreCase))
             {
                 FString AssetPath = TargetPath + TEXT("/") + TexFileName + TEXT(".") + TexFileName;
                 if (UTexture2D* Tex = LoadObject<UTexture2D>(nullptr, *AssetPath))
                 {
                     FString LowTex = TexFileName.ToLower();
-                    if (LowTex.Contains(TEXT("base")) || LowTex.Contains(TEXT("albedo"))) MatPartTextures.Add(TEXT("Base"), Tex);
-                    else if (LowTex.Contains(TEXT("normal")) || LowTex.Contains(TEXT("nrm"))) MatPartTextures.Add(TEXT("Normal"), Tex);
-                    else if (LowTex.Contains(TEXT("rough")) || LowTex.Contains(TEXT("metal")) || LowTex.Contains(TEXT("occ")) || LowTex.Contains(TEXT("ao"))) MatPartTextures.Add(TEXT("ORM"), Tex);
+                    // 分类逻辑：增加了更多关键字支持
+                    if (LowTex.Contains(TEXT("base")) || LowTex.Contains(TEXT("albedo")) || LowTex.Contains(TEXT("col"))) 
+                        PartTextures.Add(TEXT("Base"), Tex);
+                    else if (LowTex.Contains(TEXT("normal")) || LowTex.Contains(TEXT("nrm"))) 
+                        PartTextures.Add(TEXT("Normal"), Tex);
+                    else if (LowTex.Contains(TEXT("rough")) || LowTex.Contains(TEXT("metal")) || LowTex.Contains(TEXT("occ")) || LowTex.Contains(TEXT("ao"))) 
+                        PartTextures.Add(TEXT("ORM"), Tex);
+                    else if (LowTex.Contains(TEXT("opacity")) || LowTex.Contains(TEXT("alpha")) || LowTex.Contains(TEXT("trans"))) 
+                        PartTextures.Add(TEXT("Opacity"), Tex);
+                    else if (LowTex.Contains(TEXT("specular")) || LowTex.Contains(TEXT("spec"))) 
+                        PartTextures.Add(TEXT("Specular"), Tex);
+                    else if (LowTex.Contains(TEXT("emissive")) || LowTex.Contains(TEXT("glow"))) 
+                        PartTextures.Add(TEXT("Emissive"), Tex);
+                    else if (LowTex.Contains(TEXT("wpo")) || LowTex.Contains(TEXT("offset"))) 
+                        PartTextures.Add(TEXT("WPO"), Tex);
                 }
             }
         }
  
-        if (MatPartTextures.Num() == 0) continue;
+        if (PartTextures.Num() == 0) continue;
  
-        // 创建材质
+        // 创建专属材质
         UMaterialFactoryNew* MatFact = NewObject<UMaterialFactoryNew>();
         UMaterial* NewMat = Cast<UMaterial>(AssetTools.CreateAsset(TEXT("M_") + CleanName, TargetPath, UMaterial::StaticClass(), MatFact));
  
         if (NewMat)
         {
-            int32 YPos = 0;
-            TArray<FString> Cats = { TEXT("Base"), TEXT("Normal"), TEXT("ORM") };
-            for (const FString& C : Cats)
+            // 特殊逻辑：如果检测到透明贴图，自动开启半透明模式
+            if (PartTextures.Contains(TEXT("Opacity")))
             {
-                if (!MatPartTextures.Contains(C)) continue;
-                UTexture2D* T = MatPartTextures[C];
+                NewMat->BlendMode = BLEND_Translucent;
+                // 注意：在 C++ 中修改材质属性后通常需要更新编辑器
+            }
  
-                bool bNormal = (C == TEXT("Normal"));
-                bool bORM = (C == TEXT("ORM"));
-                T->CompressionSettings = bNormal ? TC_Normalmap : (bORM ? TC_Masks : TC_Default);
-                T->SRGB = !bNormal && !bORM;
+            int32 YPos = 0;
+            // 定义处理顺序
+            TArray<FString> Categories = { TEXT("Base"), TEXT("Normal"), TEXT("ORM"), TEXT("Opacity"), TEXT("Specular"), TEXT("Emissive"), TEXT("WPO") };
+ 
+            for (const FString& Cat : Categories)
+            {
+                if (!PartTextures.Contains(Cat)) continue;
+                UTexture2D* T = PartTextures[Cat];
+ 
+                // 确定压缩设置
+                bool bNormal = (Cat == TEXT("Normal"));
+                bool bMask = (Cat == TEXT("ORM") || Cat == TEXT("Opacity") || Cat == TEXT("Specular"));
+                
+                T->CompressionSettings = bNormal ? TC_Normalmap : (bMask ? TC_Masks : TC_Default);
+                T->SRGB = !bNormal && !bMask;
                 T->PostEditChange();
  
                 auto* Node = Cast<UMaterialExpressionTextureSample>(UMaterialEditingLibrary::CreateMaterialExpression(NewMat, UMaterialExpressionTextureSample::StaticClass()));
                 Node->Texture = T;
                 Node->MaterialExpressionEditorY = YPos; YPos += 300;
-                if (bNormal) Node->SamplerType = SAMPLERTYPE_Normal;
-                else if (bORM) Node->SamplerType = SAMPLERTYPE_Masks;
  
-                if (C == TEXT("Base")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), EMaterialProperty::MP_BaseColor);
-                else if (C == TEXT("Normal")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), EMaterialProperty::MP_Normal);
-                else if (C == TEXT("ORM"))
+                // 设置采样器类型
+                if (bNormal) Node->SamplerType = SAMPLERTYPE_Normal;
+                else if (bMask) Node->SamplerType = SAMPLERTYPE_Masks;
+ 
+                // 连线逻辑
+                if (Cat == TEXT("Base")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), EMaterialProperty::MP_BaseColor);
+                else if (Cat == TEXT("Normal")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), EMaterialProperty::MP_Normal);
+                else if (Cat == TEXT("Opacity")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), EMaterialProperty::MP_Opacity);
+                else if (Cat == TEXT("Specular")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), EMaterialProperty::MP_Specular);
+                else if (Cat == TEXT("Emissive")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), EMaterialProperty::MP_EmissiveColor);
+                else if (Cat == TEXT("WPO")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), EMaterialProperty::MP_WorldPositionOffset);
+                else if (Cat == TEXT("ORM"))
                 {
-                    // 智能排序连线：根据关键字在文件名中的先后位置决定 R/G/B 引脚
+                    // 动态 ORM 通道排序连线 (保持之前的稳健逻辑)
                     struct FChan { int32 P; EMaterialProperty Prop; bool operator<(const FChan& O) const { return P < O.P; } };
                     TArray<FChan> Sorter;
                     FString TN = T->GetName().ToLower();
                     auto AddC = [&](TArray<FString> K, EMaterialProperty P) {
-                        for(auto& k:K){ int32 i=TN.Find(k); if(i!=INDEX_NONE){ Sorter.Add({i,P}); break; } }
+                        for(auto& k : K){ int32 i = TN.Find(k); if(i != INDEX_NONE){ Sorter.Add({i, P}); break; } }
                     };
                     AddC({TEXT("occlusion"), TEXT("ao"), TEXT("occ")}, EMaterialProperty::MP_AmbientOcclusion);
                     AddC({TEXT("roughness"), TEXT("rough")}, EMaterialProperty::MP_Roughness);
@@ -268,13 +281,13 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, bool bFirst)
                     Sorter.Sort();
  
                     FString Pins[] = { TEXT("R"), TEXT("G"), TEXT("B") };
-                    for (int32 i=0; i < Sorter.Num() && i < 3; ++i)
+                    for (int32 i = 0; i < Sorter.Num() && i < 3; ++i)
                         UMaterialEditingLibrary::ConnectMaterialProperty(Node, Pins[i], Sorter[i].Prop);
                 }
             }
             UMaterialEditingLibrary::RecompileMaterial(NewMat);
-            // 赋予材质给所有槽位
-            for (int32 i=0; i < MeshAsset->GetStaticMaterials().Num(); ++i) MeshAsset->SetMaterial(i, NewMat);
+            // 绑定材质到所有槽位
+            for (int32 i = 0; i < MeshAsset->GetStaticMaterials().Num(); ++i) MeshAsset->SetMaterial(i, NewMat);
             MeshAsset->PostEditChange();
         }
     }
