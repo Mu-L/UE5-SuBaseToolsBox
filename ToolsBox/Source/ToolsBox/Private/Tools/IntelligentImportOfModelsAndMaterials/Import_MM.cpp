@@ -519,6 +519,7 @@ void SImport_MM::GenerateMaterials(const FImportFolderTask& Task, const FString&
     {
         TMap<FString, UTexture2D*> LocalMatch;
         UMaterialInterface* WorkingMat = nullptr;
+        bool bNeedTransparency = false; // 是否需要开启透明模式
  
         for (auto& TP : Task.TextureMap) 
         {
@@ -545,6 +546,7 @@ void SImport_MM::GenerateMaterials(const FImportFolderTask& Task, const FString&
             else if (L.Contains(TEXT("opacity")) || L.Contains(TEXT("alpha")) || L.Contains(TEXT("mask")) || L.Contains(TEXT("_op"))) 
             {
                 LocalMatch.Add(TEXT("OP"), Tex);
+                bNeedTransparency = true; // 识别到透明贴图，标记需要透明模式
             }
         }
  
@@ -557,35 +559,28 @@ void SImport_MM::GenerateMaterials(const FImportFolderTask& Task, const FString&
             {
                 WorkingMat = MIC;
  
-                // 内部处理 Lambda
+                // 通道参数设置 Lambda
                 auto SetParam = [&](FString LocalKey, FName SwitchName, FString DefaultParamName) {
                     bool bExists = LocalMatch.Contains(LocalKey);
-                    
-                    // 1. 设置静态开关
                     MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(SwitchName), bExists);
                     
                     if (bExists)
                     {
                         UTexture2D* Tex = LocalMatch[LocalKey];
-                        // 2. 根据通道设置贴图属性
                         if (LocalKey == TEXT("N")) { Tex->SRGB = false; Tex->CompressionSettings = TC_Normalmap; }
                         else if (LocalKey == TEXT("BC") || LocalKey == TEXT("EM")) { Tex->SRGB = true; Tex->CompressionSettings = TC_Default; }
                         else { Tex->SRGB = false; Tex->CompressionSettings = TC_Masks; }
                         Tex->PostEditChange();
  
-                        // 3. 从 UI 输入框读取参数名，如果没有则使用默认名称（如 "Opacity"）
                         FString FinalParamName = ParamNameInputs.Contains(LocalKey) ? ParamNameInputs[LocalKey]->GetText().ToString() : DefaultParamName;
-                        
-                        // 4. 显式覆盖纹理参数，这一步会消除 (Eliminate) 默认占位符并激活勾选
                         MIC->SetTextureParameterValueEditorOnly(FMaterialParameterInfo(FName(*FinalParamName)), Tex);
                     }
                 };
  
-                // 按顺序显式调用
                 SetParam(TEXT("BC"), TEXT("Use_BaseColor"), TEXT("BaseColor"));
                 SetParam(TEXT("N"), TEXT("Use_Normal"), TEXT("Normal"));
                 SetParam(TEXT("EM"), TEXT("Use_Emissive"), TEXT("Emissive"));
-                SetParam(TEXT("OP"), TEXT("Use_Opacity"), TEXT("Opacity")); // 确保这里对应母材质的 Opacity 参数名
+                SetParam(TEXT("OP"), TEXT("Use_Opacity"), TEXT("Opacity"));
  
                 // ORM 处理
                 bool bFoundORM = LocalMatch.Contains(TEXT("ORM"));
@@ -603,20 +598,35 @@ void SImport_MM::GenerateMaterials(const FImportFolderTask& Task, const FString&
                     MIC->SetTextureParameterValueEditorOnly(FMaterialParameterInfo(FName(*ORMPName)), ORMTex);
                 }
  
-                // 【核心】更新排列并保存修改
+                // 【核心修正】：自动切换材质实例的 Blend Mode
+                if (bNeedTransparency)
+                {
+                    // 开启混合模式覆盖
+                    MIC->BasePropertyOverrides.bOverride_BlendMode = true;
+                    // 设置为 Masked 模式（性能最好且支持镂空透明）
+                    MIC->BasePropertyOverrides.BlendMode = BLEND_Masked;
+                    AddLog(FString::Printf(TEXT("材质实例 [%s] 检测到透明贴图，已自动开启 Masked 混合模式。"), *MIName), FLinearColor::Green);
+                }
+ 
                 MIC->UpdateStaticPermutation();
                 MIC->PostEditChange();
             }
         }
         else
         {
-            // 生成新材质逻辑 (保持原样)
+            // 生成新材质逻辑
             FString FinalMatName = GetAppliedName(BCName, EImportAssetType::Material);
             UMaterial* NewMat = Cast<UMaterial>(AT.CreateAsset(FinalMatName, FinalPath, UMaterial::StaticClass(), NewObject<UMaterialFactoryNew>()));
             if (NewMat) 
             {
                 WorkingMat = NewMat;
-                if (LocalMatch.Contains(TEXT("OP"))) NewMat->BlendMode = BLEND_Masked;
+                
+                // 【核心修正】：新生成的母材质自动设置 BlendMode
+                if (bNeedTransparency) 
+                {
+                    NewMat->BlendMode = BLEND_Masked;
+                }
+ 
                 int32 YPos = 0;
                 for (auto& Pair : LocalMatch) 
                 {
