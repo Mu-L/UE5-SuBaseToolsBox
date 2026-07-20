@@ -12,65 +12,81 @@
 TSharedRef<SWidget> SlateAssistBuildFunctionLibrary::MakeToolBlock(const FText& ToolName, const FText& Description,
                                                                    const FName& IconName, const FName& TabID)
 {
-	return SNew(SBox)
-		.WidthOverride(300.0f) // 限制宽度，防止工具块横向拉得太长
-		.Padding(10.0f)
-		[
-			SNew(SVerticalBox)
+    return SNew(SBox)
+        .Padding(FMargin(5.0f, 2.0f))
+        [
+            SNew(SBorder)
+            .BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder")) // 使用编辑器面板边框
+            .Padding(10.0f)
+            [
+                SNew(SHorizontalBox)
  
-			// 1. 顶部：工具缩略图标
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.HAlign(HAlign_Center) // 居中显示图标
-			.Padding(5.0f)
-			[
-				SNew(SImage)
-				// 从你的化妆间里取图，注意这里用了之前定义的 Plugin_Icon 集合
-				.Image(FIconStyle::Get_Images().GetBrush(IconName))
-				.DesiredSizeOverride(FVector2D(128.0f, 128.0f)) // 设置图标大小
-			]
+                // 1. 左侧：图标
+                + SHorizontalBox::Slot()
+                .AutoWidth()
+                .VAlign(VAlign_Center)
+                .Padding(0, 0, 15.0f, 0)
+                [
+                    SNew(SImage)
+                    .Image(FIconStyle::Get_Images().GetBrush(IconName))
+                    .DesiredSizeOverride(FVector2D(64.0f, 64.0f)) // 缩减图标大小以适应横条
+                ]
  
-			// 2. 图标下面：工具名字
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.HAlign(HAlign_Center)
-			.Padding(2.0f)
-			[
-				SNew(STextBlock)
-				.Text(ToolName)
-				.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12)) // 字体加粗
-				.ColorAndOpacity(FLinearColor::White)
-			]
+                // 2. 中间：文本区域（名字在上，描述在下）
+                + SHorizontalBox::Slot()
+                .FillWidth(1.0f) // 占据剩余所有空间
+                .VAlign(VAlign_Center)
+                [
+                    SNew(SVerticalBox)
  
-			// 3. 名字下面：描述
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.Padding(5.0f, 10.0f)
-			[
-				SNew(STextBlock)
-				.Text(Description)
-				.AutoWrapText(true) // 【核心】自动换行，防止描述太长超出边界
-				.Justification(ETextJustify::Center) // 文字居中
-				.Font(FCoreStyle::GetDefaultFontStyle("Regular", 9))
-				.ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.7f)) // 浅灰色描述
-				.ToolTipText(Description) 
-			]
+                    // 工具名
+                    + SVerticalBox::Slot()
+                    .AutoHeight()
+                    .Padding(0, 0, 0, 4.0f)
+                    [
+                        SNew(STextBlock)
+                        .Text(ToolName)
+                        .Font(FAppStyle::GetFontStyle("NormalFontBold"))
+                    ]
  
-			// 4. 底部：打开按钮
-			+ SVerticalBox::Slot()
-			.AutoHeight() // 建议加上，否则按钮可能拉伸
-			[
-				SNew(SButton)
-				
-				.OnClicked_Lambda([TabID]() // 点击时唤起对应的 Tab
-				{
-				FGlobalTabmanager::Get()->TryInvokeTab(FTabId(TabID));
-				return FReply::Handled();
-				})
-				[
-					SNew(STextBlock).Text(NSLOCTEXT("ToolsBox", "OpenBtn", "打开工具"))
-				]
-
-			]
-		];
+                    // 描述
+                    + SVerticalBox::Slot()
+                    .AutoHeight()
+                    [
+                        SNew(STextBlock)
+                        .Text(Description)
+                        .AutoWrapText(true)
+                        .Font(FAppStyle::GetFontStyle("NormalFont"))
+                        .ColorAndOpacity(FLinearColor(0.5f, 0.5f, 0.5f))
+                    ]
+                ]
+ 
+                // 3. 右侧：操作按钮
+                + SHorizontalBox::Slot()
+                .AutoWidth()
+                .VAlign(VAlign_Center)
+                .Padding(10.0f, 0, 0, 0)
+                [
+                    SNew(SBox)
+                    .WidthOverride(100.0f)
+                    .HeightOverride(40.0f)
+                    [
+                        SNew(SButton)
+                        .HAlign(HAlign_Center)
+                        .VAlign(VAlign_Center)
+                        .ButtonStyle(FAppStyle::Get(), "PrimaryButton") // 使用醒目的主要按钮样式
+                        .OnClicked_Lambda([TabID]()
+                        {
+                            FGlobalTabmanager::Get()->TryInvokeTab(FTabId(TabID));
+                            return FReply::Handled();
+                        })
+                        [
+                            SNew(STextBlock)
+                            .Text(NSLOCTEXT("ToolsBox", "OpenBtn", "打开工具"))
+                            .Font(FAppStyle::GetFontStyle("NormalFontBold"))
+                        ]
+                    ]
+                ]
+            ]
+        ];
 }

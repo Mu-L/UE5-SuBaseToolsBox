@@ -6,7 +6,9 @@
 #include "Slate_Assist/SlateAssistBuildFunctionLibrary.h"
 #include "Tools/Tools.h"
 #include "Tools/Cleaner/Cleaner.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SSearchBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SWrapBox.h"
 
@@ -71,34 +73,100 @@ void FToolsBoxModule::RegisterMenu()
 
 TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& SpawnTabArgs)
 {
-	TSharedPtr<SWrapBox> WrapBox;
-	TSharedRef<SDockTab> SpawnedTab = SNew(SDockTab).TabRole(ETabRole::NomadTab)
-	[
-		SNew(SScrollBox)
-		+ SScrollBox::Slot().Padding(15.0f)
-		[
-			SAssignNew(WrapBox, SWrapBox).UseAllottedSize(true).InnerSlotPadding(FVector2D(15.0f, 15.0f))
-		]
-	];
+    // 定义列表容器。
+    // 注意：这里必须是 TSharedPtr，因为 Lambda 需要捕获它。
+    TSharedPtr<SVerticalBox> ListContainer;
  
-	if (WrapBox.IsValid())
-	{
-		// 渲染 UI 时不再进行注册操作，只负责画按钮
-		for (const auto& Tool : Tools::Get_ToolsData())
-		{
-			WrapBox->AddSlot()
-			[
-				SlateAssistBuildFunctionLibrary::MakeToolBlock(
-					FText::FromName(Tool.ToolName),
-					Tool.ToolDescription,
-					Tool.ToolImage,
-					Tool.ToolTabID
-				)
-			];
-		}
-	}
-	return SpawnedTab;
+    // 提前 AssignNew，这样我们在定义 RefreshList 时 ListContainer 已经有值了
+    SAssignNew(ListContainer, SVerticalBox);
+ 
+    // 【重要修复】：RefreshList 必须捕获 ListContainer 的拷贝 (TSharedPtr)
+    // 之前使用 [&ListContainer] 捕获的是局部变量的地址，函数执行完该地址就失效了，导致输入时崩溃。
+    auto RefreshList = [ListContainer](FString SearchText = TEXT(""))
+    {
+        if (!ListContainer.IsValid()) return;
+ 
+        ListContainer->ClearChildren();
+ 
+        for (const auto& Tool : Tools::Get_ToolsData())
+        {
+            FString NameStr = Tool.ToolName.ToString();
+            FString DescStr = Tool.ToolDescription.ToString();
+ 
+            if (SearchText.IsEmpty() || NameStr.Contains(SearchText) || DescStr.Contains(SearchText))
+            {
+                ListContainer->AddSlot()
+                .AutoHeight()
+                [
+                    SlateAssistBuildFunctionLibrary::MakeToolBlock(
+                        FText::FromName(Tool.ToolName),
+                        Tool.ToolDescription,
+                        Tool.ToolImage,
+                        Tool.ToolTabID
+                    )
+                ];
+            }
+        }
+    };
+ 
+    TSharedRef<SDockTab> SpawnedTab = SNew(SDockTab).TabRole(ETabRole::NomadTab)
+    [
+        SNew(SVerticalBox)
+ 
+        // 1. 顶部搜索栏
+        + SVerticalBox::Slot()
+        .AutoHeight()
+        .Padding(10.0f, 10.0f, 10.0f, 5.0f)
+        [
+            SNew(SHorizontalBox)
+            + SHorizontalBox::Slot()
+            .FillWidth(1.0f)
+            .VAlign(VAlign_Center)
+            [
+                SNew(SSearchBox)
+                .HintText(NSLOCTEXT("ToolsBox", "SearchHint", "输入关键词搜索工具..."))
+                // 这里捕获 RefreshList 这个 lambda。RefreshList 内部已经安全持有 ListContainer。
+                .OnTextChanged_Lambda([RefreshList](const FText& InText) {
+                    RefreshList(InText.ToString()); 
+                })
+            ]
+ 
+            + SHorizontalBox::Slot()
+            .AutoWidth()
+            .Padding(8.0f, 0, 0, 0)
+            [
+                SNew(SButton)
+                .ButtonStyle(FAppStyle::Get(), "SimpleButton")
+                .OnClicked_Lambda([]() { return FReply::Handled(); })
+                [
+                    SNew(SImage)
+                    .Image(FAppStyle::GetBrush("Icons.Info"))
+                    .DesiredSizeOverride(FVector2D(18, 18))
+                ]
+            ]
+        ]
+ 
+        // 2. 下方滚动列表
+        + SVerticalBox::Slot()
+        .FillHeight(1.0f)
+        .Padding(10.0f, 5.0f, 10.0f, 10.0f)
+        [
+            SNew(SScrollBox)
+            + SScrollBox::Slot()
+            [
+                ListContainer.ToSharedRef() // 直接放入预先创建好的容器
+            ]
+        ]
+    ];
+ 
+    // 初始化加载
+    RefreshList();
+ 
+    return SpawnedTab;
 }
+
+
+
 
 void FToolsBoxModule::OnButtonClick()
 {
