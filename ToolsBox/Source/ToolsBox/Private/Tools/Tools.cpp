@@ -21,7 +21,7 @@ const TSet<FTool> Tools::Get_ToolsData()
 		FTool(
 			TEXT("批量导入模型和材质"),
 			LOCTEXT("T2", "批量导入模型和材质，同文件下的模型以及附属的纹理贴图会自动连接材质球并赋予模型"),
-			TEXT("ToolsBox.Image_Anon_254px"),
+			TEXT("ToolsBox.Image_Anon_1K"),
 			TEXT("SImport_MMTab"),
 			[]() { return SNew(SImport_MM);}
 			)

@@ -10,15 +10,18 @@ TSharedPtr<FSlateStyleSet> FIconStyle::Images = nullptr;
  
 void FIconStyle::Initialize()
 {
-	FString ContentDir = IPluginManager::Get().FindPlugin(TEXT("ToolsBox"))->GetBaseDir() / TEXT("Resources");
+	FString ContentDir_Image = IPluginManager::Get().FindPlugin(TEXT("ToolsBox"))->GetBaseDir() / TEXT("Resources/Image");
+	FString ContentDir_Icon = IPluginManager::Get().FindPlugin(TEXT("ToolsBox"))->GetBaseDir() / TEXT("Resources/Icon");
  
 	// 优先初始化 Images
 	if (!Images.IsValid())
 	{
 		Images = MakeShareable(new FSlateStyleSet("ToolsBoxDockTabStyle"));
-		Images->SetContentRoot(ContentDir);
+		Images->SetContentRoot(ContentDir_Image);
 		Images->Set("ToolsBox.Image_Anon_254px",
 			new FSlateImageBrush(Images->RootToContentDir(TEXT("Icon_Anon"), TEXT(".png")), FVector2D(254.0f, 254.0f)));
+		Images->Set("ToolsBox.Image_Anon_1K",
+			new FSlateImageBrush(Images->RootToContentDir(TEXT("Image_Anon_1K"), TEXT(".png")), FVector2D(1125.0f, 1119.0f)));
 		FSlateStyleRegistry::RegisterSlateStyle(*Images);
 	}
  
@@ -26,7 +29,7 @@ void FIconStyle::Initialize()
 	if (!Icons.IsValid())
 	{
 		Icons = MakeShareable(new FSlateStyleSet("EditorToolsBoxIconStyle"));
-		Icons->SetContentRoot(ContentDir);
+		Icons->SetContentRoot(ContentDir_Icon);
 
 		// 【关键修改点】
 		// 这个 Key 的名字必须是 "Context名.变量名"

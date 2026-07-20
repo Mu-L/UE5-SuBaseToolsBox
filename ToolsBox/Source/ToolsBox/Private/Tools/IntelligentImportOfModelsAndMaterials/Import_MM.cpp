@@ -27,8 +27,10 @@
 #include "Materials/MaterialExpressionStaticSwitchParameter.h"
 #include "Materials/MaterialInstance.h"
 #include "Materials/MaterialInstanceConstant.h"
+#include "Slate_Assist/FIconStyle.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SEditableTextBox.h"
+#include "Widgets/Layout/SExpandableArea.h"
 #include "Widgets/Layout/SGridPanel.h"
 
 #include "Widgets/Layout/SScrollBox.h"
@@ -43,141 +45,249 @@ void SImport_MM::Construct(const FArguments& InArgs)
     TArray<TSharedRef<ITextDecorator>> Decorators;
 
     TSharedPtr<FRichTextLayoutMarshaller> LocalMarshaller = FRichTextLayoutMarshaller::Create(Decorators, &FAppStyle::Get());
- 
+   
     ChildSlot
-    [
-        SNew(SVerticalBox)
-        + SVerticalBox::Slot().AutoHeight().Padding(10)
-        [
-            SNew(STextBlock).Text(LOCTEXT("Title", "批量导入工具 V1")).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
-        ]
-        + SVerticalBox::Slot().AutoHeight().Padding(10, 5)
-        [
-            SNew(SVerticalBox)
-            + SVerticalBox::Slot().AutoHeight().Padding(0, 2) [
-                SNew(SHorizontalBox)
-                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center) [ SNew(STextBlock).Text(LOCTEXT("Src", "源文件夹: ")).MinDesiredWidth(100) ]
-                + SHorizontalBox::Slot().FillWidth(1.0f) [ SAssignNew(SourcePathBox, SEditableTextBox).IsReadOnly(true) ]
-                + SHorizontalBox::Slot().AutoWidth() [ SNew(SButton).Text(LOCTEXT("B1", "浏览")).OnClicked(this, &SImport_MM::OnBrowseSourceClicked) ]
-            ]
-            + SVerticalBox::Slot().AutoHeight().Padding(0, 2) [
-                SNew(SHorizontalBox)
-                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center) [ SNew(STextBlock).Text(LOCTEXT("Dst", "保存位置: ")).MinDesiredWidth(100) ]
-                + SHorizontalBox::Slot().FillWidth(1.0f) [ SAssignNew(DestPathBox, SEditableTextBox).HintText(LOCTEXT("Hint", "/Game/BatchImport/")) ]
-                + SHorizontalBox::Slot().AutoWidth() [ SNew(SButton).Text(LOCTEXT("B2", "选择路径")).OnClicked(this, &SImport_MM::OnBrowseDestClicked) ]
-            ]
-            +SVerticalBox::Slot()
-            .Padding(1,20,1,1)
             [
-                SNew(STextBlock)
-                .Text(LOCTEXT("Tip", "如果纹理贴图不与模型同一层级下，而是处于同级的文件夹内，请输入统一的此文件夹名称。留空则默认贴图与模型同级。 "))
-                .AutoWrapText(true)
-               
-            ]
-            + SVerticalBox::Slot().AutoHeight().Padding(0, 2) [
-                SNew(SHorizontalBox)
-                + SHorizontalBox::Slot()
-                .AutoWidth()
-                .VAlign(VAlign_Center)
-                [
-                    
-                    SNew(STextBlock)
-                    .Text(LOCTEXT("TexFolder", "贴图子文件夹名: ")).MinDesiredWidth(100)
-                    
-                ]
-                + SHorizontalBox::Slot().FillWidth(1.0f) [ SAssignNew(TexSubFolderNameBox, SEditableTextBox).HintText(LOCTEXT("TexHint", "留空则在模型同级目录找贴图")) ]
-            ]
-        ]
-        + SVerticalBox::Slot().AutoHeight().Padding(5)
-        [
-            SNew(SHorizontalBox)
-            + SHorizontalBox::Slot().AutoWidth()
-            [
-                SAssignNew(bCreateMICheckbox, SCheckBox)
-                // 默认不勾选
-            ]
-            + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-            [
-                SNew(STextBlock).Text(LOCTEXT("CreateMI", "创建实例并应用"))
-            ]
-        ]
-        + SVerticalBox::Slot().AutoHeight().Padding(0, 5)
-        [
-        SNew(SBorder).BorderImage(FAppStyle::GetBrush("DetailsView.CategoryTop"))
-        [
-            SNew(SVerticalBox)
-            + SVerticalBox::Slot().AutoHeight().Padding(5)
-            [
-                SNew(SHorizontalBox)
-                + SHorizontalBox::Slot().AutoWidth()
-                [
-                    SAssignNew(bUseParentMICheckbox, SCheckBox)
-                    .OnCheckStateChanged(this, &SImport_MM::OnUseParentMIToggled)
-                    // 【关键逻辑】如果勾选了“自动创建实例”，则此项变暗禁用
-                    .IsEnabled_Lambda([this](){ return !bCreateMICheckbox->IsChecked(); }) 
-                ]
-                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-                [
-                    SNew(STextBlock).Text(LOCTEXT("UseMI", "使用父材质实例"))
-                ]
-            ]
-            + SVerticalBox::Slot().AutoHeight().Padding(5)
-            [
-                SAssignNew(ParentMISelector, SObjectPropertyEntryBox)
-                .AllowedClass(UMaterialInstance::StaticClass())
-                .ObjectPath_Lambda([this](){ return SelectedParentMIPath.ToString(); })
-                .OnObjectChanged_Lambda([this](const FAssetData& AssetData){ 
-                    SelectedParentMIPath = AssetData.GetSoftObjectPath(); 
-                })
-                .IsEnabled_Lambda([this](){ return bUseParentMICheckbox->IsChecked(); })
-            ]
-            + SVerticalBox::Slot().AutoHeight().Padding(10, 5)
-            [
-                SNew(SButton)
-                .HAlign(HAlign_Center)
-                .Text(LOCTEXT("CreateGenMat", "生成通用父材质及实例"))
-                .ToolTipText(LOCTEXT("CreateGenMatTip", "自动创建一个带有标准参数(BaseColor, Normal, ORM)的父材质及其对应的实例"))
-                .OnClicked(this, &SImport_MM::OnCreateGenericMaterialClicked)
-                .ContentPadding(FMargin(10, 2))
-            ]
-            // 贴图参数名配置区
-            + SVerticalBox::Slot().AutoHeight().Padding(5)
-            [
-                SNew(SGridPanel)
-                .FillColumn(1, 1.0f)
-                + SGridPanel::Slot(0, 0).Padding(2) [ CreateParamInputRow(TEXT("基础颜色:"), TEXT("BaseColor"), TEXT("BC")) ]
-                + SGridPanel::Slot(1, 0).Padding(2) [ CreateParamInputRow(TEXT("法线:"), TEXT("Normal"), TEXT("N")) ]
-                + SGridPanel::Slot(0, 1).Padding(2) [ CreateParamInputRow(TEXT("ORM/遮罩:"), TEXT("ORM"), TEXT("ORM")) ]
-                + SGridPanel::Slot(1, 1).Padding(2) [ CreateParamInputRow(TEXT("自发光:"), TEXT("Emissive"), TEXT("EM")) ]
-            ]
-        ]
-        ]
-        + SVerticalBox::Slot().AutoHeight().Padding(10, 10)
-        [
-            SNew(SButton).HAlign(HAlign_Center).Text(LOCTEXT("Run", "导入")).OnClicked(this, &SImport_MM::OnStartImportClicked).ContentPadding(FMargin(40, 5))
-        ]
-        + SVerticalBox::Slot().FillHeight(1.0f).Padding(10, 5)
-        [
-            SNew(SVerticalBox)
-            + SVerticalBox::Slot().AutoHeight() [
-                SNew(SHorizontalBox)
-                + SHorizontalBox::Slot().FillWidth(1.0f) [ SNew(STextBlock).Text(LOCTEXT("LogLabel", "任务日志:")).ColorAndOpacity(FSlateColor(FLinearColor::Gray)) ]
-                + SHorizontalBox::Slot().AutoWidth() [ SNew(SButton).Text(LOCTEXT("Clear", "清空日志")).OnClicked(this, &SImport_MM::OnClearLog) ]
-            ]
-            + SVerticalBox::Slot().FillHeight(1.0f).Padding(0, 5) [
-                SNew(SBorder).BorderImage(FAppStyle::GetBrush("Menu.Background")) [
-                    SAssignNew(LogScrollBox, SScrollBox)
-                    + SScrollBox::Slot() [
-                        SAssignNew(LogBox, SMultiLineEditableText)
-                        .Marshaller(LocalMarshaller)
-                        .IsReadOnly(true)
-                        .AutoWrapText(true)
+                SNew(SScrollBox)
+               + SScrollBox::Slot().Padding(10)
+               [
+                    SNew(SVerticalBox)
+                    + SVerticalBox::Slot().AutoHeight().Padding(10)
+                    [
+                        SNew(STextBlock).Text(LOCTEXT("Title", "批量导入工具 V1")).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
                     ]
-                ]
-            ]
+                    + SVerticalBox::Slot().AutoHeight().Padding(10, 5)
+                    [
+                        SNew(SVerticalBox)
+                        + SVerticalBox::Slot().AutoHeight().Padding(0, 2) [
+                            SNew(SHorizontalBox)
+                            + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center) [ SNew(STextBlock).Text(LOCTEXT("Src", "源文件夹: ")).MinDesiredWidth(100) ]
+                            + SHorizontalBox::Slot().FillWidth(1.0f) [ SAssignNew(SourcePathBox, SEditableTextBox).IsReadOnly(true) ]
+                            + SHorizontalBox::Slot().AutoWidth() [ SNew(SButton).Text(LOCTEXT("B1", "浏览")).OnClicked(this, &SImport_MM::OnBrowseSourceClicked) ]
+                        ]
+                        + SVerticalBox::Slot().AutoHeight().Padding(0, 2) [
+                            SNew(SHorizontalBox)
+                            + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center) [ SNew(STextBlock).Text(LOCTEXT("Dst", "保存位置: ")).MinDesiredWidth(100) ]
+                            + SHorizontalBox::Slot().FillWidth(1.0f) [ SAssignNew(DestPathBox, SEditableTextBox).HintText(LOCTEXT("Hint", "/Game/BatchImport/")) ]
+                            + SHorizontalBox::Slot().AutoWidth() [ SNew(SButton).Text(LOCTEXT("B2", "选择路径")).OnClicked(this, &SImport_MM::OnBrowseDestClicked) ]
+                        ]
+                        +SVerticalBox::Slot()
+                        .Padding(1,20,1,1)
+                        [
+                            SNew(STextBlock)
+                            .Text(LOCTEXT("Tip", "如果纹理贴图不与模型同一层级下，而是处于同级的文件夹内，请输入统一的此文件夹名称。留空则默认贴图与模型同级。 "))
+                            .AutoWrapText(true)
+                           
+                        ]
+                        + SVerticalBox::Slot().AutoHeight().Padding(0, 2) [
+                            SNew(SHorizontalBox)
+                            + SHorizontalBox::Slot()
+                            .AutoWidth()
+                            .VAlign(VAlign_Center)
+                            [
+                                
+                                SNew(STextBlock)
+                                .Text(LOCTEXT("TexFolder", "贴图子文件夹名: ")).MinDesiredWidth(100)
+                                
+                            ]
+                            + SHorizontalBox::Slot().FillWidth(1.0f) [ SAssignNew(TexSubFolderNameBox, SEditableTextBox).HintText(LOCTEXT("TexHint", "留空则在模型同级目录找贴图")) ]
+                        ]
+                    ]
+                    + SVerticalBox::Slot().AutoHeight().Padding(10, 5)
+                    [
+                        SNew(SExpandableArea)
+                       .AreaTitle(LOCTEXT("NamingRules", "资产命名详细规则"))
+                       .InitiallyCollapsed(true)
+                       .BodyContent()
+                       [
+            
+                           SNew(SBorder)
+                           .Padding(FMargin(10, 5))
+                           .BorderImage(FIconStyle::Get_Images().GetBrush("ToolsBox.Image_Anon_1K")) 
+                           [
+                               SNew(SVerticalBox)
+                               + SVerticalBox::Slot().AutoHeight() [ CreateNamingRow(EImportAssetType::Mesh, TEXT("[ 模型 ]"), TEXT("SM_")) ]
+                               + SVerticalBox::Slot().AutoHeight() [ CreateNamingRow(EImportAssetType::Texture, TEXT("[ 贴图 ]"), TEXT("T_")) ]
+                               + SVerticalBox::Slot().AutoHeight() [ CreateNamingRow(EImportAssetType::Material, TEXT("[ 母材质 ]"), TEXT("M_")) ]
+                               + SVerticalBox::Slot().AutoHeight() [ CreateNamingRow(EImportAssetType::Instance, TEXT("[ 材质实例 ]"), TEXT("MI_")) ]
+                           ]
+                       ]
+                    ]
+                    + SVerticalBox::Slot().AutoHeight().Padding(5)
+                    [
+                        SNew(SHorizontalBox)
+                        + SHorizontalBox::Slot().AutoWidth()
+                        [
+                            SAssignNew(bCreateMICheckbox, SCheckBox)
+                            // 默认不勾选
+                        ]
+                        + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+                        [
+                            SNew(STextBlock).Text(LOCTEXT("CreateMI", "创建实例并应用"))
+                        ]
+                    ]
+                    + SVerticalBox::Slot().AutoHeight().Padding(0, 5)
+                    [
+                    SNew(SBorder).BorderImage(FAppStyle::GetBrush("DetailsView.CategoryTop"))
+                    [
+                        SNew(SVerticalBox)
+                        + SVerticalBox::Slot().AutoHeight().Padding(5)
+                        [
+                            SNew(SHorizontalBox)
+                            + SHorizontalBox::Slot().AutoWidth()
+                            [
+                                SAssignNew(bUseParentMICheckbox, SCheckBox)
+                                .OnCheckStateChanged(this, &SImport_MM::OnUseParentMIToggled)
+                                // 【关键逻辑】如果勾选了“自动创建实例”，则此项变暗禁用
+                                .IsEnabled_Lambda([this](){ return !bCreateMICheckbox->IsChecked(); }) 
+                            ]
+                            + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+                            [
+                                SNew(STextBlock).Text(LOCTEXT("UseMI", "使用父材质实例"))
+                            ]
+                        ]
+                        + SVerticalBox::Slot().AutoHeight().Padding(5)
+                        [
+                            SAssignNew(ParentMISelector, SObjectPropertyEntryBox)
+                            .AllowedClass(UMaterialInstance::StaticClass())
+                            .ObjectPath_Lambda([this](){ return SelectedParentMIPath.ToString(); })
+                            .OnObjectChanged_Lambda([this](const FAssetData& AssetData){ 
+                                SelectedParentMIPath = AssetData.GetSoftObjectPath(); 
+                            })
+                            .IsEnabled_Lambda([this](){ return bUseParentMICheckbox->IsChecked(); })
+                        ]
+                        + SVerticalBox::Slot().AutoHeight().Padding(10, 5)
+                        [
+                            SNew(SButton)
+                            .HAlign(HAlign_Center)
+                            .Text(LOCTEXT("CreateGenMat", "生成通用父材质及实例"))
+                            .ToolTipText(LOCTEXT("CreateGenMatTip", "自动创建一个带有标准参数(BaseColor, Normal, ORM)的父材质及其对应的实例"))
+                            .OnClicked(this, &SImport_MM::OnCreateGenericMaterialClicked)
+                            .ContentPadding(FMargin(10, 2))
+                        ]
+                        // 贴图参数名配置区
+                        + SVerticalBox::Slot().AutoHeight().Padding(5)
+                        [
+                            SNew(SGridPanel)
+                            .FillColumn(1, 1.0f)
+                            + SGridPanel::Slot(0, 0).Padding(2) [ CreateParamInputRow(TEXT("基础颜色:"), TEXT("BaseColor"), TEXT("BC")) ]
+                            + SGridPanel::Slot(1, 0).Padding(2) [ CreateParamInputRow(TEXT("法线:"), TEXT("Normal"), TEXT("N")) ]
+                            + SGridPanel::Slot(0, 1).Padding(2) [ CreateParamInputRow(TEXT("ORM/遮罩:"), TEXT("ORM"), TEXT("ORM")) ]
+                            + SGridPanel::Slot(1, 1).Padding(2) [ CreateParamInputRow(TEXT("自发光:"), TEXT("Emissive"), TEXT("EM")) ]
+                        ]
+                    ]
+                    ]
+                    + SVerticalBox::Slot().AutoHeight().Padding(10, 10)
+                    [
+                        SNew(SButton).HAlign(HAlign_Center).Text(LOCTEXT("Run", "导入")).OnClicked(this, &SImport_MM::OnStartImportClicked).ContentPadding(FMargin(40, 5))
+                    ]
+                    + SVerticalBox::Slot().FillHeight(1.0f).Padding(10, 5)
+                    [
+                        SNew(SVerticalBox)
+                        + SVerticalBox::Slot().AutoHeight() [
+                            SNew(SHorizontalBox)
+                            + SHorizontalBox::Slot().FillWidth(1.0f) [ SNew(STextBlock).Text(LOCTEXT("LogLabel", "任务日志:")).ColorAndOpacity(FSlateColor(FLinearColor::Gray)) ]
+                            + SHorizontalBox::Slot().AutoWidth() [ SNew(SButton).Text(LOCTEXT("Clear", "清空日志")).OnClicked(this, &SImport_MM::OnClearLog) ]
+                        ]
+                        + SVerticalBox::Slot().FillHeight(1.0f).Padding(0, 5) [
+                            SNew(SBorder)
+                            [
+                                SAssignNew(LogScrollBox, SScrollBox)
+                                + SScrollBox::Slot() [
+                                    SAssignNew(LogBox, SMultiLineEditableText)
+                                    .Marshaller(LocalMarshaller)
+                                    .IsReadOnly(true)
+                                    .AutoWrapText(true)
+                                ]
+                            ]
+                        ]
+                    ]
+                       
+                   ]
+                
+            ];
+            
+    
+    
+}
+
+TSharedRef<SWidget> SImport_MM::CreateNamingRow(EImportAssetType Type, const FString& Label, const FString& DefaultPrefix)
+{
+    FNamingWidgets Widgets;
+ 
+    // 创建该资产类型的垂直布局组
+    TSharedRef<SVerticalBox> ContentBox = SNew(SVerticalBox);
+ 
+    // 第一行：资产类别标题（如：模型、贴图）
+    ContentBox->AddSlot().AutoHeight().Padding(0, 5, 0, 2)
+    [
+        SNew(STextBlock)
+        .Text(FText::FromString(Label))
+        .Font(FAppStyle::GetFontStyle("DetailsView.CategoryFontStyle"))
+        .ColorAndOpacity(FLinearColor(0.4f, 0.8f, 1.0f)) // 淡蓝色标识类别
+    ];
+ 
+    // 第二行：前缀行
+    ContentBox->AddSlot().AutoHeight().Padding(15, 2) // 向右缩进
+    [
+        SNew(SHorizontalBox)
+        + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+        [
+            SAssignNew(Widgets.bUsePrefix, SCheckBox).IsChecked(ECheckBoxState::Checked)
+        ]
+        + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(5, 0)
+        [
+            SNew(STextBlock).Text(LOCTEXT("PrefixLabel", "前缀:")).MinDesiredWidth(40)
+        ]
+        + SHorizontalBox::Slot().FillWidth(1.0f)
+        [
+            SAssignNew(Widgets.PrefixEntry, SEditableTextBox)
+            .Text(FText::FromString(DefaultPrefix))
+            .Visibility_Lambda([this, Type]() { 
+                return NamingControlMap.Contains(Type) && NamingControlMap[Type].bUsePrefix->IsChecked() ? EVisibility::Visible : EVisibility::Hidden; 
+            })
         ]
     ];
+ 
+    // 第三行：后缀行
+    ContentBox->AddSlot().AutoHeight().Padding(15, 2, 0, 8)
+    [
+        SNew(SHorizontalBox)
+        + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+        [
+            SAssignNew(Widgets.bUseSuffix, SCheckBox).IsChecked(ECheckBoxState::Unchecked)
+        ]
+        + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(5, 0)
+        [
+            SNew(STextBlock).Text(LOCTEXT("SuffixLabel", "后缀:")).MinDesiredWidth(40)
+        ]
+        + SHorizontalBox::Slot().FillWidth(1.0f)
+        [
+            SAssignNew(Widgets.SuffixEntry, SEditableTextBox)
+            .HintText(LOCTEXT("SuffixHint", "输入后缀内容..."))
+            .Visibility_Lambda([this, Type]() { 
+                return NamingControlMap.Contains(Type) && NamingControlMap[Type].bUseSuffix->IsChecked() ? EVisibility::Visible : EVisibility::Hidden; 
+            })
+        ]
+    ];
+ 
+    NamingControlMap.Add(Type, Widgets);
+    return ContentBox;
 }
+ 
+FString SImport_MM::GetAppliedName(const FString& RawName, EImportAssetType Type)
+{
+    if (!NamingControlMap.Contains(Type)) return RawName;
+    
+    const FNamingWidgets& Widgets = NamingControlMap[Type];
+    FString FinalName = RawName;
+ 
+    if (Widgets.bUsePrefix->IsChecked()) FinalName = Widgets.PrefixEntry->GetText().ToString() + FinalName;
+    if (Widgets.bUseSuffix->IsChecked()) FinalName = FinalName + Widgets.SuffixEntry->GetText().ToString();
+ 
+    return FinalName;
+}
+ 
  
 void SImport_MM::AddLog(const FString& Message, FLinearColor Color)
 {
@@ -357,17 +467,21 @@ TArray<UStaticMesh*> SImport_MM::CollectImportedMeshes(const FString& FinalPath,
 void SImport_MM::GenerateMaterials(const FImportFolderTask& Task, const FString& FinalPath, 
     TMap<FString, UMaterialInterface*>& OutCreatedMaterials, UMaterialInterface*& OutSingleFallbackMat, int32& OutBaseColorCount)
 {
+    // 获取 AssetTools 模块
     IAssetTools& AT = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
-    bool bUseMI = bUseParentMICheckbox.IsValid() ? bUseParentMICheckbox->IsChecked() : false;
+    
+    // 获取 UI 状态：1.是否基于已有父级 2.是否自动实例化 3.父材质资产
+    bool bUseExistingParent = bUseParentMICheckbox.IsValid() ? bUseParentMICheckbox->IsChecked() : false;
+    bool bAutoCreateInstance = bCreateMICheckbox.IsValid() ? bCreateMICheckbox->IsChecked() : false;
     UMaterialInstance* ParentMI = Cast<UMaterialInstance>(SelectedParentMIPath.TryLoad());
  
-    // 1. 获取 SM6 安全的引擎内置兜底贴图 (保留您原始资源路径)
+    // 1. 获取 SM6 安全的引擎内置兜底贴图
     UTexture2D* DefNormal = LoadObject<UTexture2D>(nullptr, TEXT("/Engine/EngineMaterials/BaseFlattenNormalMap.BaseFlattenNormalMap"));
     UTexture2D* DefBlackColor = LoadObject<UTexture2D>(nullptr, TEXT("/Engine/EngineResources/Black.Black"));
     UTexture2D* DefBlackLinear = LoadObject<UTexture2D>(nullptr, TEXT("/UVEditor/Textures/UVEditorColorGrid_LinearColor.UVEditorColorGrid_LinearColor"));
     UTexture2D* DefWhiteLinear = LoadObject<UTexture2D>(nullptr, TEXT("/UVEditor/Textures/UVEditorColorGrid_Mask.UVEditorColorGrid_Mask"));
  
-    // 2. 统计 BaseColor 以确定需要生成的材质数量
+    // 2. 统计贴图组中的 BaseColor，用于确定需要生成的材质数量
     OutBaseColorCount = 0;
     TArray<FString> BaseColorFileNames;
     for (auto& TP : Task.TextureMap) 
@@ -380,18 +494,19 @@ void SImport_MM::GenerateMaterials(const FImportFolderTask& Task, const FString&
         }
     }
  
-    // 3. 为每个检测到的 BaseColor 生成材质
+    // 3. 遍历每个 BaseColor 组进行材质生成
     for (const FString& BCName : BaseColorFileNames) 
     {
         TMap<FString, UTexture2D*> LocalMatch;
         UMaterialInterface* WorkingMat = nullptr;
  
-        // --- 匹配当前子材质的贴图文件 ---
+        // 匹配当前子材质相关的贴图文件（处理多材质球模型的情况）
         for (auto& TP : Task.TextureMap) 
         {
             FString TN = FPaths::GetBaseFilename(TP.Key);
             
             if (OutBaseColorCount > 1) {
+                // 如果有多个 BaseColor，尝试匹配前缀名相同的贴图
                 FString Clean = BCName.Replace(TEXT("_BaseColor"), TEXT(""), ESearchCase::IgnoreCase)
                                       .Replace(TEXT("_Albedo"), TEXT(""), ESearchCase::IgnoreCase)
                                       .Replace(TEXT("_Col"), TEXT(""), ESearchCase::IgnoreCase);
@@ -404,83 +519,71 @@ void SImport_MM::GenerateMaterials(const FImportFolderTask& Task, const FString&
             FString L = TN.ToLower();
             if (L.Contains(TEXT("base")) || L.Contains(TEXT("albedo"))) LocalMatch.Add(TEXT("BC"), Tex);
             else if (L.Contains(TEXT("normal")) || L.Contains(TEXT("_n"))) LocalMatch.Add(TEXT("N"), Tex);
-            else if (L.Contains(TEXT("specular"))) LocalMatch.Add(TEXT("SP"), Tex);
-            else if (L.Contains(TEXT("aniso"))) LocalMatch.Add(TEXT("AN"), Tex);
-            else if (L.Contains(TEXT("opacity")) || L.Contains(TEXT("alpha")) || L.Contains(TEXT("mask"))) LocalMatch.Add(TEXT("OP"), Tex);
             else if (L.Contains(TEXT("emissive"))) LocalMatch.Add(TEXT("EM"), Tex);
             else if (L.Contains(TEXT("orm")) || L.Contains(TEXT("rough")) || L.Contains(TEXT("metal")) || L.Contains(TEXT("ao"))) 
             {
                 if (!L.Contains(TEXT("normal"))) LocalMatch.Add(TEXT("ORM"), Tex);
             }
+            else if (L.Contains(TEXT("opacity")) || L.Contains(TEXT("alpha")) || L.Contains(TEXT("mask"))) LocalMatch.Add(TEXT("OP"), Tex);
         }
  
-        // --- 应用逻辑：材质实例 (MI) 模式 ---
-        if (bUseMI && ParentMI)
+        // --- 逻辑分支 A: 基于现有的父材质实例 (MI) ---
+        if (bUseExistingParent && ParentMI)
         {
-            UMaterialInstanceConstant* MIC = Cast<UMaterialInstanceConstant>(AT.DuplicateAsset(TEXT("MI_") + BCName, FinalPath, ParentMI));
-            if (!MIC) continue;
-            WorkingMat = MIC;
+            // 【命名规则应用】：使用 Instance 命名规则
+            FString MIName = GetAppliedName(BCName, EImportAssetType::Instance);
+            UMaterialInstanceConstant* MIC = Cast<UMaterialInstanceConstant>(AT.DuplicateAsset(MIName, FinalPath, ParentMI));
+            
+            if (MIC)
+            {
+                WorkingMat = MIC;
  
-            auto ApplyChannel = [&](FString LocalKey, FName SwitchName, FString DefTexName, UTexture2D* Fallback, bool bLinear) {
-                bool bFound = LocalMatch.Contains(LocalKey);
-                MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(SwitchName), bFound);
-                UTexture2D* TargetTex = bFound ? LocalMatch[LocalKey] : Fallback;
-                
-                if (TargetTex) {
-                    if (LocalKey == TEXT("N")) TargetTex->CompressionSettings = TC_Normalmap;
-                    else if (LocalKey == TEXT("ORM") || bLinear) TargetTex->CompressionSettings = TC_Masks;
+                // 设置 MI 参数的辅助 Lambda
+                auto ApplyChannel = [&](FString LocalKey, FName SwitchName, FString DefTexName, UTexture2D* Fallback, bool bLinear) {
+                    bool bFound = LocalMatch.Contains(LocalKey);
+                    MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(SwitchName), bFound);
+                    UTexture2D* TargetTex = bFound ? LocalMatch[LocalKey] : Fallback;
                     
-                    TargetTex->SRGB = (LocalKey == TEXT("BC") || LocalKey == TEXT("EM")) ? true : false;
-                    TargetTex->PostEditChange();
+                    if (TargetTex) {
+                        // SM6 规范：调整贴图压缩设置和 SRGB
+                        if (LocalKey == TEXT("N")) TargetTex->CompressionSettings = TC_Normalmap;
+                        else if (LocalKey == TEXT("ORM") || bLinear) TargetTex->CompressionSettings = TC_Masks;
+                        
+                        TargetTex->SRGB = (LocalKey == TEXT("BC") || LocalKey == TEXT("EM")) ? true : false;
+                        TargetTex->PostEditChange();
  
-                    FString PName = ParamNameInputs.Contains(LocalKey) ? ParamNameInputs[LocalKey]->GetText().ToString() : DefTexName;
-                    MIC->SetTextureParameterValueEditorOnly(FName(*PName), TargetTex);
-                }
-            };
+                        // 从 UI 输入框获取参数名，若无则使用默认
+                        FString PName = ParamNameInputs.Contains(LocalKey) ? ParamNameInputs[LocalKey]->GetText().ToString() : DefTexName;
+                        MIC->SetTextureParameterValueEditorOnly(FName(*PName), TargetTex);
+                    }
+                };
  
-            ApplyChannel(TEXT("BC"), TEXT("Use_BaseColor"), TEXT("BaseColor"), DefBlackColor, false);
-            ApplyChannel(TEXT("N"), TEXT("Use_Normal"), TEXT("Normal"), DefNormal, false);
-            ApplyChannel(TEXT("EM"), TEXT("Use_Emissive"), TEXT("Emissive"), DefBlackColor, false);
-            ApplyChannel(TEXT("SP"), TEXT("Use_Specular"), TEXT("Specular"), DefBlackLinear, true);
-            ApplyChannel(TEXT("AN"), TEXT("Use_Anisotropy"), TEXT("Anisotropy"), DefBlackLinear, true);
-            ApplyChannel(TEXT("OP"), TEXT("Use_Opacity"), TEXT("Opacity"), DefWhiteLinear, true);
- 
-            bool bFoundORM = LocalMatch.Contains(TEXT("ORM"));
-            bool bAO = false, bRough = false, bMetal = false;
-            UTexture2D* ORMTex = bFoundORM ? LocalMatch[TEXT("ORM")] : DefWhiteLinear;
-            
-            if (bFoundORM) {
-                ORMTex->CompressionSettings = TC_Masks; 
-                ORMTex->SRGB = false; 
-                ORMTex->PostEditChange();
+                ApplyChannel(TEXT("BC"), TEXT("Use_BaseColor"), TEXT("BaseColor"), DefBlackColor, false);
+                ApplyChannel(TEXT("N"), TEXT("Use_Normal"), TEXT("Normal"), DefNormal, false);
+                ApplyChannel(TEXT("EM"), TEXT("Use_Emissive"), TEXT("Emissive"), DefBlackColor, false);
                 
-                FString N = ORMTex->GetName().ToLower();
-                bAO = N.Contains(TEXT("ao")) || N.Contains(TEXT("orm")) || N.Contains(TEXT("occ"));
-                bRough = N.Contains(TEXT("rough")) || N.Contains(TEXT("orm"));
-                bMetal = N.Contains(TEXT("metal")) || N.Contains(TEXT("orm"));
-            }
-            
-            MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(TEXT("Use_AO")), bAO);
-            MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(TEXT("Use_Roughness")), bRough);
-            MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(TEXT("Use_Metallic")), bMetal);
-            MIC->SetTextureParameterValueEditorOnly(TEXT("ORM"), ORMTex);
+                bool bFoundORM = LocalMatch.Contains(TEXT("ORM"));
+                MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(TEXT("Use_ORM")), bFoundORM);
+                if (bFoundORM) MIC->SetTextureParameterValueEditorOnly(TEXT("ORM"), LocalMatch[TEXT("ORM")]);
  
-            if (LocalMatch.Contains(TEXT("OP"))) {
-                MIC->BasePropertyOverrides.bOverride_BlendMode = true;
-                MIC->BasePropertyOverrides.BlendMode = BLEND_Masked;
+                MIC->PostEditChange();
             }
-            MIC->PostEditChange();
         }
-        // --- 应用逻辑：新建母材质模式 ---
+        // --- 逻辑分支 B: 生成新母材质 (Master Material) ---
         else
         {
-            UMaterial* NewMat = Cast<UMaterial>(AT.CreateAsset(TEXT("M_") + BCName, FinalPath, UMaterial::StaticClass(), NewObject<UMaterialFactoryNew>()));
-            if (NewMat) {
+            // 【命名规则应用】：使用 Material 命名规则
+            FString FinalMatName = GetAppliedName(BCName, EImportAssetType::Material);
+            UMaterial* NewMat = Cast<UMaterial>(AT.CreateAsset(FinalMatName, FinalPath, UMaterial::StaticClass(), NewObject<UMaterialFactoryNew>()));
+            
+            if (NewMat) 
+            {
                 WorkingMat = NewMat;
                 if (LocalMatch.Contains(TEXT("OP"))) NewMat->BlendMode = BLEND_Masked;
  
                 int32 YPos = 0;
-                for (auto& Pair : LocalMatch) {
+                for (auto& Pair : LocalMatch) 
+                {
                     UTexture2D* T = Pair.Value;
                     auto* Node = Cast<UMaterialExpressionTextureSample>(UMaterialEditingLibrary::CreateMaterialExpression(NewMat, UMaterialExpressionTextureSample::StaticClass()));
                     Node->Texture = T; 
@@ -489,36 +592,17 @@ void SImport_MM::GenerateMaterials(const FImportFolderTask& Task, const FString&
                     
                     FString K = Pair.Key;
                     
-                    // --- 关键修正：修改贴图资产属性以匹配采样器，消除 SM6 报错 ---
-                    if (K == TEXT("N")) 
-                    {
-                        T->SRGB = false;
-                        T->CompressionSettings = TC_Normalmap;
-                        Node->SamplerType = SAMPLERTYPE_Normal;
+                    // SM6 规范：自动修正贴图采样器和压缩格式
+                    if (K == TEXT("N")) {
+                        T->SRGB = false; T->CompressionSettings = TC_Normalmap; Node->SamplerType = SAMPLERTYPE_Normal;
+                    } else if (K == TEXT("BC") || K == TEXT("EM")) {
+                        T->SRGB = true; T->CompressionSettings = TC_Default; Node->SamplerType = SAMPLERTYPE_Color;
+                    } else {
+                        T->SRGB = false; T->CompressionSettings = TC_Masks; Node->SamplerType = SAMPLERTYPE_Masks;
                     }
-                    else if (K == TEXT("BC") || K == TEXT("EM")) 
-                    {
-                        T->SRGB = true;
-                        T->CompressionSettings = TC_Default;
-                        Node->SamplerType = SAMPLERTYPE_Color;
-                    }
-                    else if (K == TEXT("ORM"))
-                    {
-                        T->SRGB = false;
-                        T->CompressionSettings = TC_Masks;
-                        Node->SamplerType = SAMPLERTYPE_Masks;
-                    }
-                    else // SP, AN, OP
-                    {
-                        T->SRGB = false;
-                        T->CompressionSettings = TC_Masks;
-                        Node->SamplerType = SAMPLERTYPE_Masks;
-                    }
-                    
-                    // 应用资产修改
                     T->PostEditChange();
  
-                    // 建立连线
+                    // 建立图表连接
                     if (K == TEXT("BC")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_BaseColor);
                     else if (K == TEXT("N")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_Normal);
                     else if (K == TEXT("EM")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_EmissiveColor);
@@ -529,34 +613,35 @@ void SImport_MM::GenerateMaterials(const FImportFolderTask& Task, const FString&
                         UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT("B"), MP_Metallic);
                     }
                 }
+                
+                // 编译母材质
                 UMaterialEditingLibrary::RecompileMaterial(NewMat);
-                WorkingMat = NewMat; // 默认工作材质是母材质
  
-                // 【新增逻辑】判断是否开启了自动实例化
-                if (bCreateMICheckbox.IsValid() && bCreateMICheckbox->IsChecked())
+                // --- 【自动实例化逻辑】 ---
+                // 如果勾选了“自动创建实例”，则基于刚才生成的 NewMat 创建一个 MI
+                if (bAutoCreateInstance) 
                 {
-                    FString MIName = TEXT("MI_") + BCName;
+                    // 【命名规则应用】：使用 Instance 命名规则
+                    FString FinalInstName = GetAppliedName(BCName, EImportAssetType::Instance);
                     UMaterialInstanceConstantFactoryNew* MIFact = NewObject<UMaterialInstanceConstantFactoryNew>();
-            
-                    // 在同一路径下创建材质实例
+                    
                     UMaterialInstanceConstant* NewMIC = Cast<UMaterialInstanceConstant>(
-                        AT.CreateAsset(MIName, FinalPath, UMaterialInstanceConstant::StaticClass(), MIFact)
+                        AT.CreateAsset(FinalInstName, FinalPath, UMaterialInstanceConstant::StaticClass(), MIFact)
                     );
  
-                    if (NewMIC)
-                    {
-                        NewMIC->SetParentEditorOnly(NewMat); // 设置刚刚生成的母材质为父级
+                    if (NewMIC) {
+                        NewMIC->SetParentEditorOnly(NewMat);
                         NewMIC->PostEditChange();
-                
-                        // 【关键】将 WorkingMat 指向实例，这样 OutCreatedMaterials 存入的就是实例
+                        
+                        // 【核心改动】：将最终要赋予给模型的材质切换为这个新实例
                         WorkingMat = NewMIC; 
-                
-                        AddLog(FString::Printf(TEXT("已自动生成并应用材质实例: %s"), *MIName), FLinearColor::Green);
+                        AddLog(FString::Printf(TEXT("已为母材质 [%s] 自动生成实例 [%s]"), *FinalMatName, *FinalInstName), FLinearColor::Green);
                     }
                 }
             }
         }
  
+        // 存储结果，用于后续分配给 StaticMesh
         if (!OutSingleFallbackMat) OutSingleFallbackMat = WorkingMat;
         OutCreatedMaterials.Add(BCName, WorkingMat);
     }

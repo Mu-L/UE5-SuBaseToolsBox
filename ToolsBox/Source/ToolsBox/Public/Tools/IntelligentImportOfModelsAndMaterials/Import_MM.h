@@ -15,6 +15,18 @@ class SMultiLineEditableText;
 class SScrollBox;
 class FRichTextLayoutMarshaller;
 
+
+/** 定义资产命名类型枚举 */
+enum class EImportAssetType : uint8 { Mesh, Texture, Material, Instance };
+ 
+/** 命名规则 UI 组结构体 */
+struct FNamingWidgets {
+	TSharedPtr<SCheckBox> bUsePrefix;
+	TSharedPtr<SEditableTextBox> PrefixEntry;
+	TSharedPtr<SCheckBox> bUseSuffix;
+	TSharedPtr<SEditableTextBox> SuffixEntry;
+};
+
 struct FImportFolderTask
 {
 	FString FolderName;
@@ -108,7 +120,7 @@ private:
 	FSoftObjectPath SelectedParentMIPath;
 
 
- 
+	TMap<EImportAssetType, FNamingWidgets> NamingControlMap;
 	
 	// 辅助函数：创建参数名输入行
 	TSharedRef<SWidget> CreateParamInputRow(const FString& ChannelLabel, const FString& DefaultParamName, const FString& Key);
@@ -116,4 +128,10 @@ private:
 	// 获取当前勾选状态
 	ECheckBoxState IsUseParentMIChecked() const { return bUseParentMICheckbox->GetCheckedState(); }
 	void OnUseParentMIToggled(ECheckBoxState NewState);
+
+
+	/** 辅助函数 */
+	TSharedRef<SWidget> CreateNamingRow(EImportAssetType Type, const FString& Label, const FString& DefaultPrefix);
+	FString GetAppliedName(const FString& RawName, EImportAssetType Type);
+
 };
