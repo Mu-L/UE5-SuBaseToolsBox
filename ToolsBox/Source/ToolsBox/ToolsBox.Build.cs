@@ -36,7 +36,8 @@ public class ToolsBox : ModuleRules
 				"AssetTools", 
 				"AssetRegistry", 
 				"MaterialEditor", 
-				"DesktopPlatform" 
+				"DesktopPlatform",
+				"PropertyEditor"  
 			}
 			);
 			

@@ -1,10 +1,13 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "PropertyCustomizationHelpers.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/Material.h"
+#include "Materials/MaterialExpressionTextureSampleParameter2D.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
+#include "Widgets/Input/SCheckBox.h"
 
 // 前向声明，优化编译速度
 class SEditableTextBox;
@@ -55,12 +58,19 @@ private:
 	TArray<UStaticMesh*> CollectImportedMeshes(const FString& FinalPath, const FString& MeshBaseName);
  
 	// 4. 创建并连接材质节点
-	void GenerateMaterials(const FImportFolderTask& Task, const FString& FinalPath, 
-		TMap<FString, UMaterial*>& OutCreatedMaterials, UMaterial*& OutSingleFallbackMat, int32& OutBaseColorCount);
+	void GenerateMaterials(const FImportFolderTask& Task, const FString& FinalPath,
+	                       TMap<FString, UMaterialInterface*>& OutCreatedMaterials, UMaterialInterface*& OutSingleFallbackMat, int32&
+	                       OutBaseColorCount);
  
 	// 5. 将材质分配给模型
-	void ApplyMaterialsToMeshes(const TArray<UStaticMesh*>& Meshes, const TMap<FString, UMaterial*>& CreatedMaterials, 
-		int32 BaseColorCount, UMaterial* SingleFallbackMat, const FString& MeshBaseName, const FString& FinalPath);
+	void ApplyMaterialsToMeshes(
+		const TArray<UStaticMesh*>& Meshes, 
+		const TMap<FString, UMaterialInterface*>& CreatedMaterials, // 改为 Interface
+		int32 BaseColorCount, 
+		UMaterialInterface* SingleFallbackMat,                       // 改为 Interface
+		const FString& MeshBaseName, 
+		const FString& FinalPath
+	);
 
 	/** 路径数据 */
 	FString SourceFolderPath;
@@ -79,4 +89,31 @@ private:
 	 * 命名已修改为 MarshallerPtr 以避免隐藏局部变量 (C4458)
 	 */
 	TSharedPtr<FRichTextLayoutMarshaller> RichTextMarshallerPtr;
+
+	FReply OnCreateGenericMaterialClicked();
+    
+	// 辅助函数：向材质添加参数节点
+	UMaterialExpressionTextureSampleParameter2D* AddTextureParameter(UMaterial* InMaterial, FName InParamName, int32 InYPos, EMaterialSamplerType InSamplerType);
+
+
+	// 新增 UI 指针
+	TSharedPtr<SCheckBox> bUseParentMICheckbox;
+	TSharedPtr<SObjectPropertyEntryBox> ParentMISelector;
+    
+	// 用于存储不同通道对应的参数名输入框
+	// Key 为通道缩写（BC, N, ORM, OP, EM 等），Value 为对应的输入框
+	TMap<FString, TSharedPtr<SEditableTextBox>> ParamNameInputs;
+ 
+	// 存储用户选择的父类 MI 路径
+	FSoftObjectPath SelectedParentMIPath;
+
+
+ 
+	
+	// 辅助函数：创建参数名输入行
+	TSharedRef<SWidget> CreateParamInputRow(const FString& ChannelLabel, const FString& DefaultParamName, const FString& Key);
+    
+	// 获取当前勾选状态
+	ECheckBoxState IsUseParentMIChecked() const { return bUseParentMICheckbox->GetCheckedState(); }
+	void OnUseParentMIToggled(ECheckBoxState NewState);
 };
