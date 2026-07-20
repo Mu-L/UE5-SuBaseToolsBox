@@ -80,7 +80,7 @@ private:
 	TSharedPtr<SEditableTextBox> SourcePathBox;
 	TSharedPtr<SEditableTextBox> DestPathBox;
 	TSharedPtr<SEditableTextBox> TexSubFolderNameBox; // 已修正为单行文本框指针
-    
+	TSharedPtr<SCheckBox> bCreateMICheckbox;
 	TSharedPtr<SMultiLineEditableText> LogBox;
 	TSharedPtr<SScrollBox> LogScrollBox;
 
