@@ -1,0 +1,885 @@
+﻿#include "OpenToolsBox_Command.h"
+
+#define LOCTEXT_NAMESPACE "OpenToolsBox_Command"
+
+void FOpenToolsBox_Command::RegisterCommands()
+{
+
+	UI_COMMAND(ToolsBox_CommandInfo, "ToolsBox", "点击打开功能窗口", EUserInterfaceActionType::Button, FInputChord());
+}
+
+#undef LOCTEXT_NAMESPACE#include "ToolsBox.h"
+#include "ToolMenus.h"
+#include "OpenToolsBox_Command.h"
+#include "Framework/Commands/UICommandList.h" // 必须包含这个才能用 MapAction
+#include "Slate_Assist/FIconStyle.h"
+#include "Slate_Assist/SlateAssistBuildFunctionLibrary.h"
+#include "Tools/Tools.h"
+#include "Tools/Cleaner/Cleaner.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Layout/SWrapBox.h"
+
+#define LOCTEXT_NAMESPACE "FToolsBoxModule"
+
+void FToolsBoxModule::StartupModule()
+{
+	// 1. 开启化妆间（加载图标）
+	FIconStyle::Initialize();
+	
+	// 2. 登记身份证（注册按钮名）
+	FOpenToolsBox_Command::Register();
+
+	// 3. 准备插线板，并把按钮和 OnButtonClick 函数连接起来
+	OpenToolsBoxDockTab_CommandList = MakeShareable(new FUICommandList);
+	OpenToolsBoxDockTab_CommandList->MapAction
+	(
+		FOpenToolsBox_Command::Get().ToolsBox_CommandInfo,
+		FExecuteAction::CreateRaw(this, &FToolsBoxModule::OnButtonClick),
+		FCanExecuteAction()
+	);
+
+	// 1. 注册主工具箱
+	FGlobalTabmanager::Get()->RegisterNomadTabSpawner("ToolsBox", FOnSpawnTab::CreateRaw(this, &FToolsBoxModule::OnSpawnToolsBoxTab))
+		.SetDisplayName(LOCTEXT("ToolsBox", "工具箱"))
+		.SetMenuType(ETabSpawnerMenuType::Hidden)
+		.SetIcon(FSlateIcon(FIconStyle::Get_IconsName(), "ToolsBox.Icon_Anon"));
+ 
+	// 2. 在启动时一次性注册所有子工具窗口
+	for (const FTool& Tool : Tools::Get_ToolsData())
+	{
+		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(
+			Tool.ToolTabID, 
+			FOnSpawnTab::CreateRaw(this, &FToolsBoxModule::OnSpawnToolTab, Tool.WidgetFactory) // 绑定 Payload 参数
+		)
+		.SetDisplayName(FText::FromName(Tool.ToolName))
+		.SetMenuType(ETabSpawnerMenuType::Hidden);
+	}
+ 
+	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FToolsBoxModule::RegisterMenu));
+}
+
+
+//这个函数负责将按钮渲染到对应位置
+void FToolsBoxModule::RegisterMenu()
+{
+	// 锁定修改权
+	FToolMenuOwnerScoped OwnerScoped(this);
+	
+	// 找到工具栏上放“运行”按钮那一横行
+	UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar.PlayToolBar");
+	
+	// 开辟一个小分组
+	FToolMenuSection& Section = Menu->FindOrAddSection("SuBase_LevelEditorToolBar");
+	
+	// 把按钮画上去
+	FToolMenuEntry& Entry = Section.AddEntry(FToolMenuEntry::InitToolBarButton(FOpenToolsBox_Command::Get().ToolsBox_CommandInfo));
+	
+	// 【重点】把插线板给按钮，点击才有反应！
+	Entry.SetCommandList(OpenToolsBoxDockTab_CommandList);
+}
+
+TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& SpawnTabArgs)
+{
+	TSharedPtr<SWrapBox> WrapBox;
+	TSharedRef<SDockTab> SpawnedTab = SNew(SDockTab).TabRole(ETabRole::NomadTab)
+	[
+		SNew(SScrollBox)
+		+ SScrollBox::Slot().Padding(15.0f)
+		[
+			SAssignNew(WrapBox, SWrapBox).UseAllottedSize(true).InnerSlotPadding(FVector2D(15.0f, 15.0f))
+		]
+	];
+ 
+	if (WrapBox.IsValid())
+	{
+		// 渲染 UI 时不再进行注册操作，只负责画按钮
+		for (const auto& Tool : Tools::Get_ToolsData())
+		{
+			WrapBox->AddSlot()
+			[
+				SlateAssistBuildFunctionLibrary::MakeToolBlock(
+					FText::FromName(Tool.ToolName),
+					Tool.ToolDescription,
+					Tool.ToolImage,
+					Tool.ToolTabID
+				)
+			];
+		}
+	}
+	return SpawnedTab;
+}
+
+void FToolsBoxModule::OnButtonClick()
+{
+	// 打开工具箱
+	FGlobalTabmanager::Get()->TryInvokeTab(FTabId("ToolsBox"));
+}
+
+TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolTab(const FSpawnTabArgs& SpawnTabArgs, TFunction<TSharedRef<SWidget>()> NewToolTab)
+{
+	
+	TSharedRef<SWidget> Content = NewToolTab ? NewToolTab() : SNullWidget::NullWidget;
+ 
+	return SNew(SDockTab)
+		.TabRole(ETabRole::NomadTab)
+		[
+			Content
+		];
+}
+
+void FToolsBoxModule::ShutdownModule()
+{
+	
+	UToolMenus::UnRegisterStartupCallback(this);
+	UToolMenus::UnregisterOwner(this);
+	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner("ToolsBox");
+	FOpenToolsBox_Command::Unregister();
+	FIconStyle::Shutdown();
+	for (const FTool& Tool : Tools::Get_ToolsData())
+	{
+		FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(Tool.ToolTabID);
+	}
+    
+	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner("ToolsBox");
+}
+
+#undef LOCTEXT_NAMESPACE
+	
+IMPLEMENT_MODULE(FToolsBoxModule, ToolsBox)﻿#include "Slate_Assist/FIconStyle.h"
+
+#include "Brushes/SlateImageBrush.h"
+#include "Styling/SlateStyleRegistry.h"
+#include "Interfaces/IPluginManager.h"
+#include "Styling/SlateStyle.h"
+
+TSharedPtr<FSlateStyleSet> FIconStyle::Icons = nullptr;
+TSharedPtr<FSlateStyleSet> FIconStyle::Images = nullptr;
+ 
+void FIconStyle::Initialize()
+{
+	FString ContentDir = IPluginManager::Get().FindPlugin(TEXT("ToolsBox"))->GetBaseDir() / TEXT("Resources");
+ 
+	// 优先初始化 Images
+	if (!Images.IsValid())
+	{
+		Images = MakeShareable(new FSlateStyleSet("ToolsBoxDockTabStyle"));
+		Images->SetContentRoot(ContentDir);
+		Images->Set("ToolsBox.Image_Anon_254px",
+			new FSlateImageBrush(Images->RootToContentDir(TEXT("Icon_Anon"), TEXT(".png")), FVector2D(254.0f, 254.0f)));
+		FSlateStyleRegistry::RegisterSlateStyle(*Images);
+	}
+ 
+	// 后初始化 Icons
+	if (!Icons.IsValid())
+	{
+		Icons = MakeShareable(new FSlateStyleSet("EditorToolsBoxIconStyle"));
+		Icons->SetContentRoot(ContentDir);
+
+		// 【关键修改点】
+		// 这个 Key 的名字必须是 "Context名.变量名"
+		// 对应 FOpenToolsBox_Command 里的定义
+		Icons->Set("ToolsBox.ToolsBox_CommandInfo",// 如果图标要作用在按钮上命名规则为  [按钮的ID名，如TEXT("ToolsBox")] . [按钮指针变量名，如TSharedPtr<FUICommandInfo> ToolsBox_CommandInfo]
+			new FSlateImageBrush(Icons->RootToContentDir(TEXT("Icon_SuBaRu"), TEXT(".png")), FVector2D(20.0f, 20.0f)));
+
+		
+		// 修正：使用 Icons 自己的指针去拼路径，不要跨变量引用
+		Icons->Set("ToolsBox.Icon_Anon",
+			new FSlateImageBrush(Icons->RootToContentDir(TEXT("Icon_Anon"), TEXT(".png")), FVector2D(20.0f, 20.0f)));
+ 
+		FSlateStyleRegistry::RegisterSlateStyle(*Icons);
+	}
+}
+ 
+void FIconStyle::Shutdown()
+{
+	// 消除 (Eliminate) 注册信息，清空内存
+	FSlateStyleRegistry::UnRegisterSlateStyle(*Icons);
+	FSlateStyleRegistry::UnRegisterSlateStyle(*Images);
+	Icons.Reset();
+	Images.Reset();
+}
+ 
+FName FIconStyle::Get_IconsName() { return Icons->GetStyleSetName(); }
+
+FName FIconStyle::Get_ImagesName(){ return Images->GetStyleSetName();}
+
+const ISlateStyle& FIconStyle::Get_Icons() { return *Icons; }
+
+const ISlateStyle& FIconStyle::Get_Images(){ return *Images;}
+﻿#include "Slate_Assist/SlateAssistBuildFunctionLibrary.h"
+
+#include "Components/VerticalBox.h"
+#include "Framework/Docking/TabManager.h"
+#include "Slate_Assist/FIconStyle.h"
+#include "Widgets/DeclarativeSyntaxSupport.h"
+#include "Widgets/Images/SImage.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/Text/STextBlock.h"
+
+TSharedRef<SWidget> SlateAssistBuildFunctionLibrary::MakeToolBlock(const FText& ToolName, const FText& Description,
+                                                                   const FName& IconName, const FName& TabID)
+{
+	return SNew(SBox)
+		.WidthOverride(300.0f) // 限制宽度，防止工具块横向拉得太长
+		.Padding(10.0f)
+		[
+			SNew(SVerticalBox)
+ 
+			// 1. 顶部：工具缩略图标
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(HAlign_Center) // 居中显示图标
+			.Padding(5.0f)
+			[
+				SNew(SImage)
+				// 从你的化妆间里取图，注意这里用了之前定义的 Plugin_Icon 集合
+				.Image(FIconStyle::Get_Images().GetBrush(IconName))
+				.DesiredSizeOverride(FVector2D(128.0f, 128.0f)) // 设置图标大小
+			]
+ 
+			// 2. 图标下面：工具名字
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(HAlign_Center)
+			.Padding(2.0f)
+			[
+				SNew(STextBlock)
+				.Text(ToolName)
+				.Font(FCoreStyle::GetDefaultFontStyle("Bold", 12)) // 字体加粗
+				.ColorAndOpacity(FLinearColor::White)
+			]
+ 
+			// 3. 名字下面：描述
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(5.0f, 10.0f)
+			[
+				SNew(STextBlock)
+				.Text(Description)
+				.AutoWrapText(true) // 【核心】自动换行，防止描述太长超出边界
+				.Justification(ETextJustify::Center) // 文字居中
+				.Font(FCoreStyle::GetDefaultFontStyle("Regular", 9))
+				.ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.7f)) // 浅灰色描述
+				.ToolTipText(Description) 
+			]
+ 
+			// 4. 底部：打开按钮
+			+ SVerticalBox::Slot()
+			.AutoHeight() // 建议加上，否则按钮可能拉伸
+			[
+				SNew(SButton)
+				
+				.OnClicked_Lambda([TabID]() // 点击时唤起对应的 Tab
+				{
+				FGlobalTabmanager::Get()->TryInvokeTab(FTabId(TabID));
+				return FReply::Handled();
+				})
+				[
+					SNew(STextBlock).Text(NSLOCTEXT("ToolsBox", "OpenBtn", "打开工具"))
+				]
+
+			]
+		];
+}
+﻿#include "Tools/Tools.h"
+#include "Internationalization/Internationalization.h"
+#include "Templates/SharedPointer.h"
+#include "Tools/Cleaner/Cleaner.h"
+#include "Tools/IntelligentImportOfModelsAndMaterials/Import_MM.h"
+
+#define LOCTEXT_NAMESPACE "Tools"
+
+const TSet<FTool> Tools::Get_ToolsData()
+{
+	static TSet<FTool> InternalTools = {
+		
+		FTool(
+			TEXT("清理工具"),
+			LOCTEXT("T1", "描述1..."),
+			TEXT("ToolsBox.Image_Anon_254px"),
+			TEXT("CleanerTab"),
+			[]() { return SNew(SCleaner);}
+			),
+		
+		FTool(
+			TEXT("批量导入模型和材质"),
+			LOCTEXT("T2", "批量导入模型和材质，同文件下的模型以及附属的纹理贴图会自动连接材质球并赋予模型"),
+			TEXT("ToolsBox.Image_Anon_254px"),
+			TEXT("SImport_MMTab"),
+			[]() { return SNew(SImport_MM);}
+			)
+				
+		
+	};
+	return InternalTools;
+}
+
+
+#undef LOCTEXT_NAMESPACE﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Tools/Cleaner/Cleaner.h"
+
+
+SCleaner::SCleaner()
+{
+}
+
+﻿
+#include "Tools/IntelligentImportOfModelsAndMaterials/Import_MM.h"
+
+#include "AssetToolsModule.h"
+#include "IAssetTools.h"
+#include "AssetImportTask.h"
+#include "Factories/FbxFactory.h"
+#include "Factories/FbxImportUI.h"
+#include "Factories/FbxStaticMeshImportData.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "MaterialEditingLibrary.h"
+#include "Factories/MaterialFactoryNew.h"
+#include "Materials/MaterialExpressionTextureSample.h"
+#include "Engine/StaticMesh.h"
+#include "Engine/Texture2D.h"
+#include "HAL/FileManager.h"
+#include "Misc/Paths.h"
+#include "Misc/PackageName.h"
+#include "DesktopPlatformModule.h"
+#include "Framework/Text/ITextDecorator.h"
+#include "Framework/Text/RichTextLayoutMarshaller.h"
+#include "Interfaces/IMainFrameModule.h"
+#include "Materials/Material.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SEditableTextBox.h"
+
+#include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Text/SMultiLineEditableText.h"
+#include "Widgets/Text/STextBlock.h"
+
+#define LOCTEXT_NAMESPACE "SImport_MM"
+
+void SImport_MM::Construct(const FArguments& InArgs)
+{
+    TArray<TSharedRef<ITextDecorator>> Decorators;
+
+    TSharedPtr<FRichTextLayoutMarshaller> LocalMarshaller = FRichTextLayoutMarshaller::Create(Decorators, &FAppStyle::Get());
+ 
+    ChildSlot
+    [
+        SNew(SVerticalBox)
+        + SVerticalBox::Slot().AutoHeight().Padding(10)
+        [
+            SNew(STextBlock).Text(LOCTEXT("Title", "批量导入工具 V1")).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
+        ]
+        + SVerticalBox::Slot().AutoHeight().Padding(10, 5)
+        [
+            SNew(SVerticalBox)
+            + SVerticalBox::Slot().AutoHeight().Padding(0, 2) [
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center) [ SNew(STextBlock).Text(LOCTEXT("Src", "源文件夹: ")).MinDesiredWidth(100) ]
+                + SHorizontalBox::Slot().FillWidth(1.0f) [ SAssignNew(SourcePathBox, SEditableTextBox).IsReadOnly(true) ]
+                + SHorizontalBox::Slot().AutoWidth() [ SNew(SButton).Text(LOCTEXT("B1", "浏览")).OnClicked(this, &SImport_MM::OnBrowseSourceClicked) ]
+            ]
+            + SVerticalBox::Slot().AutoHeight().Padding(0, 2) [
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center) [ SNew(STextBlock).Text(LOCTEXT("Dst", "保存位置: ")).MinDesiredWidth(100) ]
+                + SHorizontalBox::Slot().FillWidth(1.0f) [ SAssignNew(DestPathBox, SEditableTextBox).HintText(LOCTEXT("Hint", "/Game/BatchImport/")) ]
+                + SHorizontalBox::Slot().AutoWidth() [ SNew(SButton).Text(LOCTEXT("B2", "选择路径")).OnClicked(this, &SImport_MM::OnBrowseDestClicked) ]
+            ]
+            +SVerticalBox::Slot()
+            .Padding(1,20,1,1)
+            [
+                SNew(STextBlock)
+                .Text(LOCTEXT("Tip", "如果纹理贴图不与模型同一层级下，而是处于同级的文件夹内，请输入统一的此文件夹名称。留空则默认贴图与模型同级。 "))
+                .AutoWrapText(true)
+               
+            ]
+            + SVerticalBox::Slot().AutoHeight().Padding(0, 2) [
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot()
+                .AutoWidth()
+                .VAlign(VAlign_Center)
+                [
+                    
+                    SNew(STextBlock)
+                    .Text(LOCTEXT("TexFolder", "贴图子文件夹名: ")).MinDesiredWidth(100)
+                    
+                ]
+                + SHorizontalBox::Slot().FillWidth(1.0f) [ SAssignNew(TexSubFolderNameBox, SEditableTextBox).HintText(LOCTEXT("TexHint", "留空则在模型同级目录找贴图")) ]
+            ]
+        ]
+        + SVerticalBox::Slot().AutoHeight().Padding(10, 10)
+        [
+            SNew(SButton).HAlign(HAlign_Center).Text(LOCTEXT("Run", "导入")).OnClicked(this, &SImport_MM::OnStartImportClicked).ContentPadding(FMargin(40, 5))
+        ]
+        + SVerticalBox::Slot().FillHeight(1.0f).Padding(10, 5)
+        [
+            SNew(SVerticalBox)
+            + SVerticalBox::Slot().AutoHeight() [
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot().FillWidth(1.0f) [ SNew(STextBlock).Text(LOCTEXT("LogLabel", "任务日志:")).ColorAndOpacity(FSlateColor(FLinearColor::Gray)) ]
+                + SHorizontalBox::Slot().AutoWidth() [ SNew(SButton).Text(LOCTEXT("Clear", "清空日志")).OnClicked(this, &SImport_MM::OnClearLog) ]
+            ]
+            + SVerticalBox::Slot().FillHeight(1.0f).Padding(0, 5) [
+                SNew(SBorder).BorderImage(FAppStyle::GetBrush("Menu.Background")) [
+                    SAssignNew(LogScrollBox, SScrollBox)
+                    + SScrollBox::Slot() [
+                        SAssignNew(LogBox, SMultiLineEditableText)
+                        .Marshaller(LocalMarshaller)
+                        .IsReadOnly(true)
+                        .AutoWrapText(true)
+                    ]
+                ]
+            ]
+        ]
+    ];
+}
+ 
+void SImport_MM::AddLog(const FString& Message, FLinearColor Color)
+{
+    FString TimeStr = FDateTime::Now().ToString(TEXT("[%H:%M:%S] "));
+    FString ColorHex = Color.ToFColor(true).ToHex();
+    FString FormattedMessage = FString::Printf(TEXT("<RichTextBlock.Color=\"#%s\">%s%s</>\n"), *ColorHex, *TimeStr, *Message);
+    FText Current = LogBox->GetText();
+    LogBox->SetText(FText::FromString(Current.ToString() + FormattedMessage));
+    LogScrollBox->ScrollToEnd();
+}
+ 
+FReply SImport_MM::OnClearLog()
+{
+    LogBox->SetText(FText::GetEmpty());
+    return FReply::Handled();
+}
+ 
+FReply SImport_MM::OnBrowseSourceClicked()
+{
+    IDesktopPlatform* DP = FDesktopPlatformModule::Get();
+    if (DP)
+    {
+        IMainFrameModule& MF = FModuleManager::LoadModuleChecked<IMainFrameModule>("MainFrame");
+        void* Parent = MF.GetParentWindow().IsValid() ? MF.GetParentWindow()->GetNativeWindow()->GetOSWindowHandle() : nullptr;
+        FString Out; if (DP->OpenDirectoryDialog(Parent, TEXT("选择源"), TEXT(""), Out)) { SourceFolderPath = Out; SourcePathBox->SetText(FText::FromString(SourceFolderPath)); }
+    }
+    return FReply::Handled();
+}
+ 
+FReply SImport_MM::OnBrowseDestClicked()
+{
+    IDesktopPlatform* DP = FDesktopPlatformModule::Get();
+    if (DP)
+    {
+        IMainFrameModule& MF = FModuleManager::LoadModuleChecked<IMainFrameModule>("MainFrame");
+        void* Parent = MF.GetParentWindow().IsValid() ? MF.GetParentWindow()->GetNativeWindow()->GetOSWindowHandle() : nullptr;
+        FString Out; if (DP->OpenDirectoryDialog(Parent, TEXT("目标"), FPaths::ProjectContentDir(), Out))
+        {
+            FString Pkg; if (FPackageName::TryConvertFilenameToLongPackageName(Out, Pkg)) { RelativeDestPath = Pkg; DestPathBox->SetText(FText::FromString(RelativeDestPath)); }
+        }
+    }
+    return FReply::Handled();
+}
+ 
+FReply SImport_MM::OnStartImportClicked()
+{
+    if (SourceFolderPath.IsEmpty()) return FReply::Handled();
+    FString FinalDest = DestPathBox->GetText().ToString().IsEmpty() ? TEXT("/Game/BatchImport") : DestPathBox->GetText().ToString();
+    FString TexSubFolderName = TexSubFolderNameBox->GetText().ToString();
+ 
+    AddLog(TEXT("--- 开始执行层级递归导入 ---"), FLinearColor::White);
+    IFileManager& FM = IFileManager::Get();
+    
+    TFunction<void(const FString&)> RecursiveScan;
+    RecursiveScan = [&](const FString& CurrentDirPath) {
+        TArray<FString> LocalFiles;
+        FM.FindFiles(LocalFiles, *(CurrentDirPath / TEXT("*")), true, false);
+ 
+        FString RelativePath = CurrentDirPath == SourceFolderPath ? TEXT("") : CurrentDirPath.RightChop(SourceFolderPath.Len() + 1);
+ 
+        for (const FString& FileName : LocalFiles) {
+            FString Ext = FPaths::GetExtension(FileName).ToLower();
+            if (Ext == TEXT("fbx") || Ext == TEXT("obj")) {
+                FImportFolderTask Task;
+                Task.MeshPath = CurrentDirPath / FileName;
+                Task.FolderName = RelativePath.IsEmpty() ? FPaths::GetBaseFilename(SourceFolderPath) : RelativePath;
+                
+                FString TexSearchPath = TexSubFolderName.IsEmpty() ? CurrentDirPath : (CurrentDirPath / TexSubFolderName);
+ 
+                TArray<FString> TexFiles;
+                FM.FindFiles(TexFiles, *(TexSearchPath / TEXT("*")), true, false);
+                for (const FString& TF : TexFiles) {
+                    FString TExt = FPaths::GetExtension(TF).ToLower();
+                    if (TExt == TEXT("png") || TExt == TEXT("tga") || TExt == TEXT("jpg")) {
+                        Task.TextureMap.Add(TF, TexSearchPath / TF);
+                    }
+                }
+                ExecuteImportTask(Task, FinalDest);
+            }
+        }
+ 
+        TArray<FString> SubDirs;
+        FM.FindFiles(SubDirs, *(CurrentDirPath / TEXT("*")), false, true);
+        for (const FString& SubDirName : SubDirs) {
+            // 排除指定的贴图子目录，避免扫描其内部的模型
+            if (!TexSubFolderName.IsEmpty() && SubDirName.Equals(TexSubFolderName, ESearchCase::IgnoreCase)) continue;
+            RecursiveScan(CurrentDirPath / SubDirName);
+        }
+    };
+ 
+    RecursiveScan(SourceFolderPath);
+    AddLog(TEXT("--- 所有导入任务已结束 ---"), FLinearColor::White);
+    return FReply::Handled();
+}
+ 
+void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, const FString& BaseDestPath)
+{
+    IAssetTools& AT = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
+    FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+    
+    FString FinalPath = BaseDestPath / Task.FolderName;
+    FString MeshBaseName = FPaths::GetBaseFilename(Task.MeshPath);
+    FString MeshPrefix = MeshBaseName + TEXT("_");
+ 
+    // 1. 模型导入配置
+    UFbxFactory* Fact = NewObject<UFbxFactory>();
+    Fact->ImportUI->MeshTypeToImport = FBXIT_StaticMesh;
+    Fact->ImportUI->bImportMaterials = Fact->ImportUI->bImportTextures = false;
+    Fact->ImportUI->StaticMeshImportData->bTransformVertexToAbsolute = true;
+    Fact->ImportUI->StaticMeshImportData->bConvertSceneUnit = true;
+    Fact->ImportUI->StaticMeshImportData->ImportUniformScale = 1.0f;
+ 
+    UAssetImportTask* MTask = NewObject<UAssetImportTask>();
+    MTask->Filename = Task.MeshPath; 
+    MTask->DestinationPath = FinalPath;
+    MTask->Factory = Fact; 
+    MTask->bAutomated = true;
+    AT.ImportAssetTasks({ MTask });
+ 
+    // 2. 贴图导入
+    TArray<FString> TPaths; Task.TextureMap.GenerateValueArray(TPaths);
+    if (TPaths.Num() > 0) AT.ImportAssets(TPaths, FinalPath, nullptr);
+    ARM.Get().ScanPathsSynchronous({ FinalPath });
+ 
+    // 3. 获取并过滤当前任务生成的 Mesh
+    TArray<FAssetData> MeshDatas; ARM.Get().GetAssetsByPath(FName(*FinalPath), MeshDatas);
+    TArray<UStaticMesh*> Meshes;
+    for (const FAssetData& Ad : MeshDatas) {
+        UStaticMesh* M = Cast<UStaticMesh>(Ad.GetAsset());
+        // 确保是该文件生成的 Mesh，防止被 FinalPath 下的其他模型污染
+        if (M && M->GetName().Contains(MeshBaseName)) Meshes.Add(M);
+    }
+    if (Meshes.Num() == 0) return;
+ 
+    // 4. 分析贴图并创建材质
+    TMap<FString, UMaterial*> CreatedMaterials;
+    UMaterial* SingleFallbackMat = nullptr;
+    int32 BaseColorCount = 0;
+    TArray<FString> BaseColorFileNames;
+    for (auto& TP : Task.TextureMap) {
+        FString LN = TP.Key.ToLower();
+        if (LN.Contains(TEXT("base")) || LN.Contains(TEXT("albedo")) || LN.Contains(TEXT("col"))) {
+            BaseColorFileNames.Add(FPaths::GetBaseFilename(TP.Key));
+            BaseColorCount++;
+        }
+    }
+ 
+    for (const FString& BCName : BaseColorFileNames) {
+        UMaterialFactoryNew* MF = NewObject<UMaterialFactoryNew>();
+        UMaterial* NewMat = Cast<UMaterial>(AT.CreateAsset(TEXT("M_") + BCName, FinalPath, UMaterial::StaticClass(), MF));
+        if (!NewMat) continue;
+        if (!SingleFallbackMat) SingleFallbackMat = NewMat;
+        CreatedMaterials.Add(BCName, NewMat);
+ 
+        int32 YPos = 0;
+        TMap<FString, UTexture2D*> LocalMatch;
+        for (auto& TP : Task.TextureMap) {
+            FString TN = FPaths::GetBaseFilename(TP.Key);
+            // 多贴图集时执行前缀过滤
+            if (BaseColorCount > 1 && !TN.Contains(BCName.Replace(TEXT("_BaseColor"), TEXT(""), ESearchCase::IgnoreCase))) continue;
+            UTexture2D* Tex = LoadObject<UTexture2D>(nullptr, *(FinalPath / TN + TEXT(".") + TN));
+            if (!Tex) continue;
+ 
+            FString L = TN.ToLower();
+            if (L.Contains(TEXT("base")) || L.Contains(TEXT("albedo"))) LocalMatch.Add(TEXT("BC"), Tex);
+            else if (L.Contains(TEXT("normal"))) LocalMatch.Add(TEXT("N"), Tex);
+            else if (L.Contains(TEXT("rough")) || L.Contains(TEXT("metal")) || L.Contains(TEXT("occ")) || L.Contains(TEXT("ao"))) LocalMatch.Add(TEXT("ORM"), Tex);
+            else if (L.Contains(TEXT("opacity"))) LocalMatch.Add(TEXT("OP"), Tex);
+            else if (L.Contains(TEXT("specular"))) LocalMatch.Add(TEXT("SP"), Tex);
+            else if (L.Contains(TEXT("emissive"))) LocalMatch.Add(TEXT("EM"), Tex);
+            else if (L.Contains(TEXT("wpo"))) LocalMatch.Add(TEXT("WPO"), Tex);
+        }
+ 
+        if (LocalMatch.Contains(TEXT("OP"))) NewMat->BlendMode = BLEND_Translucent;
+        for (auto& Pair : LocalMatch) {
+            UTexture2D* T = Pair.Value; FString K = Pair.Key;
+            bool bN = (K == TEXT("N")), bM = (K == TEXT("ORM") || K == TEXT("OP") || K == TEXT("SP"));
+            T->CompressionSettings = bN ? TC_Normalmap : (bM ? TC_Masks : TC_Default);
+            T->SRGB = !bN && !bM; T->PostEditChange();
+            auto* Node = Cast<UMaterialExpressionTextureSample>(UMaterialEditingLibrary::CreateMaterialExpression(NewMat, UMaterialExpressionTextureSample::StaticClass()));
+            Node->Texture = T; Node->MaterialExpressionEditorY = YPos; YPos += 300;
+            Node->SamplerType = bN ? SAMPLERTYPE_Normal : (bM ? SAMPLERTYPE_Masks : SAMPLERTYPE_Color);
+            if (K == TEXT("BC")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_BaseColor);
+            else if (K == TEXT("N")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_Normal);
+            else if (K == TEXT("OP")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_Opacity);
+            else if (K == TEXT("SP")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_Specular);
+            else if (K == TEXT("EM")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_EmissiveColor);
+            else if (K == TEXT("WPO")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_WorldPositionOffset);
+            else if (K == TEXT("ORM")) {
+                struct FSort { int32 P; EMaterialProperty Prop; bool operator<(const FSort& O) const { return P < O.P; } };
+                TArray<FSort> S; FString LN = T->GetName().ToLower();
+                auto AddS = [&](TArray<FString> Ks, EMaterialProperty P){ for(auto& k : Ks){ int32 i = LN.Find(k); if(i != -1){ S.Add({i, P}); break; } } };
+                AddS({TEXT("occlusion"), TEXT("ao"), TEXT("occ")}, MP_AmbientOcclusion);
+                AddS({TEXT("roughness"), TEXT("rough")}, MP_Roughness);
+                AddS({TEXT("metallic"), TEXT("metal")}, MP_Metallic);
+                S.Sort(); FString P[] = { TEXT("R"), TEXT("G"), TEXT("B") };
+                for (int32 i=0; i<S.Num() && i<3; ++i) UMaterialEditingLibrary::ConnectMaterialProperty(Node, P[i], S[i].Prop);
+            }
+        }
+        UMaterialEditingLibrary::RecompileMaterial(NewMat);
+    }
+ 
+    // 5. 分配材质与汇总日志
+    bool bHasNamingError = false;
+    for (UStaticMesh* SM : Meshes) {
+        FString Clean = SM->GetName().StartsWith(MeshPrefix) ? SM->GetName().RightChop(MeshPrefix.Len()) : SM->GetName();
+        bool bAssigned = false;
+        for (auto& MatPair : CreatedMaterials) {
+            if (MatPair.Key.Contains(Clean, ESearchCase::IgnoreCase) || Clean.Contains(MatPair.Key, ESearchCase::IgnoreCase)) {
+                for (int32 i=0; i<SM->GetStaticMaterials().Num(); ++i) SM->SetMaterial(i, MatPair.Value);
+                SM->PostEditChange(); bAssigned = true; break;
+            }
+        }
+        if (!bAssigned) {
+            if (BaseColorCount == 1 && SingleFallbackMat) {
+                for (int32 i=0; i<SM->GetStaticMaterials().Num(); ++i) SM->SetMaterial(i, SingleFallbackMat);
+                SM->PostEditChange();
+                AddLog(FString::Printf(TEXT("模型 [%s] 已检测到拆分出的单独模型中部分或全部模型命名不规范，且现有纹理贴图仅能生成一个材质球。所以将此唯一材质球赋予全部模型。"), *SM->GetName()), FLinearColor::Yellow);
+            } else bHasNamingError = true;
+        }
+    }
+ 
+    if (bHasNamingError) {
+        AddLog(FString::Printf(TEXT("错误：模型 [%s] (路径:%s) 无法自动匹配贴图！已生成材质但未赋予。"), *MeshBaseName, *FinalPath), FLinearColor::Red);
+    }
+}﻿#pragma once
+
+#include "CoreMinimal.h"
+#include "Slate_Assist/FIconStyle.h" // 引入化妆间，为了拿样式名字
+#include "Framework/Commands/Commands.h" // 引入命令基类
+
+
+class FOpenToolsBox_Command : public TCommands<FOpenToolsBox_Command>
+{
+public:
+	FOpenToolsBox_Command()
+	: TCommands<FOpenToolsBox_Command>
+	(
+		TEXT("ToolsBox"), // 按钮的“姓”，很重要，要跟图标匹配
+		NSLOCTEXT("Contexts", "SuBaseToolsBox_PluginCommand", "SuBaseToolsBox_PluginCommand"), // 在设置里显示的组名
+		NAME_None,
+		FIconStyle::Get_IconsName()
+	) {}
+
+	// 必须重写的函数：真正登记按钮的地方
+	virtual void RegisterCommands() override;
+
+	// 定义一个“按钮指针”，以后代码里就靠这个变量来找这个按钮
+	TSharedPtr<FUICommandInfo> ToolsBox_CommandInfo;
+};#pragma once
+
+
+#include "Modules/ModuleManager.h"
+#include "Widgets/Docking/SDockTab.h"
+
+class FUICommandList;
+
+class FToolsBoxModule : public IModuleInterface
+{
+public:
+	virtual void StartupModule() override; // 插件启动时的入口
+	virtual void ShutdownModule() override; // 插件关闭时的扫尾
+
+	void RegisterMenu(); 
+	TSharedRef<SDockTab> OnSpawnToolsBoxTab(const FSpawnTabArgs& SpawnTabArgs); // 窗口怎么画
+	void OnButtonClick();
+
+
+	
+
+	TSharedPtr<FUICommandList> OpenToolsBoxDockTab_CommandList; // 【插线板】把按钮点击映射到函数上
+
+
+	//生成工具详情按钮
+	//第二个参数传入的是要生成的对应的Tool面板类
+	TSharedRef<SDockTab> OnSpawnToolTab(const FSpawnTabArgs& SpawnTabArgs, TFunction<TSharedRef<SWidget>()> NewToolTab);
+	
+};
+﻿#pragma once
+#include "Styling/ISlateStyle.h"
+#include "UObject/NameTypes.h"
+
+class FIconStyle
+{
+public:
+	static void Initialize();
+	static void Shutdown();   
+	static FName Get_IconsName();
+	static FName Get_ImagesName();
+	static const ISlateStyle& Get_Icons();
+	static const ISlateStyle& Get_Images();
+ 
+private:
+	static TSharedPtr<FSlateStyleSet> Icons;
+	static TSharedPtr<FSlateStyleSet> Images;
+};﻿#pragma once
+#include "Templates/SharedPointer.h"
+
+class SWidget;
+
+class SlateAssistBuildFunctionLibrary
+{
+public:
+
+	//这个函数用来循环往工具箱滚动框添加预设工具块
+static TSharedRef<SWidget> MakeToolBlock(const FText& ToolName, const FText& Description, const FName& IconName,const FName& TabID);
+	
+};
+﻿#pragma once
+
+#define LOCTEXT_NAMESPACE "Tools"
+#include "Internationalization/Text.h"
+#include "UObject/NameTypes.h"
+#include "Widgets/SWidget.h"
+
+struct FTool
+{
+
+	FName ToolName;
+	FText ToolDescription;
+	FName ToolImage;
+	FName ToolTabID; 
+    
+
+	TFunction<TSharedRef<SWidget>()> WidgetFactory;
+ 
+	FTool(FName InName, const FText& InDesc, FName InImage, FName InTabID, TFunction<TSharedRef<SWidget>()> InFactory)
+		: ToolName(InName), ToolDescription(InDesc), ToolImage(InImage), ToolTabID(InTabID), WidgetFactory(InFactory) {}
+	
+	bool operator==(const FTool& Other) const
+	{
+		return ToolName == Other.ToolName;
+	}
+};
+
+
+FORCEINLINE uint32 GetTypeHash(const FTool& Thing)
+{
+	return GetTypeHash(Thing.ToolName);
+}
+
+
+class Tools
+{
+
+	
+public:
+
+	static const TSet<FTool> Get_ToolsData();
+	
+
+
+	
+};
+
+
+#undef LOCTEXT_NAMESPACE﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Widgets/SCompoundWidget.h"
+#include "Widgets/Text/STextBlock.h"
+
+
+class  SCleaner : public SCompoundWidget
+{
+public:
+	
+	
+	SLATE_BEGIN_ARGS(SCleaner) {}
+	SLATE_END_ARGS()
+	SCleaner();
+	
+	void Construct(const FArguments& InArgs)
+	{
+		ChildSlot
+		[
+			SNew(STextBlock).Text(NSLOCTEXT("SCleaner", "这是清理工具的独立界面", "这是清理工具的独立界面"))
+			// 在这里编写该工具复杂的 UI 排布
+		];
+	}
+	
+
+};
+﻿#pragma once
+
+#include "CoreMinimal.h"
+#include "Widgets/SCompoundWidget.h"
+#include "Widgets/DeclarativeSyntaxSupport.h"
+
+// 前向声明，优化编译速度
+class SEditableTextBox;
+class SMultiLineEditableText;
+class SScrollBox;
+class FRichTextLayoutMarshaller;
+
+struct FImportFolderTask
+{
+	FString FolderName;
+	FString MeshPath;
+	TMap<FString, FString> TextureMap;
+};
+
+class SImport_MM : public SCompoundWidget
+{
+public:
+	SLATE_BEGIN_ARGS(SImport_MM) {}
+	SLATE_END_ARGS()
+
+	/** 构建 Slate 界面 */
+	void Construct(const FArguments& InArgs);
+
+private:
+	/** UI 事件回调 */
+	FReply OnBrowseSourceClicked();
+	FReply OnBrowseDestClicked();
+	FReply OnStartImportClicked();
+	FReply OnClearLog();
+    
+	/** 
+	 * 向日志框添加信息
+	 * @param Message 日志内容
+	 * @param Color   颜色（支持富文本渲染）
+	 */
+	void AddLog(const FString& Message, FLinearColor Color);
+    
+	/** 执行具体的 FBX/OBJ 导入逻辑 */
+	void ExecuteImportTask(const FImportFolderTask& Task, const FString& BaseDestPath);
+
+	/** 路径数据 */
+	FString SourceFolderPath;
+	FString RelativeDestPath;
+
+	/** UI 组件指针 */
+	TSharedPtr<SEditableTextBox> SourcePathBox;
+	TSharedPtr<SEditableTextBox> DestPathBox;
+	TSharedPtr<SEditableTextBox> TexSubFolderNameBox; // 已修正为单行文本框指针
+    
+	TSharedPtr<SMultiLineEditableText> LogBox;
+	TSharedPtr<SScrollBox> LogScrollBox;
+
+	/** 
+	 * 富文本处理器：用于在 SMultiLineEditableText 中显示颜色标签 
+	 * 命名已修改为 MarshallerPtr 以避免隐藏局部变量 (C4458)
+	 */
+	TSharedPtr<FRichTextLayoutMarshaller> RichTextMarshallerPtr;
+};

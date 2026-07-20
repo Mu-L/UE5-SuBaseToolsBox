@@ -1,6 +1,8 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/StaticMesh.h"
+#include "Materials/Material.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 
@@ -42,6 +44,23 @@ private:
     
 	/** 执行具体的 FBX/OBJ 导入逻辑 */
 	void ExecuteImportTask(const FImportFolderTask& Task, const FString& BaseDestPath);
+
+	// 1. 执行模型导入
+	void PerformMeshImport(const FImportFolderTask& Task, const FString& FinalPath);
+ 
+	// 2. 执行贴图导入
+	void PerformTextureImport(const FImportFolderTask& Task, const FString& FinalPath);
+ 
+	// 3. 收集并过滤导入后的 StaticMesh
+	TArray<UStaticMesh*> CollectImportedMeshes(const FString& FinalPath, const FString& MeshBaseName);
+ 
+	// 4. 创建并连接材质节点
+	void GenerateMaterials(const FImportFolderTask& Task, const FString& FinalPath, 
+		TMap<FString, UMaterial*>& OutCreatedMaterials, UMaterial*& OutSingleFallbackMat, int32& OutBaseColorCount);
+ 
+	// 5. 将材质分配给模型
+	void ApplyMaterialsToMeshes(const TArray<UStaticMesh*>& Meshes, const TMap<FString, UMaterial*>& CreatedMaterials, 
+		int32 BaseColorCount, UMaterial* SingleFallbackMat, const FString& MeshBaseName, const FString& FinalPath);
 
 	/** 路径数据 */
 	FString SourceFolderPath;

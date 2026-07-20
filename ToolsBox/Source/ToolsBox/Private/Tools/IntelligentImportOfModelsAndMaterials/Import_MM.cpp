@@ -203,14 +203,34 @@ FReply SImport_MM::OnStartImportClicked()
  
 void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, const FString& BaseDestPath)
 {
-    IAssetTools& AT = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
-    FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-    
-    FString FinalPath = BaseDestPath / Task.FolderName;
-    FString MeshBaseName = FPaths::GetBaseFilename(Task.MeshPath);
-    FString MeshPrefix = MeshBaseName + TEXT("_");
+    const FString FinalPath = BaseDestPath / Task.FolderName;
+    const FString MeshBaseName = FPaths::GetBaseFilename(Task.MeshPath);
  
-    // 1. 模型导入配置
+    // 1: 导入模型
+    PerformMeshImport(Task, FinalPath);
+ 
+    // 2: 导入贴图
+    PerformTextureImport(Task, FinalPath);
+ 
+    // 3: 获取导入的模型对象
+    TArray<UStaticMesh*> Meshes = CollectImportedMeshes(FinalPath, MeshBaseName);
+    if (Meshes.Num() == 0) return;
+ 
+    // 4: 分析贴图并创建材质
+    TMap<FString, UMaterial*> CreatedMaterials;
+    UMaterial* SingleFallbackMat = nullptr;
+    int32 BaseColorCount = 0;
+    GenerateMaterials(Task, FinalPath, CreatedMaterials, SingleFallbackMat, BaseColorCount);
+ 
+    // 5: 分配材质
+    ApplyMaterialsToMeshes(Meshes, CreatedMaterials, BaseColorCount, SingleFallbackMat, MeshBaseName, FinalPath);
+}
+
+
+void SImport_MM::PerformMeshImport(const FImportFolderTask& Task, const FString& FinalPath)
+{
+    IAssetTools& AT = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
+    
     UFbxFactory* Fact = NewObject<UFbxFactory>();
     Fact->ImportUI->MeshTypeToImport = FBXIT_StaticMesh;
     Fact->ImportUI->bImportMaterials = Fact->ImportUI->bImportTextures = false;
@@ -223,49 +243,80 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, const FString&
     MTask->DestinationPath = FinalPath;
     MTask->Factory = Fact; 
     MTask->bAutomated = true;
+    
     AT.ImportAssetTasks({ MTask });
+}
  
-    // 2. 贴图导入
-    TArray<FString> TPaths; Task.TextureMap.GenerateValueArray(TPaths);
-    if (TPaths.Num() > 0) AT.ImportAssets(TPaths, FinalPath, nullptr);
-    ARM.Get().ScanPathsSynchronous({ FinalPath });
+void SImport_MM::PerformTextureImport(const FImportFolderTask& Task, const FString& FinalPath)
+{
+    IAssetTools& AT = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
+    FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
  
-    // 3. 获取并过滤当前任务生成的 Mesh
-    TArray<FAssetData> MeshDatas; ARM.Get().GetAssetsByPath(FName(*FinalPath), MeshDatas);
-    TArray<UStaticMesh*> Meshes;
-    for (const FAssetData& Ad : MeshDatas) {
-        UStaticMesh* M = Cast<UStaticMesh>(Ad.GetAsset());
-        // 确保是该文件生成的 Mesh，防止被 FinalPath 下的其他模型污染
-        if (M && M->GetName().Contains(MeshBaseName)) Meshes.Add(M);
+    TArray<FString> TPaths; 
+    Task.TextureMap.GenerateValueArray(TPaths);
+    
+    if (TPaths.Num() > 0)
+    {
+        AT.ImportAssets(TPaths, FinalPath, nullptr);
     }
-    if (Meshes.Num() == 0) return;
+    ARM.Get().ScanPathsSynchronous({ FinalPath });
+}
  
-    // 4. 分析贴图并创建材质
-    TMap<FString, UMaterial*> CreatedMaterials;
-    UMaterial* SingleFallbackMat = nullptr;
-    int32 BaseColorCount = 0;
+TArray<UStaticMesh*> SImport_MM::CollectImportedMeshes(const FString& FinalPath, const FString& MeshBaseName)
+{
+    FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+    TArray<FAssetData> MeshDatas; 
+    ARM.Get().GetAssetsByPath(FName(*FinalPath), MeshDatas);
+    
+    TArray<UStaticMesh*> Meshes;
+    for (const FAssetData& Ad : MeshDatas) 
+    {
+        UStaticMesh* M = Cast<UStaticMesh>(Ad.GetAsset());
+        if (M && M->GetName().Contains(MeshBaseName)) 
+        {
+            Meshes.Add(M);
+        }
+    }
+    return Meshes;
+}
+ 
+void SImport_MM::GenerateMaterials(const FImportFolderTask& Task, const FString& FinalPath, 
+    TMap<FString, UMaterial*>& OutCreatedMaterials, UMaterial*& OutSingleFallbackMat, int32& OutBaseColorCount)
+{
+    IAssetTools& AT = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
+    OutBaseColorCount = 0;
     TArray<FString> BaseColorFileNames;
-    for (auto& TP : Task.TextureMap) {
+ 
+    // 1. 统计 BaseColor
+    for (auto& TP : Task.TextureMap) 
+    {
         FString LN = TP.Key.ToLower();
-        if (LN.Contains(TEXT("base")) || LN.Contains(TEXT("albedo")) || LN.Contains(TEXT("col"))) {
+        if (LN.Contains(TEXT("base")) || LN.Contains(TEXT("albedo")) || LN.Contains(TEXT("col"))) 
+        {
             BaseColorFileNames.Add(FPaths::GetBaseFilename(TP.Key));
-            BaseColorCount++;
+            OutBaseColorCount++;
         }
     }
  
-    for (const FString& BCName : BaseColorFileNames) {
+    // 2. 循环创建材质
+    for (const FString& BCName : BaseColorFileNames) 
+    {
         UMaterialFactoryNew* MF = NewObject<UMaterialFactoryNew>();
         UMaterial* NewMat = Cast<UMaterial>(AT.CreateAsset(TEXT("M_") + BCName, FinalPath, UMaterial::StaticClass(), MF));
         if (!NewMat) continue;
-        if (!SingleFallbackMat) SingleFallbackMat = NewMat;
-        CreatedMaterials.Add(BCName, NewMat);
+ 
+        if (!OutSingleFallbackMat) OutSingleFallbackMat = NewMat;
+        OutCreatedMaterials.Add(BCName, NewMat);
  
         int32 YPos = 0;
         TMap<FString, UTexture2D*> LocalMatch;
-        for (auto& TP : Task.TextureMap) {
+ 
+        // 匹配当前材质的相关贴图
+        for (auto& TP : Task.TextureMap) 
+        {
             FString TN = FPaths::GetBaseFilename(TP.Key);
-            // 多贴图集时执行前缀过滤
-            if (BaseColorCount > 1 && !TN.Contains(BCName.Replace(TEXT("_BaseColor"), TEXT(""), ESearchCase::IgnoreCase))) continue;
+            if (OutBaseColorCount > 1 && !TN.Contains(BCName.Replace(TEXT("_BaseColor"), TEXT(""), ESearchCase::IgnoreCase))) continue;
+            
             UTexture2D* Tex = LoadObject<UTexture2D>(nullptr, *(FinalPath / TN + TEXT(".") + TN));
             if (!Tex) continue;
  
@@ -279,56 +330,83 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, const FString&
             else if (L.Contains(TEXT("wpo"))) LocalMatch.Add(TEXT("WPO"), Tex);
         }
  
+        // 连接材质属性
         if (LocalMatch.Contains(TEXT("OP"))) NewMat->BlendMode = BLEND_Translucent;
-        for (auto& Pair : LocalMatch) {
+        for (auto& Pair : LocalMatch) 
+        {
             UTexture2D* T = Pair.Value; FString K = Pair.Key;
             bool bN = (K == TEXT("N")), bM = (K == TEXT("ORM") || K == TEXT("OP") || K == TEXT("SP"));
             T->CompressionSettings = bN ? TC_Normalmap : (bM ? TC_Masks : TC_Default);
             T->SRGB = !bN && !bM; T->PostEditChange();
+ 
             auto* Node = Cast<UMaterialExpressionTextureSample>(UMaterialEditingLibrary::CreateMaterialExpression(NewMat, UMaterialExpressionTextureSample::StaticClass()));
             Node->Texture = T; Node->MaterialExpressionEditorY = YPos; YPos += 300;
             Node->SamplerType = bN ? SAMPLERTYPE_Normal : (bM ? SAMPLERTYPE_Masks : SAMPLERTYPE_Color);
+ 
             if (K == TEXT("BC")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_BaseColor);
             else if (K == TEXT("N")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_Normal);
             else if (K == TEXT("OP")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_Opacity);
             else if (K == TEXT("SP")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_Specular);
             else if (K == TEXT("EM")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_EmissiveColor);
             else if (K == TEXT("WPO")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_WorldPositionOffset);
-            else if (K == TEXT("ORM")) {
+            else if (K == TEXT("ORM")) 
+            {
                 struct FSort { int32 P; EMaterialProperty Prop; bool operator<(const FSort& O) const { return P < O.P; } };
                 TArray<FSort> S; FString LN = T->GetName().ToLower();
                 auto AddS = [&](TArray<FString> Ks, EMaterialProperty P){ for(auto& k : Ks){ int32 i = LN.Find(k); if(i != -1){ S.Add({i, P}); break; } } };
                 AddS({TEXT("occlusion"), TEXT("ao"), TEXT("occ")}, MP_AmbientOcclusion);
                 AddS({TEXT("roughness"), TEXT("rough")}, MP_Roughness);
                 AddS({TEXT("metallic"), TEXT("metal")}, MP_Metallic);
-                S.Sort(); FString P[] = { TEXT("R"), TEXT("G"), TEXT("B") };
+                S.Sort(); 
+                FString P[] = { TEXT("R"), TEXT("G"), TEXT("B") };
                 for (int32 i=0; i<S.Num() && i<3; ++i) UMaterialEditingLibrary::ConnectMaterialProperty(Node, P[i], S[i].Prop);
             }
         }
         UMaterialEditingLibrary::RecompileMaterial(NewMat);
     }
+}
  
-    // 5. 分配材质与汇总日志
+void SImport_MM::ApplyMaterialsToMeshes(const TArray<UStaticMesh*>& Meshes, const TMap<FString, UMaterial*>& CreatedMaterials, 
+    int32 BaseColorCount, UMaterial* SingleFallbackMat, const FString& MeshBaseName, const FString& FinalPath)
+{
+    const FString MeshPrefix = MeshBaseName + TEXT("_");
     bool bHasNamingError = false;
-    for (UStaticMesh* SM : Meshes) {
+ 
+    for (UStaticMesh* SM : Meshes) 
+    {
         FString Clean = SM->GetName().StartsWith(MeshPrefix) ? SM->GetName().RightChop(MeshPrefix.Len()) : SM->GetName();
         bool bAssigned = false;
-        for (auto& MatPair : CreatedMaterials) {
-            if (MatPair.Key.Contains(Clean, ESearchCase::IgnoreCase) || Clean.Contains(MatPair.Key, ESearchCase::IgnoreCase)) {
+ 
+        for (auto& MatPair : CreatedMaterials) 
+        {
+            if (MatPair.Key.Contains(Clean, ESearchCase::IgnoreCase) || Clean.Contains(MatPair.Key, ESearchCase::IgnoreCase)) 
+            {
                 for (int32 i=0; i<SM->GetStaticMaterials().Num(); ++i) SM->SetMaterial(i, MatPair.Value);
-                SM->PostEditChange(); bAssigned = true; break;
+                SM->PostEditChange(); 
+                bAssigned = true; 
+                break;
             }
         }
-        if (!bAssigned) {
-            if (BaseColorCount == 1 && SingleFallbackMat) {
+ 
+        if (!bAssigned) 
+        {
+            if (BaseColorCount == 1 && SingleFallbackMat) 
+            {
                 for (int32 i=0; i<SM->GetStaticMaterials().Num(); ++i) SM->SetMaterial(i, SingleFallbackMat);
                 SM->PostEditChange();
-                AddLog(FString::Printf(TEXT("模型 [%s] 已检测到拆分出的单独模型中部分或全部模型命名不规范，且现有纹理贴图仅能生成一个材质球。所以将此唯一材质球赋予全部模型。"), *SM->GetName()), FLinearColor::Yellow);
-            } else bHasNamingError = true;
+                AddLog(FString::Printf(TEXT("模型 [%s] 已检测到拆分出的单独模型中部分或全部模型命名不规范，且现有纹理贴图仅能生成一个材质球。已赋予唯一材质。"), *SM->GetName()), FLinearColor::Yellow);
+            } 
+            else 
+            {
+                bHasNamingError = true;
+            }
         }
     }
  
-    if (bHasNamingError) {
+    if (bHasNamingError) 
+    {
         AddLog(FString::Printf(TEXT("错误：模型 [%s] (路径:%s) 无法自动匹配贴图！已生成材质但未赋予。"), *MeshBaseName, *FinalPath), FLinearColor::Red);
     }
 }
+
+
