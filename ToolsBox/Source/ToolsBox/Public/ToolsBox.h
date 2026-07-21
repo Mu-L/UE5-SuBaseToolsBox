@@ -9,17 +9,17 @@ class FUICommandList;
 class FToolsBoxModule : public IModuleInterface
 {
 public:
-	virtual void StartupModule() override; // 插件启动时的入口
-	virtual void ShutdownModule() override; // 插件关闭时的扫尾
+	virtual void StartupModule() override; 
+	virtual void ShutdownModule() override;
 
 	void RegisterMenu(); 
-	TSharedRef<SDockTab> OnSpawnToolsBoxTab(const FSpawnTabArgs& SpawnTabArgs); // 窗口怎么画
+	
 	void OnButtonClick();
 
 
-	
+	TSharedRef<SDockTab> OnSpawnToolsBoxTab(const FSpawnTabArgs& SpawnTabArgs); 
 
-	TSharedPtr<FUICommandList> OpenToolsBoxDockTab_CommandList; // 【插线板】把按钮点击映射到函数上
+	TSharedPtr<FUICommandList> OpenToolsBoxDockTab_CommandList; 
 
 
 	//生成工具详情按钮

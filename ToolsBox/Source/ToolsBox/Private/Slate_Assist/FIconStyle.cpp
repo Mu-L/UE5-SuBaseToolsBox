@@ -22,6 +22,16 @@ void FIconStyle::Initialize()
 			new FSlateImageBrush(Images->RootToContentDir(TEXT("Icon_Anon"), TEXT(".png")), FVector2D(254.0f, 254.0f)));
 		Images->Set("ToolsBox.Image_Anon_1K",
 			new FSlateImageBrush(Images->RootToContentDir(TEXT("Image_Anon_1K"), TEXT(".png")), FVector2D(1125.0f, 1119.0f)));
+		Images->Set("Info.Info_Bilibili",
+			new FSlateImageBrush(Images->RootToContentDir(TEXT("Info_Bilibili"), TEXT(".png")), FVector2D(947, 116)));
+
+		Images->Set("Info.Info_github",
+			new FSlateImageBrush(Images->RootToContentDir(TEXT("Image_GitHub"), TEXT(".jpeg")), FVector2D(947, 116)));
+
+
+		Images->Set("Info.Info_zf",
+			new FSlateImageBrush(Images->RootToContentDir(TEXT("Image_zf"), TEXT(".png")), FVector2D(821, 605)));
+		
 		FSlateStyleRegistry::RegisterSlateStyle(*Images);
 	}
  

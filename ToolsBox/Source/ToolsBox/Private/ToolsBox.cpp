@@ -1,6 +1,7 @@
 #include "ToolsBox.h"
 #include "ToolMenus.h"
 #include "OpenToolsBox_Command.h"
+#include "Framework/Application/SlateApplication.h"
 #include "Framework/Commands/UICommandList.h" // 必须包含这个才能用 MapAction
 #include "Slate_Assist/FIconStyle.h"
 #include "Slate_Assist/SlateAssistBuildFunctionLibrary.h"
@@ -16,13 +17,11 @@
 
 void FToolsBoxModule::StartupModule()
 {
-	// 1. 开启化妆间（加载图标）
+
 	FIconStyle::Initialize();
-	
-	// 2. 登记身份证（注册按钮名）
+
 	FOpenToolsBox_Command::Register();
 
-	// 3. 准备插线板，并把按钮和 OnButtonClick 函数连接起来
 	OpenToolsBoxDockTab_CommandList = MakeShareable(new FUICommandList);
 	OpenToolsBoxDockTab_CommandList->MapAction
 	(
@@ -31,13 +30,13 @@ void FToolsBoxModule::StartupModule()
 		FCanExecuteAction()
 	);
 
-	// 1. 注册主工具箱
+
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner("ToolsBox", FOnSpawnTab::CreateRaw(this, &FToolsBoxModule::OnSpawnToolsBoxTab))
 		.SetDisplayName(LOCTEXT("ToolsBox", "工具箱"))
 		.SetMenuType(ETabSpawnerMenuType::Hidden)
 		.SetIcon(FSlateIcon(FIconStyle::Get_IconsName(), "ToolsBox.Icon_Anon"));
  
-	// 2. 在启动时一次性注册所有子工具窗口
+	//在启动时一次性注册所有子工具窗口
 	for (const FTool& Tool : Tools::Get_ToolsData())
 	{
 		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(
@@ -55,19 +54,19 @@ void FToolsBoxModule::StartupModule()
 //这个函数负责将按钮渲染到对应位置
 void FToolsBoxModule::RegisterMenu()
 {
-	// 锁定修改权
+	
 	FToolMenuOwnerScoped OwnerScoped(this);
 	
-	// 找到工具栏上放“运行”按钮那一横行
+	
 	UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar.PlayToolBar");
 	
-	// 开辟一个小分组
+	
 	FToolMenuSection& Section = Menu->FindOrAddSection("SuBase_LevelEditorToolBar");
 	
-	// 把按钮画上去
+	
 	FToolMenuEntry& Entry = Section.AddEntry(FToolMenuEntry::InitToolBarButton(FOpenToolsBox_Command::Get().ToolsBox_CommandInfo));
 	
-	// 【重点】把插线板给按钮，点击才有反应！
+	
 	Entry.SetCommandList(OpenToolsBoxDockTab_CommandList);
 }
 
@@ -80,8 +79,7 @@ TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& Sp
     // 提前 AssignNew，这样我们在定义 RefreshList 时 ListContainer 已经有值了
     SAssignNew(ListContainer, SVerticalBox);
  
-    // 【重要修复】：RefreshList 必须捕获 ListContainer 的拷贝 (TSharedPtr)
-    // 之前使用 [&ListContainer] 捕获的是局部变量的地址，函数执行完该地址就失效了，导致输入时崩溃。
+
     auto RefreshList = [ListContainer](FString SearchText = TEXT(""))
     {
         if (!ListContainer.IsValid()) return;
@@ -124,20 +122,35 @@ TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& Sp
             .VAlign(VAlign_Center)
             [
                 SNew(SSearchBox)
-                .HintText(NSLOCTEXT("ToolsBox", "SearchHint", "输入关键词搜索工具..."))
-                // 这里捕获 RefreshList 这个 lambda。RefreshList 内部已经安全持有 ListContainer。
+                .HintText(NSLOCTEXT("ToolsBox", "SearchHint", "窝里giao"))
                 .OnTextChanged_Lambda([RefreshList](const FText& InText) {
                     RefreshList(InText.ToString()); 
                 })
             ]
+
+	        + SHorizontalBox::Slot()
+        	.AutoWidth()
+			.Padding(2.0f, 0, 2.0f, 0)
+	        [
+		        SNew(STextBlock)
+		        .Text(LOCTEXT("打赏", "打赏"))
+	        ]
  
             + SHorizontalBox::Slot()
             .AutoWidth()
             .Padding(8.0f, 0, 0, 0)
             [
+            	
                 SNew(SButton)
                 .ButtonStyle(FAppStyle::Get(), "SimpleButton")
-                .OnClicked_Lambda([]() { return FReply::Handled(); })
+                .OnClicked_Lambda([]()
+                {
+
+                	TSharedRef<SWindow> Info= SlateAssistBuildFunctionLibrary::MakeInfoWindow();
+
+                	FSlateApplication::Get().AddWindow(Info);
+                	return FReply::Handled();
+                })
                 [
                     SNew(SImage)
                     .Image(FAppStyle::GetBrush("Icons.Info"))

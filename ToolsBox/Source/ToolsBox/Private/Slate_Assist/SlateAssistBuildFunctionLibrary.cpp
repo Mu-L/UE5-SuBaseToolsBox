@@ -1,16 +1,17 @@
 ﻿#include "Slate_Assist/SlateAssistBuildFunctionLibrary.h"
 
 #include "Components/VerticalBox.h"
+#include "Framework/Application/SlateApplication.h"
 #include "Framework/Docking/TabManager.h"
 #include "Slate_Assist/FIconStyle.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Text/STextBlock.h"
 
-TSharedRef<SWidget> SlateAssistBuildFunctionLibrary::MakeToolBlock(const FText& ToolName, const FText& Description,
-                                                                   const FName& IconName, const FName& TabID)
+TSharedRef<SWidget> SlateAssistBuildFunctionLibrary::MakeToolBlock(const FText& ToolName, const FText& Description, const FName& IconName, const FName& TabID)
 {
     return SNew(SBox)
         .Padding(FMargin(5.0f, 2.0f))
@@ -87,6 +88,82 @@ TSharedRef<SWidget> SlateAssistBuildFunctionLibrary::MakeToolBlock(const FText& 
                         ]
                     ]
                 ]
+            ]
+        ];
+}
+
+TSharedRef<SWindow> SlateAssistBuildFunctionLibrary::MakeInfoWindow()
+{
+    // --- 创建悬浮窗口 ---
+    TSharedRef<SWindow> DetailsWindow = SNew(SWindow)
+        .Title(NSLOCTEXT("Info", "DetailsTitle", "关于"))
+        .ClientSize(FVector2D(947, 600))
+        [
+            SNew(SScrollBox)
+            .Orientation(Orient_Vertical)
+            
+            + SScrollBox::Slot()
+            [
+                SNew(SVerticalBox)
+                + SVerticalBox::Slot()
+                .AutoHeight()
+                [
+                    MakeClickableImageLink(FIconStyle::Get_Images().GetBrush("Info.Info_Bilibili"), FText::FromString(TEXT("前往bilibili")), "https://space.bilibili.com/391627131/",FVector2D(947.0f,116.0f))
+                ]
+                + SVerticalBox::Slot()
+                .AutoHeight()
+                [
+
+                    MakeClickableImageLink(FIconStyle::Get_Images().GetBrush("Info.Info_github"), FText::FromString(TEXT("前往github")), "https://github.com/dashboard",FVector2D(1143.0f,295.0f))
+
+                ]
+                + SVerticalBox::Slot()
+                .AutoHeight()
+                [
+
+                    MakeClickableImageLink(FIconStyle::Get_Images().GetBrush("Info.Info_zf"), FText::FromString(TEXT("制作不易，恳求打赏，谢谢勒喵ฅ^•ﻌ•^ฅ")), "",FVector2D(400, 300))
+
+                ]
+            ]
+            
+        ];
+
+    return DetailsWindow;
+}
+
+TSharedRef<SWidget> SlateAssistBuildFunctionLibrary::MakeClickableImageLink(const FSlateBrush* InBrush,
+    const FText& InLinkText, const FString& InURL,const FVector2D & IamgeSizeOverride)
+{
+
+    FSlateFontInfo Font(FCoreStyle::GetDefaultFont(),30,NAME_None);
+    
+    return SNew(SButton)
+        .ButtonStyle(FCoreStyle::Get(), "NoBorder") 
+        .OnClicked_Lambda([InURL]() -> FReply {
+           
+            FPlatformProcess::LaunchURL(*InURL, nullptr, nullptr);
+            return FReply::Handled();
+        })
+        [
+            // 垂直布局：上图片，下文字
+            SNew(SVerticalBox)
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .HAlign(HAlign_Center) // 图片水平居中
+            [
+                SNew(SImage)
+                .Image(InBrush)
+                .DesiredSizeOverride(IamgeSizeOverride)
+            ]
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .Padding(0, 10, 0, 0) 
+            .HAlign(HAlign_Center) 
+            [
+                SNew(STextBlock)
+                .Text(InLinkText)
+                .ColorAndOpacity(FLinearColor::White)
+                .Font(Font)
             ]
         ];
 }
