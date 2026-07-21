@@ -73,7 +73,31 @@ private:
 	void GenerateMaterials(const FImportFolderTask& Task, const FString& FinalPath,
 	                       TMap<FString, UMaterialInterface*>& OutCreatedMaterials, UMaterialInterface*& OutSingleFallbackMat, int32&
 	                       OutBaseColorCount);
- 
+
+	// 4a. 无ORM贴图时生成材质（AO、粗糙度、金属度为独立贴图）
+	void GenerateMaterialWithoutORM(
+		const FString& BCRawName,
+		const TMap<FString, UTexture2D*>& LocalMatch,
+		bool bHasOpacity,
+		const FString& FinalPath,
+		bool bUseExistingParent,
+		bool bAutoCreateInstance,
+		UMaterialInterface* ParentMI,
+		UMaterialInterface*& OutWorkingMat
+	);
+
+	// 4b. 有ORM贴图时生成材质（AO、粗糙度、金属度合并在一张贴图内）
+	void GenerateMaterialWithORM(
+		const FString& BCRawName,
+		const TMap<FString, UTexture2D*>& LocalMatch,
+		bool bHasOpacity,
+		const FString& FinalPath,
+		bool bUseExistingParent,
+		bool bAutoCreateInstance,
+		UMaterialInterface* ParentMI,
+		UMaterialInterface*& OutWorkingMat
+	);
+
 	// 5. 将材质分配给模型
 	void ApplyMaterialsToMeshes(
 		const TArray<UStaticMesh*>& Meshes, 
