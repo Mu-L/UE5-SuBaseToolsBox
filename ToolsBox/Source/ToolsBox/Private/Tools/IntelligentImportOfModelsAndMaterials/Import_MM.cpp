@@ -490,143 +490,151 @@ TArray<UStaticMesh*> SImport_MM::CollectImportedMeshes(const FString& FinalPath,
     return Meshes;
 }
  
-void SImport_MM::GenerateMaterials(const FImportFolderTask& Task, const FString& FinalPath, 
+	void SImport_MM::GenerateMaterials(const FImportFolderTask& Task, const FString& FinalPath, 
     TMap<FString, UMaterialInterface*>& OutCreatedMaterials, UMaterialInterface*& OutSingleFallbackMat, int32& OutBaseColorCount)
 {
+    // 获取 AssetTools 模块用于资源创建和复制
     IAssetTools& AT = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
     
+    // 从 UI 获取当前的配置状态
     bool bUseExistingParent = bUseParentMICheckbox.IsValid() ? bUseParentMICheckbox->IsChecked() : false;
     bool bAutoCreateInstance = bCreateMICheckbox.IsValid() ? bCreateMICheckbox->IsChecked() : false;
-    UMaterialInstance* ParentMI = Cast<UMaterialInstance>(SelectedParentMIPath.TryLoad());
+    UMaterialInterface* ParentMI = Cast<UMaterialInterface>(SelectedParentMIPath.TryLoad());
  
-    UTexture2D* DefNormal = LoadObject<UTexture2D>(nullptr, TEXT("/Engine/EngineMaterials/BaseFlattenNormalMap.BaseFlattenNormalMap"));
-    UTexture2D* DefBlackColor = LoadObject<UTexture2D>(nullptr, TEXT("/Engine/EngineResources/Black.Black"));
-    UTexture2D* DefWhiteLinear = LoadObject<UTexture2D>(nullptr, TEXT("/UVEditor/Textures/UVEditorColorGrid_Mask.UVEditorColorGrid_Mask"));
- 
+    // 1. 预统计 BaseColor 组，以此作为材质划分依据
     OutBaseColorCount = 0;
-    TArray<FString> BaseColorFileNames;
+    TArray<FString> BaseColorRawNames;
     for (auto& TP : Task.TextureMap) 
     {
         FString Key = FPaths::GetBaseFilename(TP.Key).ToLower();
         if (Key.Contains(TEXT("base")) || Key.Contains(TEXT("albedo")) || Key.Contains(TEXT("col"))) 
         {
-            BaseColorFileNames.Add(FPaths::GetBaseFilename(TP.Key));
+            BaseColorRawNames.Add(FPaths::GetBaseFilename(TP.Key));
             OutBaseColorCount++;
         }
     }
  
-    for (const FString& BCName : BaseColorFileNames) 
+    // 2. 遍历每个 BaseColor 组并生成材质
+    for (const FString& BCRawName : BaseColorRawNames) 
     {
+        // 存储当前材质组匹配到的所有贴图
         TMap<FString, UTexture2D*> LocalMatch;
         UMaterialInterface* WorkingMat = nullptr;
-        bool bNeedTransparency = false; // 是否需要开启透明模式
+        bool bHasOpacity = false; 
  
+        // 匹配逻辑：根据重命名后的规则寻找资产
         for (auto& TP : Task.TextureMap) 
         {
-            FString RawTexFileName = FPaths::GetBaseFilename(TP.Key);
+            FString TexFileName = FPaths::GetBaseFilename(TP.Key);
+            
+            // 多材质球子组过滤逻辑
             if (OutBaseColorCount > 1) {
-                FString Clean = BCName.Replace(TEXT("_BaseColor"), TEXT(""), ESearchCase::IgnoreCase)
-                                      .Replace(TEXT("_Albedo"), TEXT(""), ESearchCase::IgnoreCase)
-                                      .Replace(TEXT("_Col"), TEXT(""), ESearchCase::IgnoreCase);
-                if (!RawTexFileName.Contains(Clean)) continue;
+                FString CleanPrefix = BCRawName.Replace(TEXT("_BaseColor"), TEXT(""), ESearchCase::IgnoreCase)
+                                             .Replace(TEXT("_Albedo"), TEXT(""), ESearchCase::IgnoreCase)
+                                             .Replace(TEXT("_Col"), TEXT(""), ESearchCase::IgnoreCase);
+                if (!TexFileName.Contains(CleanPrefix)) continue;
             }
  
-            FString AppliedTexAssetName = GetAppliedName(RawTexFileName, EImportAssetType::Texture);
-            UTexture2D* Tex = LoadObject<UTexture2D>(nullptr, *(FinalPath / AppliedTexAssetName + TEXT(".") + AppliedTexAssetName));
+            // 计算资产应用重命名规则后的真实名称
+            FString AppliedAssetName = GetAppliedName(TexFileName, EImportAssetType::Texture);
+            
+            // 加载贴图资产
+            UTexture2D* Tex = LoadObject<UTexture2D>(nullptr, *(FinalPath / AppliedAssetName + TEXT(".") + AppliedAssetName));
             if (!Tex) continue;
  
-            FString L = RawTexFileName.ToLower();
+            // 智能通道识别逻辑
+            FString L = TexFileName.ToLower();
             if (L.Contains(TEXT("base")) || L.Contains(TEXT("albedo"))) LocalMatch.Add(TEXT("BC"), Tex);
             else if (L.Contains(TEXT("normal")) || L.Contains(TEXT("_n"))) LocalMatch.Add(TEXT("N"), Tex);
             else if (L.Contains(TEXT("emissive"))) LocalMatch.Add(TEXT("EM"), Tex);
-            else if (L.Contains(TEXT("orm")) || L.Contains(TEXT("rough")) || L.Contains(TEXT("metal")) || L.Contains(TEXT("ao"))) 
-            {
-                if (!L.Contains(TEXT("normal"))) LocalMatch.Add(TEXT("ORM"), Tex);
-            }
-            else if (L.Contains(TEXT("opacity")) || L.Contains(TEXT("alpha")) || L.Contains(TEXT("mask")) || L.Contains(TEXT("_op"))) 
-            {
+            else if (L.Contains(TEXT("opacity")) || L.Contains(TEXT("alpha")) || L.Contains(TEXT("mask"))) {
                 LocalMatch.Add(TEXT("OP"), Tex);
-                bNeedTransparency = true; // 识别到透明贴图，标记需要透明模式
+                bHasOpacity = true; 
             }
+            // 识别合并 ORM 
+            else if (L.Contains(TEXT("orm"))) LocalMatch.Add(TEXT("ORM"), Tex);
+            // 识别独立 PBR 通道 (AO, Roughness, Metallic)
+            else if (L.Contains(TEXT("ao")) || L.Contains(TEXT("occlusion"))) LocalMatch.Add(TEXT("AO"), Tex);
+            else if (L.Contains(TEXT("rough"))) LocalMatch.Add(TEXT("R"), Tex);
+            else if (L.Contains(TEXT("metal"))) LocalMatch.Add(TEXT("M"), Tex);
         }
  
+        // --- 逻辑分支 A: 材质实例模式 (MIC) ---
         if (bUseExistingParent && ParentMI)
         {
-            FString MIName = GetAppliedName(BCName, EImportAssetType::Instance);
+            FString MIName = GetAppliedName(BCRawName, EImportAssetType::Instance);
             UMaterialInstanceConstant* MIC = Cast<UMaterialInstanceConstant>(AT.DuplicateAsset(MIName, FinalPath, ParentMI));
             
             if (MIC)
             {
                 WorkingMat = MIC;
- 
-                // 通道参数设置 Lambda
-                auto SetParam = [&](FString LocalKey, FName SwitchName, FString DefaultParamName) {
-                    bool bExists = LocalMatch.Contains(LocalKey);
-                    MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(SwitchName), bExists);
+                
+                // 通道分配辅助 Lambda (不改变原始设置逻辑)
+                auto ApplyToMIC = [&](FString LocalKey, FName SwitchName, FString DefaultParamName) {
+                    bool bFound = LocalMatch.Contains(LocalKey);
+                    MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(SwitchName), bFound);
                     
-                    if (bExists)
-                    {
-                        UTexture2D* Tex = LocalMatch[LocalKey];
-                        if (LocalKey == TEXT("N")) { Tex->SRGB = false; Tex->CompressionSettings = TC_Normalmap; }
-                        else if (LocalKey == TEXT("BC") || LocalKey == TEXT("EM")) { Tex->SRGB = true; Tex->CompressionSettings = TC_Default; }
-                        else { Tex->SRGB = false; Tex->CompressionSettings = TC_Masks; }
-                        Tex->PostEditChange();
- 
-                        FString FinalParamName = ParamNameInputs.Contains(LocalKey) ? ParamNameInputs[LocalKey]->GetText().ToString() : DefaultParamName;
-                        MIC->SetTextureParameterValueEditorOnly(FMaterialParameterInfo(FName(*FinalParamName)), Tex);
+                    if (bFound) {
+                        UTexture2D* T = LocalMatch[LocalKey];
+                        // 修正贴图导入设置：BC/EM 用 sRGB，其余非线性
+                        T->SRGB = (LocalKey == TEXT("BC") || LocalKey == TEXT("EM")) ? true : false;
+                        T->CompressionSettings = (LocalKey == TEXT("N")) ? TC_Normalmap : (T->SRGB ? TC_Default : TC_Masks);
+                        T->PostEditChange();
+                        
+                        // 获取参数名并覆盖
+                        FString PName = ParamNameInputs.Contains(LocalKey) ? ParamNameInputs[LocalKey]->GetText().ToString() : DefaultParamName;
+                        MIC->SetTextureParameterValueEditorOnly(FMaterialParameterInfo(FName(*PName)), T);
                     }
                 };
  
-                SetParam(TEXT("BC"), TEXT("Use_BaseColor"), TEXT("BaseColor"));
-                SetParam(TEXT("N"), TEXT("Use_Normal"), TEXT("Normal"));
-                SetParam(TEXT("EM"), TEXT("Use_Emissive"), TEXT("Emissive"));
-                SetParam(TEXT("OP"), TEXT("Use_Opacity"), TEXT("Opacity"));
+                // 设置常规通道
+                ApplyToMIC(TEXT("BC"), TEXT("Use_BaseColor"), TEXT("BaseColor"));
+                ApplyToMIC(TEXT("N"), TEXT("Use_Normal"), TEXT("Normal"));
+                ApplyToMIC(TEXT("EM"), TEXT("Use_Emissive"), TEXT("Emissive"));
+                ApplyToMIC(TEXT("OP"), TEXT("Use_Opacity"), TEXT("Opacity"));
  
-                // ORM 处理
+                // 【核心改进】：智能 PBR 通道选择
                 bool bFoundORM = LocalMatch.Contains(TEXT("ORM"));
-                MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(TEXT("Use_ORM")), bFoundORM);
-                MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(TEXT("Use_AO")), bFoundORM);
-                MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(TEXT("Use_Roughness")), bFoundORM);
-                MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(TEXT("Use_Metallic")), bFoundORM);
-                
-                if (bFoundORM) {
-                    UTexture2D* ORMTex = LocalMatch[TEXT("ORM")];
-                    ORMTex->SRGB = false;
-                    ORMTex->CompressionSettings = TC_Masks;
-                    ORMTex->PostEditChange();
-                    FString ORMPName = ParamNameInputs.Contains(TEXT("ORM")) ? ParamNameInputs[TEXT("ORM")]->GetText().ToString() : TEXT("ORM");
-                    MIC->SetTextureParameterValueEditorOnly(FMaterialParameterInfo(FName(*ORMPName)), ORMTex);
-                }
- 
-                // 【核心修正】：自动切换材质实例的 Blend Mode
-                if (bNeedTransparency)
+                if (bFoundORM) 
                 {
-                    // 开启混合模式覆盖
-                    MIC->BasePropertyOverrides.bOverride_BlendMode = true;
-                    // 设置为 Masked 模式（性能最好且支持镂空透明）
-                    MIC->BasePropertyOverrides.BlendMode = BLEND_Masked;
-                    AddLog(FString::Printf(TEXT("材质实例 [%s] 检测到透明贴图，已自动开启 Masked 混合模式。"), *MIName), FLinearColor::Green);
+                    // 1. 优先使用 ORM
+                    ApplyToMIC(TEXT("ORM"), TEXT("Use_ORM"), TEXT("ORM"));
+                    // 同时显式关闭独立通道开关，避免冲突
+                    MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(TEXT("Use_AO")), false);
+                    MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(TEXT("Use_Roughness")), false);
+                    MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(TEXT("Use_Metallic")), false);
+                } 
+                else 
+                {
+                    // 2. 如果没有 ORM，回退到独立贴图扫描
+                    MIC->SetStaticSwitchParameterValueEditorOnly(FMaterialParameterInfo(TEXT("Use_ORM")), false);
+                    ApplyToMIC(TEXT("AO"), TEXT("Use_AO"), TEXT("AmbientOcclusion"));
+                    ApplyToMIC(TEXT("R"), TEXT("Use_Roughness"), TEXT("Roughness"));
+                    ApplyToMIC(TEXT("M"), TEXT("Use_Metallic"), TEXT("Metallic"));
                 }
  
+                // 透明修正：强制覆盖 Blend Mode
+                if (bHasOpacity) {
+                    MIC->BasePropertyOverrides.bOverride_BlendMode = true;
+                    MIC->BasePropertyOverrides.BlendMode = BLEND_Masked;
+                }
+ 
+                // 强制同步状态并通知 UI 刷新
                 MIC->UpdateStaticPermutation();
                 MIC->PostEditChange();
             }
         }
+        // --- 逻辑分支 B: 母材质创建模式 ---
         else
         {
-            // 生成新材质逻辑
-            FString FinalMatName = GetAppliedName(BCName, EImportAssetType::Material);
+            FString FinalMatName = GetAppliedName(BCRawName, EImportAssetType::Material);
             UMaterial* NewMat = Cast<UMaterial>(AT.CreateAsset(FinalMatName, FinalPath, UMaterial::StaticClass(), NewObject<UMaterialFactoryNew>()));
+            
             if (NewMat) 
             {
                 WorkingMat = NewMat;
+                if (bHasOpacity) NewMat->BlendMode = BLEND_Masked;
                 
-                // 【核心修正】：新生成的母材质自动设置 BlendMode
-                if (bNeedTransparency) 
-                {
-                    NewMat->BlendMode = BLEND_Masked;
-                }
- 
                 int32 YPos = 0;
                 for (auto& Pair : LocalMatch) 
                 {
@@ -635,11 +643,14 @@ void SImport_MM::GenerateMaterials(const FImportFolderTask& Task, const FString&
                     Node->Texture = T; 
                     Node->MaterialExpressionEditorY = YPos; 
                     YPos += 350;
+                    
                     FString K = Pair.Key;
-                    if (K == TEXT("N")) { T->SRGB = false; T->CompressionSettings = TC_Normalmap; Node->SamplerType = SAMPLERTYPE_Normal; }
-                    else if (K == TEXT("BC") || K == TEXT("EM")) { T->SRGB = true; T->CompressionSettings = TC_Default; Node->SamplerType = SAMPLERTYPE_Color; }
-                    else { T->SRGB = false; T->CompressionSettings = TC_Masks; Node->SamplerType = SAMPLERTYPE_Masks; }
+                    T->SRGB = (K == TEXT("BC") || K == TEXT("EM")) ? true : false;
+                    T->CompressionSettings = (K == TEXT("N")) ? TC_Normalmap : (T->SRGB ? TC_Default : TC_Masks);
+                    Node->SamplerType = (K == TEXT("N")) ? SAMPLERTYPE_Normal : (T->SRGB ? SAMPLERTYPE_Color : SAMPLERTYPE_Masks);
                     T->PostEditChange();
+ 
+                    // 智能连线逻辑
                     if (K == TEXT("BC")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_BaseColor);
                     else if (K == TEXT("N")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_Normal);
                     else if (K == TEXT("EM")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_EmissiveColor);
@@ -649,17 +660,28 @@ void SImport_MM::GenerateMaterials(const FImportFolderTask& Task, const FString&
                         UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT("G"), MP_Roughness);
                         UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT("B"), MP_Metallic);
                     }
+                    // 独立引脚连接
+                    else if (K == TEXT("AO")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_AmbientOcclusion);
+                    else if (K == TEXT("R")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_Roughness);
+                    else if (K == TEXT("M")) UMaterialEditingLibrary::ConnectMaterialProperty(Node, TEXT(""), MP_Metallic);
                 }
+                
                 UMaterialEditingLibrary::RecompileMaterial(NewMat);
+ 
                 if (bAutoCreateInstance) {
-                    FString FinalInstName = GetAppliedName(BCName, EImportAssetType::Instance);
+                    FString FinalInstName = GetAppliedName(BCRawName, EImportAssetType::Instance);
                     UMaterialInstanceConstant* NewMIC = Cast<UMaterialInstanceConstant>(AT.CreateAsset(FinalInstName, FinalPath, UMaterialInstanceConstant::StaticClass(), NewObject<UMaterialInstanceConstantFactoryNew>()));
-                    if (NewMIC) { NewMIC->SetParentEditorOnly(NewMat); NewMIC->PostEditChange(); WorkingMat = NewMIC; }
+                    if (NewMIC) {
+                        NewMIC->SetParentEditorOnly(NewMat);
+                        NewMIC->PostEditChange();
+                        WorkingMat = NewMIC;
+                    }
                 }
             }
         }
+ 
         if (!OutSingleFallbackMat) OutSingleFallbackMat = WorkingMat;
-        OutCreatedMaterials.Add(BCName, WorkingMat);
+        OutCreatedMaterials.Add(BCRawName, WorkingMat);
     }
 }
  
