@@ -127,6 +127,20 @@ void SImport_MM::Construct(const FArguments& InArgs)
                             SNew(STextBlock).Text(LOCTEXT("CreateMI", "创建实例并应用"))
                         ]
                     ]
+                    + SVerticalBox::Slot().AutoHeight().Padding(5)
+                    [
+                        SNew(SHorizontalBox)
+                        + SHorizontalBox::Slot().AutoWidth()
+                        [
+                            SAssignNew(bUseCombinedNamePrefixCheckbox, SCheckBox)
+                            .IsChecked(ECheckBoxState::Checked) // 默认勾选，保持当前行为
+                        ]
+                        + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+                        [
+                            SNew(STextBlock).Text(LOCTEXT("UseCombinedPrefix", "拆分模型添加合并模型名前缀"))
+                            .ToolTipText(LOCTEXT("UseCombinedPrefixTip", "勾选时，合并模型拆分后的每个子模型会加上合并模型名作为前缀（如 SM_Chair_Seat）；取消勾选则只保留子模型原名（如 SM_Seat）"))
+                        ]
+                    ]
                     + SVerticalBox::Slot().AutoHeight().Padding(0, 5)
                     [
                     SNew(SBorder).BorderImage(FAppStyle::GetBrush("DetailsView.CategoryTop"))
@@ -405,6 +419,12 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, const FString&
     // 阶段 3: 获取导入的模型对象
     TArray<UStaticMesh*> Meshes = CollectImportedMeshes(FinalPath, MeshBaseName);
     if (Meshes.Num() == 0) return;
+
+    // 如果取消勾选"拆分模型添加合并模型名前缀"，则重命名子模型去掉合并模型名
+    if (bUseCombinedNamePrefixCheckbox.IsValid() && !bUseCombinedNamePrefixCheckbox->IsChecked())
+    {
+        RenameSplitMeshes(Meshes, MeshBaseName, FinalPath);
+    }
  
     // --- 关键修正点：将局部变量类型改为 UMaterialInterface* ---
     TMap<FString, UMaterialInterface*> CreatedMaterials; 
@@ -528,7 +548,18 @@ void SImport_MM::GenerateMaterials(const FImportFolderTask& Task, const FString&
         TMap<FString, UTexture2D*> LocalMatch;
         UMaterialInterface* WorkingMat = nullptr;
         bool bHasOpacity = false; 
- 
+
+        // 剥离 BC 后缀，得到干净的材质命名基础名（如 "Chair_BaseColor" → "Chair"）
+        FString MatNameBase = BCRawName;
+        for (const FString& S : BaseColorSuffixes::All())
+        {
+            if (MatNameBase.EndsWith(S, ESearchCase::IgnoreCase))
+            {
+                MatNameBase = MatNameBase.LeftChop(S.Len());
+                break;
+            }
+        }
+
         // 提取材质组前缀，用于过滤贴图
         FString CleanPrefix = BCRawName;
         if (OutBaseColorCount > 1) {
@@ -575,17 +606,17 @@ void SImport_MM::GenerateMaterials(const FImportFolderTask& Task, const FString&
         bool bFoundORM = LocalMatch.Contains(ChannelKey::ORM);
         if (bFoundORM)
         {
-            GenerateMaterialWithORM(BCRawName, LocalMatch, bHasOpacity, FinalPath, 
+            GenerateMaterialWithORM(MatNameBase, LocalMatch, bHasOpacity, FinalPath, 
                                     bUseExistingParent, bAutoCreateInstance, ParentMI, WorkingMat);
         }
         else
         {
-            GenerateMaterialWithoutORM(BCRawName, LocalMatch, bHasOpacity, FinalPath, 
+            GenerateMaterialWithoutORM(MatNameBase, LocalMatch, bHasOpacity, FinalPath, 
                                        bUseExistingParent, bAutoCreateInstance, ParentMI, WorkingMat);
         }
- 
+
         if (!OutSingleFallbackMat) OutSingleFallbackMat = WorkingMat;
-        OutCreatedMaterials.Add(BCRawName, WorkingMat);
+        OutCreatedMaterials.Add(MatNameBase, WorkingMat);
     }
 }
 
@@ -904,6 +935,58 @@ void SImport_MM::GenerateMaterialWithORM(
 
 
 
+void SImport_MM::RenameSplitMeshes(TArray<UStaticMesh*>& Meshes, const FString& MeshBaseName, const FString& FinalPath)
+{
+    IAssetTools& AT = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
+    const FString AppliedMeshBaseName = GetAppliedName(MeshBaseName, EImportAssetType::Mesh);
+    const FString MeshSearchPrefix = AppliedMeshBaseName + TEXT("_");
+
+    // 获取模型命名前缀（如 "SM_"）
+    FString Prefix;
+    if (NamingControlMap.Contains(EImportAssetType::Mesh) && NamingControlMap[EImportAssetType::Mesh].bUsePrefix->IsChecked())
+    {
+        Prefix = NamingControlMap[EImportAssetType::Mesh].PrefixEntry->GetText().ToString();
+    }
+
+    TArray<FAssetRenameData> RenameAssets;
+
+    for (UStaticMesh* SM : Meshes)
+    {
+        if (!SM) continue;
+        FString CurrentName = SM->GetName();
+
+        // 主模型（名字和 AppliedMeshBaseName 完全一致）不重命名
+        if (CurrentName == AppliedMeshBaseName) continue;
+
+        // 剥离合并模型名前缀，得到子模型的逻辑名
+        FString CleanLogicName = CurrentName;
+        if (CurrentName.StartsWith(MeshSearchPrefix))
+        {
+            CleanLogicName = CurrentName.RightChop(MeshSearchPrefix.Len());
+        }
+        else if (CurrentName.StartsWith(AppliedMeshBaseName))
+        {
+            CleanLogicName = CurrentName.RightChop(AppliedMeshBaseName.Len());
+            if (CleanLogicName.StartsWith(TEXT("_"))) CleanLogicName = CleanLogicName.RightChop(1);
+        }
+
+        if (CleanLogicName.IsEmpty()) continue;
+
+        // 新名字 = 前缀 + 子模型逻辑名（如 "SM_" + "Seat" = "SM_Seat"）
+        FString NewName = Prefix + CleanLogicName;
+        if (NewName.Equals(CurrentName)) continue;
+
+        RenameAssets.Add(FAssetRenameData(SM, FinalPath, NewName));
+        AddLog(FString::Printf(TEXT("重命名: %s → %s"), *CurrentName, *NewName), FLinearColor::Yellow);
+    }
+
+    if (RenameAssets.Num() > 0)
+    {
+        AT.RenameAssetsWithDialog(RenameAssets, false);
+    }
+}
+
+
 void SImport_MM::ApplyMaterialsToMeshes(const TArray<UStaticMesh*>& Meshes, const TMap<FString, UMaterialInterface*>& CreatedMaterials, int32 BaseColorCount, UMaterialInterface* SingleFallbackMat, const FString& MeshBaseName, const FString& FinalPath)
 {
     // 关键修正：获取模型在应用命名规则后的预期名称前缀
@@ -925,6 +1008,20 @@ void SImport_MM::ApplyMaterialsToMeshes(const TArray<UStaticMesh*>& Meshes, cons
         if (CleanLogicName.StartsWith(AppliedMeshBaseName))
         {
              CleanLogicName = CleanLogicName.RightChop(AppliedMeshBaseName.Len()).TrimStartAndEnd().Replace(TEXT("_"), TEXT(""), ESearchCase::IgnoreCase);
+        }
+
+        // 兼容重命名后的子模型：如果以上都没匹配到，尝试只剥离命名前缀（如 "SM_" → "Seat"）
+        if (CleanLogicName == CurrentSMName && NamingControlMap.Contains(EImportAssetType::Mesh))
+        {
+            const FNamingWidgets& MeshWidgets = NamingControlMap[EImportAssetType::Mesh];
+            if (MeshWidgets.bUsePrefix->IsChecked())
+            {
+                FString Prefix = MeshWidgets.PrefixEntry->GetText().ToString();
+                if (CurrentSMName.StartsWith(Prefix))
+                {
+                    CleanLogicName = CurrentSMName.RightChop(Prefix.Len());
+                }
+            }
         }
  
         bool bAssigned = false;

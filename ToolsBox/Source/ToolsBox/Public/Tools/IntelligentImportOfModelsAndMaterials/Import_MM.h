@@ -108,6 +108,9 @@ private:
 		const FString& FinalPath
 	);
 
+	// 5a. 拆分模型重命名（去掉合并模型名前缀）
+	void RenameSplitMeshes(TArray<UStaticMesh*>& Meshes, const FString& MeshBaseName, const FString& FinalPath);
+
 	/** 路径数据 */
 	FString SourceFolderPath;
 	FString RelativeDestPath;
@@ -117,6 +120,7 @@ private:
 	TSharedPtr<SEditableTextBox> DestPathBox;
 	TSharedPtr<SEditableTextBox> TexSubFolderNameBox; // 已修正为单行文本框指针
 	TSharedPtr<SCheckBox> bCreateMICheckbox;
+	TSharedPtr<SCheckBox> bUseCombinedNamePrefixCheckbox; // 拆分模型是否添加合并模型名前缀
 	TSharedPtr<SMultiLineEditableText> LogBox;
 	TSharedPtr<SScrollBox> LogScrollBox;
 
