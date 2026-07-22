@@ -111,6 +111,14 @@ private:
 	// 5a. 拆分模型重命名（去掉合并模型名前缀）
 	void RenameSplitMeshes(TArray<UStaticMesh*>& Meshes, const FString& MeshBaseName, const FString& FinalPath);
 
+	// 5b. 收集指定路径下的所有 StaticMesh（重命名后使用）
+	TArray<UStaticMesh*> CollectAllStaticMeshesInPath(const FString& FinalPath);
+
+	// 5c. 检查指定路径下是否已存在同名资产（含内存中未保存的对象）
+	bool DoesAssetExistInPath(const FString& AssetName, const FString& PackagePath) const;
+	// 5d. 若目标名称已被占用则追加 _1,_2... 生成不冲突的唯一资产名
+	FString MakeUniqueAssetName(const FString& DesiredName, const FString& PackagePath) const;
+
 	/** 路径数据 */
 	FString SourceFolderPath;
 	FString RelativeDestPath;

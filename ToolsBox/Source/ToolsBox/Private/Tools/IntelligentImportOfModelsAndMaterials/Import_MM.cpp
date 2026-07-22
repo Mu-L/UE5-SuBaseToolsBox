@@ -418,6 +418,10 @@ void SImport_MM::ExecuteImportTask(const FImportFolderTask& Task, const FString&
     if (bUseCombinedNamePrefixCheckbox.IsValid() && !bUseCombinedNamePrefixCheckbox->IsChecked())
     {
         RenameSplitMeshes(Meshes, MeshBaseName, FinalPath);
+        // 重命名后子模型名称已改变（不再包含 MeshBaseName），
+        // 且指针可能因重命名操作失效，因此重新收集路径下所有 StaticMesh
+        Meshes = CollectAllStaticMeshesInPath(FinalPath);
+        if (Meshes.Num() == 0) return;
     }
  
     // --- 关键修正点：将局部变量类型改为 UMaterialInterface* ---
@@ -511,6 +515,62 @@ TArray<UStaticMesh*> SImport_MM::CollectImportedMeshes(const FString& FinalPath,
         }
     }
     return Meshes;
+}
+
+
+TArray<UStaticMesh*> SImport_MM::CollectAllStaticMeshesInPath(const FString& FinalPath)
+{
+    FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+    ARM.Get().ScanPathsSynchronous({ FinalPath });
+
+    TArray<FAssetData> MeshDatas;
+    ARM.Get().GetAssetsByPath(FName(*FinalPath), MeshDatas);
+
+    TArray<UStaticMesh*> Meshes;
+    for (const FAssetData& Ad : MeshDatas)
+    {
+        if (UStaticMesh* M = Cast<UStaticMesh>(Ad.GetAsset()))
+        {
+            Meshes.Add(M);
+        }
+    }
+    return Meshes;
+}
+
+
+bool SImport_MM::DoesAssetExistInPath(const FString& AssetName, const FString& PackagePath) const
+{
+    // 构造对象路径，如 /Game/Folder/Sub/Name.Name
+    FString ObjectPath = (PackagePath / AssetName) + TEXT(".") + AssetName;
+
+    // 优先检查内存中已加载的对象（刚导入但可能尚未保存到磁盘的资产）
+    if (FindObject<UObject>(nullptr, *ObjectPath))
+    {
+        return true;
+    }
+
+    // 再查资产注册表（已保存但可能未加载的资产）
+    FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+    return ARM.Get().GetAssetByObjectPath(FSoftObjectPath(ObjectPath)).IsValid();
+}
+
+
+FString SImport_MM::MakeUniqueAssetName(const FString& DesiredName, const FString& PackagePath) const
+{
+    if (!DoesAssetExistInPath(DesiredName, PackagePath))
+    {
+        return DesiredName;
+    }
+
+    // 名称已被占用，追加 _1, _2 ... 直到不冲突
+    int32 Suffix = 1;
+    FString UniqueName;
+    do
+    {
+        UniqueName = FString::Printf(TEXT("%s_%d"), *DesiredName, Suffix++);
+    } while (DoesAssetExistInPath(UniqueName, PackagePath));
+
+    return UniqueName;
 }
 
 
@@ -631,6 +691,7 @@ void SImport_MM::GenerateMaterialWithoutORM(
     if (bUseExistingParent && ParentMI)
     {
         FString MIName = GetAppliedName(BCRawName, EImportAssetType::Instance);
+        MIName = MakeUniqueAssetName(MIName, FinalPath);
         UMaterialInstanceConstant* MIC = Cast<UMaterialInstanceConstant>(AT.DuplicateAsset(MIName, FinalPath, ParentMI));
 
         if (MIC)
@@ -722,6 +783,7 @@ void SImport_MM::GenerateMaterialWithoutORM(
     else
     {
         FString FinalMatName = GetAppliedName(BCRawName, EImportAssetType::Material);
+        FinalMatName = MakeUniqueAssetName(FinalMatName, FinalPath);
         UMaterial* NewMat = Cast<UMaterial>(AT.CreateAsset(FinalMatName, FinalPath, UMaterial::StaticClass(), NewObject<UMaterialFactoryNew>()));
 
         if (NewMat)
@@ -754,6 +816,7 @@ void SImport_MM::GenerateMaterialWithoutORM(
 
             if (bAutoCreateInstance) {
                 FString FinalInstName = GetAppliedName(BCRawName, EImportAssetType::Instance);
+                FinalInstName = MakeUniqueAssetName(FinalInstName, FinalPath);
                 UMaterialInstanceConstant* NewMIC = Cast<UMaterialInstanceConstant>(AT.CreateAsset(FinalInstName, FinalPath, UMaterialInstanceConstant::StaticClass(), NewObject<UMaterialInstanceConstantFactoryNew>()));
                 if (NewMIC) {
                     NewMIC->SetParentEditorOnly(NewMat);
@@ -782,6 +845,7 @@ void SImport_MM::GenerateMaterialWithORM(
     if (bUseExistingParent && ParentMI)
     {
         FString MIName = GetAppliedName(BCRawName, EImportAssetType::Instance);
+        MIName = MakeUniqueAssetName(MIName, FinalPath);
         UMaterialInstanceConstant* MIC = Cast<UMaterialInstanceConstant>(AT.DuplicateAsset(MIName, FinalPath, ParentMI));
 
         if (MIC)
@@ -868,6 +932,7 @@ void SImport_MM::GenerateMaterialWithORM(
     else
     {
         FString FinalMatName = GetAppliedName(BCRawName, EImportAssetType::Material);
+        FinalMatName = MakeUniqueAssetName(FinalMatName, FinalPath);
         UMaterial* NewMat = Cast<UMaterial>(AT.CreateAsset(FinalMatName, FinalPath, UMaterial::StaticClass(), NewObject<UMaterialFactoryNew>()));
 
         if (NewMat)
@@ -916,6 +981,7 @@ void SImport_MM::GenerateMaterialWithORM(
 
             if (bAutoCreateInstance) {
                 FString FinalInstName = GetAppliedName(BCRawName, EImportAssetType::Instance);
+                FinalInstName = MakeUniqueAssetName(FinalInstName, FinalPath);
                 UMaterialInstanceConstant* NewMIC = Cast<UMaterialInstanceConstant>(AT.CreateAsset(FinalInstName, FinalPath, UMaterialInstanceConstant::StaticClass(), NewObject<UMaterialInstanceConstantFactoryNew>()));
                 if (NewMIC) {
                     NewMIC->SetParentEditorOnly(NewMat);
@@ -935,7 +1001,6 @@ void SImport_MM::RenameSplitMeshes(TArray<UStaticMesh*>& Meshes, const FString& 
     const FString AppliedMeshBaseName = GetAppliedName(MeshBaseName, EImportAssetType::Mesh);
     const FString MeshSearchPrefix = AppliedMeshBaseName + TEXT("_");
 
-    // 获取模型命名前缀（如 "SM_"）
     FString Prefix;
     if (NamingControlMap.Contains(EImportAssetType::Mesh) && NamingControlMap[EImportAssetType::Mesh].bUsePrefix->IsChecked())
     {
@@ -943,40 +1008,46 @@ void SImport_MM::RenameSplitMeshes(TArray<UStaticMesh*>& Meshes, const FString& 
     }
 
     TArray<FAssetRenameData> RenameAssets;
+    TSet<FString> ReservedNames;
+    ReservedNames.Add(AppliedMeshBaseName); // 主模型名字必须永远保留，谁都不能占用
 
     for (UStaticMesh* SM : Meshes)
     {
-        if (!SM) continue;
+        if (!IsValid(SM)) continue; // 防御性判空
         FString CurrentName = SM->GetName();
-
-        // 主模型（名字和 AppliedMeshBaseName 完全一致）不重命名
         if (CurrentName == AppliedMeshBaseName) continue;
 
-        // 剥离合并模型名前缀，得到子模型的逻辑名
         FString CleanLogicName = CurrentName;
         if (CurrentName.StartsWith(MeshSearchPrefix))
-        {
             CleanLogicName = CurrentName.RightChop(MeshSearchPrefix.Len());
-        }
         else if (CurrentName.StartsWith(AppliedMeshBaseName))
         {
             CleanLogicName = CurrentName.RightChop(AppliedMeshBaseName.Len());
             if (CleanLogicName.StartsWith(TEXT("_"))) CleanLogicName = CleanLogicName.RightChop(1);
         }
-
         if (CleanLogicName.IsEmpty()) continue;
 
-        // 新名字 = 前缀 + 子模型逻辑名（如 "SM_" + "Seat" = "SM_Seat"）
         FString NewName = Prefix + CleanLogicName;
         if (NewName.Equals(CurrentName)) continue;
 
-        RenameAssets.Add(FAssetRenameData(SM, FinalPath, NewName));
-        AddLog(FString::Printf(TEXT("重命名: %s → %s"), *CurrentName, *NewName), FLinearColor::Yellow);
+        // 【关键修复】如果目标名字已被占用（撞主模型、撞其它子模型、或撞已存在的贴图/材质），
+        // 自动加编号消歧，而不是交给引擎弹窗去"覆写"一个还在被引用的对象
+        FString UniqueName = NewName;
+        int32 Suffix = 1;
+        while (ReservedNames.Contains(UniqueName) || DoesAssetExistInPath(UniqueName, FinalPath))
+        {
+            UniqueName = FString::Printf(TEXT("%s_%d"), *NewName, Suffix++);
+        }
+        ReservedNames.Add(UniqueName);
+
+        RenameAssets.Add(FAssetRenameData(SM, FinalPath, UniqueName));
+        AddLog(FString::Printf(TEXT("重命名: %s → %s"), *CurrentName, *UniqueName), FLinearColor::Yellow);
     }
 
     if (RenameAssets.Num() > 0)
     {
-        AT.RenameAssetsWithDialog(RenameAssets, false);
+        // 使用非对话框版本，名字已保证唯一，不会再触发覆写确认框
+        AT.RenameAssets(RenameAssets);
     }
 }
 
@@ -991,6 +1062,7 @@ void SImport_MM::ApplyMaterialsToMeshes(const TArray<UStaticMesh*>& Meshes, cons
  
     for (UStaticMesh* SM : Meshes) 
     {
+        if (!IsValid(SM)) continue;
         // 1. 获取模型当前在引擎中的真实名称
         FString CurrentSMName = SM->GetName();
         
@@ -1029,6 +1101,11 @@ void SImport_MM::ApplyMaterialsToMeshes(const TArray<UStaticMesh*>& Meshes, cons
             // 模糊匹配逻辑：如果模型名包含材质名，或材质名包含模型名
             if (MatKey.Contains(TargetMatchName) || TargetMatchName.Contains(MatKey) || TargetMatchName.IsEmpty()) 
             {
+                if (!IsValid(MatPair.Value))
+                {
+                    AddLog(FString::Printf(TEXT("模型 [%s] 匹配到材质但材质无效，跳过。"), *CurrentSMName), FLinearColor::Red);
+                    break;
+                }
                 for (int32 i = 0; i < SM->GetStaticMaterials().Num(); ++i)
                 {
                     SM->SetMaterial(i, MatPair.Value);
