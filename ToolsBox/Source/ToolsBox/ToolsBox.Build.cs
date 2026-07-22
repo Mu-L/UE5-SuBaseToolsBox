@@ -37,7 +37,9 @@ public class ToolsBox : ModuleRules
 				"AssetRegistry", 
 				"MaterialEditor", 
 				"DesktopPlatform",
-				"PropertyEditor"  
+				"PropertyEditor"  ,
+		
+				"EditorScriptingUtilities"
 			}
 			);
 			
@@ -49,7 +51,9 @@ public class ToolsBox : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				// ... add private dependencies that you statically link with here ...	
+				"Blutility",
+				
+					
 			}
 			);
 		

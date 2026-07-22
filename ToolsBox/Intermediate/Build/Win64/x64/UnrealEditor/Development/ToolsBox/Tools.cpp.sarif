@@ -3,7 +3,33 @@
     "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json",
     "runs": [
         {
-            "results": [],
+            "results": [
+                {
+                    "ruleId": "C5038",
+                    "message": {
+                        "text": "数据成员“FTool::WidgetFactory”将在 数据成员“FTool::ToolDockTabIcon”后初始化"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Tools.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Public/Tools/Tools.h"
+                                },
+                                "region": {
+                                    "startLine": 24,
+                                    "startColumn": 88,
+                                    "snippet": {
+                                        "text": "\t\t: ToolName(InName), ToolDescription(InDesc), ToolImage(InImage), ToolTabID(InTabID), WidgetFactory(InFactory), ToolDockTabIcon(Icon) {}"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ],
             "tool": {
                 "driver": {
                     "name": "MSVC",

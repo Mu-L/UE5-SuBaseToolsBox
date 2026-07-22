@@ -5,7 +5,7 @@
 void FOpenToolsBox_Command::RegisterCommands()
 {
 
-	UI_COMMAND(ToolsBox_CommandInfo, "ToolsBox", "点击打开功能窗口", EUserInterfaceActionType::Button, FInputChord());
+	UI_COMMAND(ToolsBox_OpenToolsBox, "ToolsBox", "点击打开功能窗口", EUserInterfaceActionType::Button, FInputChord());
 }
 
 #undef LOCTEXT_NAMESPACE

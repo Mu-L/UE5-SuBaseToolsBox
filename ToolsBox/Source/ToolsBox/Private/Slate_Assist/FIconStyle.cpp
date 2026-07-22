@@ -44,7 +44,7 @@ void FIconStyle::Initialize()
 		// 【关键修改点】
 		// 这个 Key 的名字必须是 "Context名.变量名"
 		// 对应 FOpenToolsBox_Command 里的定义
-		Icons->Set("ToolsBox.ToolsBox_CommandInfo",// 如果图标要作用在按钮上命名规则为  [按钮的ID名，如TEXT("ToolsBox")] . [按钮指针变量名，如TSharedPtr<FUICommandInfo> ToolsBox_CommandInfo]
+		Icons->Set("ToolsBox.ToolsBox_OpenToolsBox",// 如果图标要作用在按钮上命名规则为  [按钮的ID名，如TEXT("ToolsBox")] . [按钮指针变量名，如TSharedPtr<FUICommandInfo> ToolsBox_CommandInfo]
 			new FSlateImageBrush(Icons->RootToContentDir(TEXT("Icon_SuBaRu"), TEXT(".png")), FVector2D(20.0f, 20.0f)));
 
 		

@@ -6,7 +6,7 @@
 #include "Slate_Assist/FIconStyle.h"
 #include "Slate_Assist/SlateAssistBuildFunctionLibrary.h"
 #include "Tools/Tools.h"
-#include "Tools/Cleaner/Cleaner.h"
+
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SSearchBox.h"
@@ -25,7 +25,7 @@ void FToolsBoxModule::StartupModule()
 	OpenToolsBoxDockTab_CommandList = MakeShareable(new FUICommandList);
 	OpenToolsBoxDockTab_CommandList->MapAction
 	(
-		FOpenToolsBox_Command::Get().ToolsBox_CommandInfo,
+		FOpenToolsBox_Command::Get().ToolsBox_OpenToolsBox,
 		FExecuteAction::CreateRaw(this, &FToolsBoxModule::OnButtonClick),
 		FCanExecuteAction()
 	);
@@ -35,7 +35,6 @@ void FToolsBoxModule::StartupModule()
 		.SetDisplayName(LOCTEXT("ToolsBox", "工具箱"))
 		.SetMenuType(ETabSpawnerMenuType::Hidden)
 		.SetIcon(FSlateIcon(FIconStyle::Get_IconsName(), "ToolsBox.Icon_Anon"));
- 
 	//在启动时一次性注册所有子工具窗口
 	for (const FTool& Tool : Tools::Get_ToolsData())
 	{
@@ -44,7 +43,9 @@ void FToolsBoxModule::StartupModule()
 			FOnSpawnTab::CreateRaw(this, &FToolsBoxModule::OnSpawnToolTab, Tool.WidgetFactory) // 绑定 Payload 参数
 		)
 		.SetDisplayName(FText::FromName(Tool.ToolName))
-		.SetMenuType(ETabSpawnerMenuType::Hidden);
+		.SetMenuType(ETabSpawnerMenuType::Hidden)
+		.SetIcon(FSlateIcon(FIconStyle::Get_Icons().GetStyleSetName(), Tool.ToolDockTabIcon));
+		
 	}
  
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FToolsBoxModule::RegisterMenu));
@@ -64,7 +65,7 @@ void FToolsBoxModule::RegisterMenu()
 	FToolMenuSection& Section = Menu->FindOrAddSection("SuBase_LevelEditorToolBar");
 	
 	
-	FToolMenuEntry& Entry = Section.AddEntry(FToolMenuEntry::InitToolBarButton(FOpenToolsBox_Command::Get().ToolsBox_CommandInfo));
+	FToolMenuEntry& Entry = Section.AddEntry(FToolMenuEntry::InitToolBarButton(FOpenToolsBox_Command::Get().ToolsBox_OpenToolsBox));
 	
 	
 	Entry.SetCommandList(OpenToolsBoxDockTab_CommandList);
@@ -177,8 +178,6 @@ TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& Sp
  
     return SpawnedTab;
 }
-
-
 
 
 void FToolsBoxModule::OnButtonClick()

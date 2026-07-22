@@ -21,9 +21,6 @@ public:
 
 	TSharedPtr<FUICommandList> OpenToolsBoxDockTab_CommandList; 
 
-
-	//生成工具详情按钮
-	//第二个参数传入的是要生成的对应的Tool面板类
 	TSharedRef<SDockTab> OnSpawnToolTab(const FSpawnTabArgs& SpawnTabArgs, TFunction<TSharedRef<SWidget>()> NewToolTab);
 	
 };
