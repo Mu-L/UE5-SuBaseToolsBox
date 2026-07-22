@@ -72,14 +72,7 @@ void SImport_MM::Construct(const FArguments& InArgs)
                             + SHorizontalBox::Slot().FillWidth(1.0f) [ SAssignNew(DestPathBox, SEditableTextBox).HintText(LOCTEXT("Hint", "/Game/BatchImport/")) ]
                             + SHorizontalBox::Slot().AutoWidth() [ SNew(SButton).Text(LOCTEXT("B2", "选择路径")).OnClicked(this, &SImport_MM::OnBrowseDestClicked) ]
                         ]
-                        +SVerticalBox::Slot()
-                        .Padding(1,20,1,1)
-                        [
-                            SNew(STextBlock)
-                            .Text(LOCTEXT("Tip", "如果纹理贴图不与模型同一层级下，而是处于同级的文件夹内，请输入统一的此文件夹名称。留空则默认贴图与模型同级。 "))
-                            .AutoWrapText(true)
-                           
-                        ]
+                        
                         + SVerticalBox::Slot().AutoHeight().Padding(0, 2) [
                             SNew(SHorizontalBox)
                             + SHorizontalBox::Slot()
@@ -89,6 +82,7 @@ void SImport_MM::Construct(const FArguments& InArgs)
                                 
                                 SNew(STextBlock)
                                 .Text(LOCTEXT("TexFolder", "贴图子文件夹名: ")).MinDesiredWidth(100)
+                                .ToolTipText(LOCTEXT("Tip", "如果纹理贴图不与模型同一层级下，而是处于同级的文件夹内，请输入统一的此文件夹名称。留空则默认贴图与模型同级。 "))
                                 
                             ]
                             + SHorizontalBox::Slot().FillWidth(1.0f) [ SAssignNew(TexSubFolderNameBox, SEditableTextBox).HintText(LOCTEXT("TexHint", "留空则在模型同级目录找贴图")) ]
