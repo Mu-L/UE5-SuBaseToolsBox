@@ -4,6 +4,7 @@
 #include "Tools/AssetActionUtility/AAU.h"
 #include "Tools/BlankTemplateTool/BlankTemplateTool.h"
 #include "Tools/IntelligentImportOfModelsAndMaterials/Import_MM.h"
+#include "Tools/SpawnMaterial/SpawnMaterial.h"
 
 #define LOCTEXT_NAMESPACE "Tools"
 
@@ -31,14 +32,21 @@ const TSet<FTool> Tools::Get_ToolsData()
 
 		FTool(
 			TEXT("资产操作工具"),
-			LOCTEXT("AssetUtility", "编辑器资产工具"),
+			LOCTEXT("ToolDetail", "编辑器资产工具"),
 			TEXT("ToolsBox.Image_Anon_1K"),
 			TEXT("SAAUTab"),
 			TEXT("ToolsBox.Icon_Anon"),
 			[]() { return SNew(SAAU);}
-			)
+			),
 		
-				
+		FTool(
+			TEXT("批量材质球生成"),
+			LOCTEXT("ToolDetail", "选择若干纹理生成材质球或材质实例并赋予模型"),
+			TEXT("ToolsBox.Image_Anon_1K"),
+			TEXT("SSpawnMaterialTab"),
+			TEXT("ToolsBox.Icon_Anon"),
+			[]() { return SNew(SSpawnMaterial);}
+			)		
 		
 	};
 	return InternalTools;
