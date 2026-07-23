@@ -28,7 +28,8 @@
             "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\engine\\uht\\materialexpressiontexturebase.generated.h",
             "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\engine\\uht\\materialexpressiontexturesample.generated.h",
             "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\engine\\uht\\materialexpressiontexturesampleparameter.generated.h",
-            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\engine\\uht\\materialexpressiontexturesampleparameter2d.generated.h"
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\engine\\uht\\materialexpressiontexturesampleparameter2d.generated.h",
+            "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\source\\toolsbox\\public\\tools\\spawnmaterial\\spawnmaterial.h"
         ],
         "ImportedModules": [],
         "ImportedHeaderUnits": []
