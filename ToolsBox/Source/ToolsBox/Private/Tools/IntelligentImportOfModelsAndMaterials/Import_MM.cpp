@@ -308,7 +308,7 @@ void SImport_MM::AddLog(const FString& Message, FLinearColor Color)
 {
     FString TimeStr = FDateTime::Now().ToString(TEXT("[%H:%M:%S] "));
     FString ColorHex = Color.ToFColor(true).ToHex();
-    FString FormattedMessage = FString::Printf(TEXT("<RichTextBlock.Color=\"#%s\">%s%s</>\n"), *ColorHex, *TimeStr, *Message);
+    FString FormattedMessage = FString::Printf(TEXT("%s%s\n"), *TimeStr, *Message);
     FText Current = LogBox->GetText();
     LogBox->SetText(FText::FromString(Current.ToString() + FormattedMessage));
     LogScrollBox->ScrollToEnd();
