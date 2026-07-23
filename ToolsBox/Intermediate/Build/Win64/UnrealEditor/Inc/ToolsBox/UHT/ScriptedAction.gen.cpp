@@ -82,6 +82,72 @@ DEFINE_FUNCTION(UScriptedAction::execAddPrefixAndSuffix)
 }
 // ********** End Class UScriptedAction Function AddPrefixAndSuffix ********************************
 
+// ********** Begin Class UScriptedAction Function ReplaceText_ ************************************
+#ifdef UHT_STATICS
+#error UHT_STATICS already defined
+#endif
+#define UHT_STATICS Z_Construct_UFunction_UScriptedAction_ReplaceText__Statics
+struct UHT_STATICS
+{
+	struct ScriptedAction_eventReplaceText__Parms
+	{
+		FString OldText;
+		FString NewText;
+	};
+#if WITH_METADATA
+	static constexpr UECodeGen_Private::FMetaDataPairParam Type_MetaData[] = {
+		{ "CallInEditor", "true" },
+#if !UE_BUILD_SHIPPING
+		{ "Comment", "//\xe6\x96\x87\xe6\x9c\xac\xe6\x9b\xbf\xe6\x8d\xa2\n" },
+#endif
+		{ "DisplayName", "\xe6\x96\x87\xe6\x9c\xac\xe6\x9b\xbf\xe6\x8d\xa2" },
+		{ "ModuleRelativePath", "Public/Tools/AssetActionUtility/ScriptedAction.h" },
+#if !UE_BUILD_SHIPPING
+		{ "ToolTip", "\xe6\x96\x87\xe6\x9c\xac\xe6\x9b\xbf\xe6\x8d\xa2" },
+#endif
+	};
+#endif // WITH_METADATA
+
+// ********** Begin Function ReplaceText_ constinit property declarations **************************
+	static const UECodeGen_Private::FStrPropertyParams NewProp_OldText;
+	static const UECodeGen_Private::FStrPropertyParams NewProp_NewText;
+	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
+// ********** End Function ReplaceText_ constinit property declarations ****************************
+	static const UECodeGen_Private::FFunctionParams FuncParams;
+};
+
+// ********** Begin Function ReplaceText_ Property Definitions *************************************
+const UECodeGen_Private::FStrPropertyParams UHT_STATICS::NewProp_OldText = { "OldText", nullptr, (EPropertyFlags)0x0010000000000080, UECodeGen_Private::EPropertyGenFlags::Str, nullptr, nullptr, 1, STRUCT_OFFSET(ScriptedAction_eventReplaceText__Parms, OldText), METADATA_PARAMS(0, nullptr) };
+const UECodeGen_Private::FStrPropertyParams UHT_STATICS::NewProp_NewText = { "NewText", nullptr, (EPropertyFlags)0x0010000000000080, UECodeGen_Private::EPropertyGenFlags::Str, nullptr, nullptr, 1, STRUCT_OFFSET(ScriptedAction_eventReplaceText__Parms, NewText), METADATA_PARAMS(0, nullptr) };
+const UECodeGen_Private::FPropertyParamsBase* const UHT_STATICS::PropPointers[] = {
+	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_OldText,
+	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_NewText,
+};
+static_assert(UE_ARRAY_COUNT(UHT_STATICS::PropPointers) < 2048);
+// ********** End Function ReplaceText_ Property Definitions ***************************************
+const UECodeGen_Private::FFunctionParams UHT_STATICS::FuncParams = { { (FTypeConstructFunc*)Z_Construct_UClass_UScriptedAction, nullptr, "ReplaceText_", UHT_STATICS::PropPointers, UE_ARRAY_COUNT(UHT_STATICS::PropPointers), DataSizeOf<UHT_STATICS::ScriptedAction_eventReplaceText__Parms>(), RF_Public|RF_Transient|RF_MarkAsNative, (EFunctionFlags)0x04020401, 0, 0, METADATA_PARAMS(UE_ARRAY_COUNT(UHT_STATICS::Type_MetaData), UHT_STATICS::Type_MetaData)},  };
+static_assert(sizeof(UHT_STATICS::ScriptedAction_eventReplaceText__Parms) < MAX_uint16);
+UFunction* Z_Construct_UFunction_UScriptedAction_ReplaceText_(ETypeConstructPhase Phase)
+{
+	static UFunction* ReturnFunction = nullptr;
+	if (!ReturnFunction)
+	{
+		UECodeGen_Private::ConstructUFunction(&ReturnFunction, UHT_STATICS::FuncParams);
+	}
+	return ReturnFunction;
+}
+#undef UHT_STATICS
+DEFINE_FUNCTION(UScriptedAction::execReplaceText_)
+{
+	P_GET_PROPERTY(FStrProperty,Z_Param_OldText);
+	P_GET_PROPERTY(FStrProperty,Z_Param_NewText);
+	P_FINISH;
+	P_NATIVE_BEGIN;
+	P_THIS->ReplaceText_(Z_Param_OldText,Z_Param_NewText);
+	P_NATIVE_END;
+}
+// ********** End Class UScriptedAction Function ReplaceText_ **************************************
+
 // ********** Begin Class UScriptedAction **********************************************************
 #ifdef UHT_STATICS
 #error UHT_STATICS already defined
@@ -105,10 +171,12 @@ struct UHT_STATICS
 // ********** End Class UScriptedAction constinit property declarations ****************************
 	static constexpr UE::CodeGen::FClassNativeFunction Funcs[] = {
 		{ .NameUTF8 = UTF8TEXT("AddPrefixAndSuffix"), .Pointer = &UScriptedAction::execAddPrefixAndSuffix },
+		{ .NameUTF8 = UTF8TEXT("ReplaceText_"), .Pointer = &UScriptedAction::execReplaceText_ },
 	};
 	static FTypeConstructFunc* DependentSingletons[];
 	static constexpr FClassFunctionLinkInfo FuncInfo[] = {
 		{ &Z_Construct_UFunction_UScriptedAction_AddPrefixAndSuffix, "AddPrefixAndSuffix" }, // bd3134135697b9028e7513cb895a8a2abce0f263
+		{ &Z_Construct_UFunction_UScriptedAction_ReplaceText_, "ReplaceText_" }, // 54404eb0a4c6be9e4df2ae03bef0ce0247d6a396
 	};
 	static_assert(UE_ARRAY_COUNT(FuncInfo) < 2048);
 	static constexpr FCppClassTypeInfoStatic StaticCppClassTypeInfo = {
@@ -187,10 +255,10 @@ UScriptedAction::~UScriptedAction() {}
 struct UHT_STATICS
 {
 	static constexpr FClassRegisterCompiledInInfo ClassInfo[] = {
-		{ Z_Construct_UClass_UScriptedAction, TEXT("UScriptedAction"), &Z_Registration_Info_UClass_UScriptedAction, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UScriptedAction), 3225887795U) },
+		{ Z_Construct_UClass_UScriptedAction, TEXT("UScriptedAction"), &Z_Registration_Info_UClass_UScriptedAction, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UScriptedAction), 4045127423U) },
 	};
 }; // UHT_STATICS 
-static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_AssetActionUtility_ScriptedAction_h__Script_ToolsBox_6386797187c9ab900a0331f37255e093241e4654{
+static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_AssetActionUtility_ScriptedAction_h__Script_ToolsBox_51b2a53f126213a0a2e7689479d7b6e5cc5ba2e9{
 	TEXT("/Script/ToolsBox"),
 	UHT_STATICS::ClassInfo, UE_ARRAY_COUNT(UHT_STATICS::ClassInfo),
 	nullptr, 0,

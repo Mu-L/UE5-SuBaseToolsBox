@@ -215,10 +215,14 @@
             "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\blutility\\uht\\ieditorutilityextension.generated.h",
             "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\blutility\\uht\\assetactionutility.generated.h",
             "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\intermediate\\build\\win64\\unrealeditor\\inc\\toolsbox\\uht\\scriptedaction.generated.h",
+            "f:\\ue_5.8\\engine\\plugins\\editor\\editorscriptingutilities\\source\\editorscriptingutilities\\public\\editorassetlibrary.h",
+            "f:\\ue_5.8\\engine\\plugins\\editor\\editorscriptingutilities\\intermediate\\build\\win64\\unrealeditor\\inc\\editorscriptingutilities\\uht\\editorassetlibrary.generated.h",
             "f:\\ue_5.8\\engine\\source\\editor\\blutility\\public\\editorutilitylibrary.h",
             "f:\\ue_5.8\\engine\\source\\runtime\\engine\\classes\\kismet\\blueprintasyncactionbase.h",
             "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\engine\\uht\\blueprintasyncactionbase.generated.h",
-            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\blutility\\uht\\editorutilitylibrary.generated.h"
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\blutility\\uht\\editorutilitylibrary.generated.h",
+            "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\source\\toolsbox\\public\\slate_assist\\slateassistbuildfunctionlibrary.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\slate\\public\\widgets\\notifications\\snotificationlist.h"
         ],
         "ImportedModules": [],
         "ImportedHeaderUnits": []

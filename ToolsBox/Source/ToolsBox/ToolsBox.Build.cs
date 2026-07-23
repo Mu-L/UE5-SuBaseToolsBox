@@ -40,6 +40,7 @@ public class ToolsBox : ModuleRules
 			"PropertyEditor",
 			"ContentBrowser",
 			"EditorScriptingUtilities"
+			
 			}
 			);
 			

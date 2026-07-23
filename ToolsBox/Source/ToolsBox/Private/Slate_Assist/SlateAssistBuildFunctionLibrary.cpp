@@ -3,6 +3,7 @@
 #include "Components/VerticalBox.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Framework/Docking/TabManager.h"
+#include "Framework/Notifications/NotificationManager.h"
 #include "Slate_Assist/FIconStyle.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/Images/SImage.h"
@@ -166,4 +167,22 @@ TSharedRef<SWidget> SlateAssistBuildFunctionLibrary::MakeClickableImageLink(cons
                 .Font(Font)
             ]
         ];
+}
+
+void SlateAssistBuildFunctionLibrary::SpawnNotifiy(const FText& InText, const float& TimeIn, const float& TimeOut,SNotificationItem::ECompletionState NotificationItem)
+{
+    
+    FNotificationInfo Info(InText);
+    
+    Info.ExpireDuration = 6.0f;
+
+    Info.FadeInDuration = TimeIn;
+    Info.FadeOutDuration = TimeOut;
+    
+    Info.bUseThrobber = false; 
+
+    Info.bUseSuccessFailIcons = true;
+    
+    FSlateNotificationManager::Get().AddNotification(Info)->SetCompletionState(NotificationItem);
+     
 }

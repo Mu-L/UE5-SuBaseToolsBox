@@ -19,6 +19,7 @@ PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 // ********** Begin Class UScriptedAction **********************************************************
 #define FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_AssetActionUtility_ScriptedAction_h_17_RPC_WRAPPERS_NO_PURE_DECLS \
+	DECLARE_FUNCTION(execReplaceText_); \
 	DECLARE_FUNCTION(execAddPrefixAndSuffix);
 
 

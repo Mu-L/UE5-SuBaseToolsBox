@@ -7,6 +7,7 @@
         "Includes": [
             "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\toolsbox\\definitions.toolsbox.h",
             "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\source\\toolsbox\\public\\slate_assist\\slateassistbuildfunctionlibrary.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\slate\\public\\widgets\\notifications\\snotificationlist.h",
             "f:\\ue_5.8\\engine\\source\\runtime\\umg\\public\\components\\verticalbox.h",
             "f:\\ue_5.8\\engine\\source\\runtime\\umg\\public\\components\\panelwidget.h",
             "f:\\ue_5.8\\engine\\source\\runtime\\umg\\public\\components\\panelslot.h",
@@ -90,6 +91,9 @@
             "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\umg\\uht\\userwidget.generated.h",
             "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\umg\\uht\\panelwidget.generated.h",
             "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\umg\\uht\\verticalbox.generated.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\slate\\public\\framework\\notifications\\notificationmanager.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\core\\public\\misc\\coreasynctasknotificationimpl.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\core\\public\\misc\\asynctasknotification.h",
             "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\source\\toolsbox\\public\\slate_assist\\ficonstyle.h"
         ],
         "ImportedModules": [],

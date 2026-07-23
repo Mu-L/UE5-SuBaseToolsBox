@@ -25,6 +25,10 @@ public:
 	
 	UFUNCTION(BlueprintCallable,DisplayName="添加前后缀",CallInEditor)
 	void  AddPrefixAndSuffix(FString Prefix, FString Suffix);
+
+	//文本替换
+	UFUNCTION(BlueprintCallable,DisplayName="文本替换",CallInEditor)
+	void  ReplaceText_(FString OldText, FString NewText);
 	
 	
 };
