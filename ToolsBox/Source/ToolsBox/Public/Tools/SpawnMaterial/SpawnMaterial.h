@@ -57,6 +57,16 @@ private:
     /** 从内容浏览器获取选中的 UTexture2D 资产 */
     TArray<UTexture2D*> GetSelectedTextures();
 
+    /** 从内容浏览器获取选中的 UStaticMesh 资产 */
+    TArray<UStaticMesh*> GetSelectedMeshes();
+
+    /**
+     * 将生成的材质按名称关键词匹配赋予给选中的模型
+     * @param CreatedMaterials 材质基础名 -> 生成的材质接口
+     * @param Meshes 选中的模型数组
+     */
+    void AssignMaterialsToMeshes(const TMap<FString, UMaterialInterface*>& CreatedMaterials, const TArray<UStaticMesh*>& Meshes);
+
     /**
      * 将贴图按关键词分类并按材质基础名分组
      * @param Textures 选中的贴图数组

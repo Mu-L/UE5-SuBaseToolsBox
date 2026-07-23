@@ -23,6 +23,7 @@
 
 // Engine
 #include "Engine/Texture2D.h"
+#include "Engine/StaticMesh.h"
 
 // Misc
 #include "Misc/PackageName.h"
@@ -94,7 +95,10 @@ void SSpawnMaterial::Construct(const FArguments& InArgs)
                                 "使用方法：\n"
                                 "  1. 在内容浏览器中选中一个或多个纹理贴图（同一材质的贴图需包含至少一张基础色贴图）\n"
                                 "  2. 在下方设置保存路径与生成模式\n"
-                                "  3. 点击「生成材质」按钮"))
+                                "  3. 点击「生成材质」按钮\n"
+                                "  \n"
+                                "  提示：如果同时选中了模型（StaticMesh），生成材质后会自动按名称关键词\n"
+                                "  匹配并将对应材质赋予对应模型（如贴图 Chair_BaseColor 匹配模型 SM_Chair）"))
                         ]
                         + SVerticalBox::Slot().AutoHeight().Padding(0, 6, 0, 0)
                         [
@@ -346,8 +350,174 @@ TArray<UTexture2D*> SSpawnMaterial::GetSelectedTextures()
 
 
 // ============================================================================
-// OnGenerateClicked — 核心入口
+// GetSelectedMeshes — 从内容浏览器获取选中的 UStaticMesh
 // ============================================================================
+
+TArray<UStaticMesh*> SSpawnMaterial::GetSelectedMeshes()
+{
+    TArray<UStaticMesh*> Result;
+
+    FContentBrowserModule& CBModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
+    TArray<FAssetData> SelectedAssets;
+    CBModule.Get().GetSelectedAssets(SelectedAssets);
+
+    for (const FAssetData& AssetData : SelectedAssets)
+    {
+        if (UStaticMesh* Mesh = Cast<UStaticMesh>(AssetData.GetAsset()))
+        {
+            Result.Add(Mesh);
+        }
+    }
+
+    return Result;
+}
+
+
+// ============================================================================
+// AssignMaterialsToMeshes — 按名称关键词匹配将材质赋予模型
+// ============================================================================
+
+void SSpawnMaterial::AssignMaterialsToMeshes(const TMap<FString, UMaterialInterface*>& CreatedMaterials, const TArray<UStaticMesh*>& Meshes)
+{
+    if (CreatedMaterials.Num() == 0 || Meshes.Num() == 0) return;
+
+    // ----------------------------------------------------------------
+    // 核心名提取：从带多层前缀/后缀的名字中还原「原始名」
+    //
+    // 命名结构示例：
+    //   贴图:   T_OriginalName_TextureSuffix     (如 T_Door_BaseColor)
+    //   材质key: T_OriginalName                   (如 T_Door，后缀已剥离)
+    //   材质名: M_T_OriginalName                  (如 M_T_Door)
+    //   模型:   SM_ParentName_OriginalName        (如 SM_BalconyDoor_Door)
+    //
+    // 提取规则：剥离材质前缀(M_/MI_)和贴图后缀后，
+    //           最后一个下划线右侧的部分即为「核心名」
+    //           材质和模型都用同一套规则提取，然后精确比对
+    // ----------------------------------------------------------------
+    auto ExtractCoreName = [](FString Name) -> FString
+    {
+        // 剥离材质前缀 M_ / MI_
+        if (Name.StartsWith(TEXT("MI_"), ESearchCase::IgnoreCase))
+            Name = Name.RightChop(3);
+        else if (Name.StartsWith(TEXT("M_"), ESearchCase::IgnoreCase))
+            Name = Name.RightChop(2);
+
+        // 剥离残留的贴图类型后缀（如 _BaseColor / _BC 等）
+        for (const FString& S : BaseColorSuffixes::All())
+        {
+            if (Name.EndsWith(S, ESearchCase::IgnoreCase))
+            {
+                Name = Name.LeftChop(S.Len());
+                break;
+            }
+        }
+
+        // 取最后一个下划线右侧的部分作为核心名
+        int32 LastUnderscore = Name.Find(TEXT("_"), ESearchCase::IgnoreCase, ESearchDir::FromEnd);
+        if (LastUnderscore != INDEX_NONE)
+        {
+            FString Core = Name.RightChop(LastUnderscore + 1);
+            if (!Core.IsEmpty())
+                return Core;
+        }
+        return Name;
+    };
+
+    // 预计算每个材质的核心名，建立 核心名(小写) -> 材质 映射
+    TMap<FString, UMaterialInterface*> CoreToMaterial;
+    for (auto& Pair : CreatedMaterials)
+    {
+        FString Core = ExtractCoreName(Pair.Key).ToLower();
+        if (!Core.IsEmpty() && !CoreToMaterial.Contains(Core))
+        {
+            CoreToMaterial.Add(Core, Pair.Value);
+            AddLog(FString::Printf(TEXT("材质 [%s] → 核心名: \"%s\""), *Pair.Key, *Core), FLinearColor::Gray);
+        }
+    }
+
+    int32 AssignedCount = 0;
+
+    for (UStaticMesh* SM : Meshes)
+    {
+        if (!IsValid(SM)) continue;
+
+        FString MeshName = SM->GetName();
+
+        // 对模型名同样提取核心名（剥离 SM_ 等前缀后取最后一段）
+        FString MeshCore = ExtractCoreName(MeshName).ToLower();
+
+        bool bAssigned = false;
+
+        // ===== 主匹配：模型核心名 == 材质核心名（精确比对） =====
+        if (CoreToMaterial.Contains(MeshCore))
+        {
+            UMaterialInterface* Mat = CoreToMaterial[MeshCore];
+            if (IsValid(Mat))
+            {
+                for (int32 i = 0; i < SM->GetStaticMaterials().Num(); ++i)
+                    SM->SetMaterial(i, Mat);
+                SM->PostEditChange();
+                AddLog(FString::Printf(TEXT("模型 [%s] → 核心名: \"%s\" ← 材质 [%s]"), *MeshName, *MeshCore, *Mat->GetName()), FLinearColor::Green);
+                bAssigned = true;
+                AssignedCount++;
+            }
+            else
+            {
+                AddLog(FString::Printf(TEXT("模型 [%s] 匹配到核心名 [%s] 但材质无效，跳过。"), *MeshName, *MeshCore), FLinearColor::Red);
+                bAssigned = true;
+            }
+        }
+
+        // ===== 次匹配：模型名的某个完整段 == 材质核心名（整段匹配，非子串） =====
+        // 处理核心名不在最后一段的情况（如 SM_Door_BalconyDoor）
+        if (!bAssigned)
+        {
+            TArray<FString> Segments;
+            MeshName.ParseIntoArray(Segments, TEXT("_"), true);
+            TArray<FString> LowerSegments;
+            for (const FString& Seg : Segments)
+                LowerSegments.Add(Seg.ToLower());
+
+            for (auto& Pair : CoreToMaterial)
+            {
+                if (LowerSegments.Contains(Pair.Key))
+                {
+                    UMaterialInterface* Mat = Pair.Value;
+                    if (IsValid(Mat))
+                    {
+                        for (int32 i = 0; i < SM->GetStaticMaterials().Num(); ++i)
+                            SM->SetMaterial(i, Mat);
+                        SM->PostEditChange();
+                        AddLog(FString::Printf(TEXT("模型 [%s] → 段匹配: \"%s\" ← 材质 [%s]"), *MeshName, *Pair.Key, *Mat->GetName()), FLinearColor::Green);
+                        bAssigned = true;
+                        AssignedCount++;
+                    }
+                    break;
+                }
+            }
+        }
+
+        // ===== 兜底：只有一组材质时，未匹配的模型也赋予该材质 =====
+        if (!bAssigned && CreatedMaterials.Num() == 1)
+        {
+            auto It = CreatedMaterials.CreateConstIterator();
+            if (It && IsValid(It->Value))
+            {
+                for (int32 i = 0; i < SM->GetStaticMaterials().Num(); ++i)
+                    SM->SetMaterial(i, It->Value);
+                SM->PostEditChange();
+                AddLog(FString::Printf(TEXT("模型 [%s] ← 材质 [%s]（唯一材质自动适配）"), *MeshName, *It->Value->GetName()), FLinearColor::Yellow);
+                AssignedCount++;
+            }
+        }
+        else if (!bAssigned)
+        {
+            AddLog(FString::Printf(TEXT("模型 [%s] → 核心名: \"%s\" 未匹配到任何材质，跳过。"), *MeshName, *MeshCore), FLinearColor::Red);
+        }
+    }
+
+    AddLog(FString::Printf(TEXT("材质赋予完成：成功 %d / 共 %d 个模型"), AssignedCount, Meshes.Num()), FLinearColor::White);
+}
 
 FReply SSpawnMaterial::OnGenerateClicked()
 {
@@ -394,6 +564,7 @@ FReply SSpawnMaterial::OnGenerateClicked()
 
     // 5. 为每个分组生成材质
     int32 SuccessCount = 0;
+    TMap<FString, UMaterialInterface*> CreatedMaterials; // 材质基础名 -> 生成的材质
     for (const FString& BCRawName : BaseColorRawNames)
     {
         if (!Groups.Contains(BCRawName)) continue;
@@ -441,6 +612,7 @@ FReply SSpawnMaterial::OnGenerateClicked()
         if (GeneratedMat)
         {
             SuccessCount++;
+            CreatedMaterials.Add(MatNameBase, GeneratedMat);
             AddLog(FString::Printf(TEXT("成功：已生成材质 [%s]"), *GeneratedMat->GetName()), FLinearColor::Green);
         }
         else
@@ -450,6 +622,15 @@ FReply SSpawnMaterial::OnGenerateClicked()
     }
 
     AddLog(FString::Printf(TEXT("--- 生成结束，成功 %d / 共 %d 组 ---"), SuccessCount, BaseColorCount), FLinearColor::White);
+
+    // 6. 如果同时选中了模型，按名称关键词匹配赋予材质
+    TArray<UStaticMesh*> SelectedMeshes = GetSelectedMeshes();
+    if (SelectedMeshes.Num() > 0 && CreatedMaterials.Num() > 0)
+    {
+        AddLog(FString::Printf(TEXT("--- 开始赋予材质到模型（共 %d 个模型）---"), SelectedMeshes.Num()), FLinearColor::White);
+        AssignMaterialsToMeshes(CreatedMaterials, SelectedMeshes);
+    }
+
     return FReply::Handled();
 }
 
