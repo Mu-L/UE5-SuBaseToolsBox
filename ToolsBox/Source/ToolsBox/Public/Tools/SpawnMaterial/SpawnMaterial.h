@@ -14,6 +14,17 @@ class SMultiLineEditableText;
 class SScrollBox;
 class SObjectPropertyEntryBox;
 
+/** 资产命名类型枚举 */
+enum class EAssetType : uint8 { Mesh, Texture, Material, Instance };
+
+/** 命名规则 UI 组结构体 */
+struct FSpawnNamingWidgets {
+    TSharedPtr<SCheckBox> bUsePrefix;
+    TSharedPtr<SEditableTextBox> PrefixEntry;
+    TSharedPtr<SCheckBox> bUseSuffix;
+    TSharedPtr<SEditableTextBox> SuffixEntry;
+};
+
 /**
  * 批量材质球生成工具
  * 从内容浏览器获取选中的纹理贴图，按文件名关键词自动分类贴图通道，
@@ -131,6 +142,15 @@ private:
     /** 父材质实例勾选状态变更回调 */
     void OnUseParentMIToggled(ECheckBoxState NewState);
 
+    /** 创建命名规则配置行（前缀/后缀勾选+输入框） */
+    TSharedRef<SWidget> CreateNamingRow(EAssetType Type, const FString& Label, const FString& DefaultPrefix);
+
+    /** 根据命名规则为原始名应用前缀和后缀 */
+    FString GetAppliedName(const FString& RawName, EAssetType Type);
+
+    /** 从名称中剥离指定类型的前缀和后缀（反向操作，用于匹配时还原原名） */
+    FString StripNamingAffixes(const FString& Name, EAssetType Type) const;
+
     // ==================== 数据成员 ====================
 
     /** 保存路径（包路径，如 /Game/Materials） */
@@ -152,4 +172,7 @@ private:
 
     /** 用户选择的父材质实例路径 */
     FSoftObjectPath SelectedParentMIPath;
+
+    /** 命名规则控件映射表 */
+    TMap<EAssetType, FSpawnNamingWidgets> NamingControlMap;
 };

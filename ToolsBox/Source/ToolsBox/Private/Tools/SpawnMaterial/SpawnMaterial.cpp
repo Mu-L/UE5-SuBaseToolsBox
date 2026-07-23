@@ -98,7 +98,10 @@ void SSpawnMaterial::Construct(const FArguments& InArgs)
                                 "  3. 点击「生成材质」按钮\n"
                                 "  \n"
                                 "  提示：如果同时选中了模型（StaticMesh），生成材质后会自动按名称关键词\n"
-                                "  匹配并将对应材质赋予对应模型（如贴图 Chair_BaseColor 匹配模型 SM_Chair）"))
+                                "  匹配并将对应材质赋予对应模型（如贴图 T_Door_BaseColor 匹配模型 SM_BalconyDoor_Door）\n"
+                                "  \n"
+                                "  命名规则：可在下方「资产命名详细规则」中配置各类型资产的前缀/后缀。\n"
+                                "  生成材质时会自动剥离贴图前缀（如 T_），再加材质前缀（如 M_），避免叠两层前缀。"))
                         ]
                         + SVerticalBox::Slot().AutoHeight().Padding(0, 6, 0, 0)
                         [
@@ -148,6 +151,27 @@ void SSpawnMaterial::Construct(const FArguments& InArgs)
                 + SHorizontalBox::Slot().AutoWidth()
                 [
                     SNew(SButton).Text(LOCTEXT("BrowseDst", "选择路径")).OnClicked(this, &SSpawnMaterial::OnBrowseDestClicked)
+                ]
+            ]
+
+            // ==================== 资产命名详细规则 ====================
+            + SVerticalBox::Slot().AutoHeight().Padding(10, 5)
+            [
+                SNew(SExpandableArea)
+                .AreaTitle(LOCTEXT("NamingRules", "资产命名详细规则"))
+                .InitiallyCollapsed(true)
+                .BodyContent()
+                [
+                    SNew(SBorder)
+                    .Padding(FMargin(10, 5))
+                    .BorderImage(FAppStyle::GetBrush("DetailsView.CategoryTop"))
+                    [
+                        SNew(SVerticalBox)
+                        + SVerticalBox::Slot().AutoHeight() [ CreateNamingRow(EAssetType::Mesh, TEXT("[ 模型 ]"), TEXT("SM_")) ]
+                        + SVerticalBox::Slot().AutoHeight() [ CreateNamingRow(EAssetType::Texture, TEXT("[ 贴图 ]"), TEXT("T_")) ]
+                        + SVerticalBox::Slot().AutoHeight() [ CreateNamingRow(EAssetType::Material, TEXT("[ 母材质 ]"), TEXT("M_")) ]
+                        + SVerticalBox::Slot().AutoHeight() [ CreateNamingRow(EAssetType::Instance, TEXT("[ 材质实例 ]"), TEXT("MI_")) ]
+                    ]
                 ]
             ]
 
@@ -386,21 +410,20 @@ void SSpawnMaterial::AssignMaterialsToMeshes(const TMap<FString, UMaterialInterf
     //
     // 命名结构示例：
     //   贴图:   T_OriginalName_TextureSuffix     (如 T_Door_BaseColor)
-    //   材质key: T_OriginalName                   (如 T_Door，后缀已剥离)
-    //   材质名: M_T_OriginalName                  (如 M_T_Door)
+    //   材质key: OriginalName                     (如 Door，贴图前缀已剥离)
+    //   材质名: M_OriginalName                    (如 M_Door)
     //   模型:   SM_ParentName_OriginalName        (如 SM_BalconyDoor_Door)
     //
-    // 提取规则：剥离材质前缀(M_/MI_)和贴图后缀后，
-    //           最后一个下划线右侧的部分即为「核心名」
-    //           材质和模型都用同一套规则提取，然后精确比对
+    // 提取规则：依次尝试剥离各类型(材质/实例/模型/贴图)的前缀和后缀，
+    //           然后取最后一个下划线右侧的部分作为「核心名」
     // ----------------------------------------------------------------
-    auto ExtractCoreName = [](FString Name) -> FString
+    auto ExtractCoreName = [this](FString Name) -> FString
     {
-        // 剥离材质前缀 M_ / MI_
-        if (Name.StartsWith(TEXT("MI_"), ESearchCase::IgnoreCase))
-            Name = Name.RightChop(3);
-        else if (Name.StartsWith(TEXT("M_"), ESearchCase::IgnoreCase))
-            Name = Name.RightChop(2);
+        // 依次尝试剥离各类型的前缀/后缀（哪个匹配就剥哪个）
+        Name = StripNamingAffixes(Name, EAssetType::Material);
+        Name = StripNamingAffixes(Name, EAssetType::Instance);
+        Name = StripNamingAffixes(Name, EAssetType::Mesh);
+        Name = StripNamingAffixes(Name, EAssetType::Texture);
 
         // 剥离残留的贴图类型后缀（如 _BaseColor / _BC 等）
         for (const FString& S : BaseColorSuffixes::All())
@@ -584,7 +607,11 @@ FReply SSpawnMaterial::OnGenerateClicked()
         }
         if (MatNameBase.IsEmpty()) MatNameBase = BCRawName;
 
-        AddLog(FString::Printf(TEXT("正在生成材质: %s"), *MatNameBase), FLinearColor::White);
+        // 剥离贴图命名前缀/后缀（如 T_ 前缀），避免材质名叠两层前缀（M_T_Door → M_Door）
+        FString CleanMatName = StripNamingAffixes(MatNameBase, EAssetType::Texture);
+        if (CleanMatName.IsEmpty()) CleanMatName = MatNameBase;
+
+        AddLog(FString::Printf(TEXT("正在生成材质: %s"), *CleanMatName), FLinearColor::White);
 
         // 勾选"保存到贴图同级目录"时，从 BC 贴图所在包路径推导保存位置
         FString CurrentSavePath = DefaultSavePath;
@@ -606,18 +633,18 @@ FReply SSpawnMaterial::OnGenerateClicked()
         }
 
         UMaterialInterface* GeneratedMat = GenerateMaterialForGroup(
-            MatNameBase, LocalMatch, bHasOpacity, CurrentSavePath,
+            CleanMatName, LocalMatch, bHasOpacity, CurrentSavePath,
             bUseExistingParent, bAutoCreateInstance, ParentMI);
 
         if (GeneratedMat)
         {
             SuccessCount++;
-            CreatedMaterials.Add(MatNameBase, GeneratedMat);
+            CreatedMaterials.Add(CleanMatName, GeneratedMat);
             AddLog(FString::Printf(TEXT("成功：已生成材质 [%s]"), *GeneratedMat->GetName()), FLinearColor::Green);
         }
         else
         {
-            AddLog(FString::Printf(TEXT("失败：材质 [%s] 生成失败，请检查日志。"), *MatNameBase), FLinearColor::Red);
+            AddLog(FString::Printf(TEXT("失败：材质 [%s] 生成失败，请检查日志。"), *CleanMatName), FLinearColor::Red);
         }
     }
 
@@ -778,7 +805,7 @@ UMaterialInterface* SSpawnMaterial::GenerateMaterialWithoutORM(
     // --- 分支 A：材质实例模式（从父 MI 复制并设置参数） ---
     if (bUseExistingParent && ParentMI)
     {
-        FString MIName = MakeUniqueAssetName(TEXT("MI_") + BCRawName, SavePath);
+        FString MIName = MakeUniqueAssetName(GetAppliedName(BCRawName, EAssetType::Instance), SavePath);
         UMaterialInstanceConstant* MIC = Cast<UMaterialInstanceConstant>(AT.DuplicateAsset(MIName, SavePath, ParentMI));
 
         if (MIC)
@@ -861,7 +888,7 @@ UMaterialInterface* SSpawnMaterial::GenerateMaterialWithoutORM(
     // --- 分支 B：母材质连线模式 ---
     else
     {
-        FString FinalMatName = MakeUniqueAssetName(TEXT("M_") + BCRawName, SavePath);
+        FString FinalMatName = MakeUniqueAssetName(GetAppliedName(BCRawName, EAssetType::Material), SavePath);
         UMaterial* NewMat = Cast<UMaterial>(AT.CreateAsset(FinalMatName, SavePath, UMaterial::StaticClass(), NewObject<UMaterialFactoryNew>()));
 
         if (NewMat)
@@ -895,7 +922,7 @@ UMaterialInterface* SSpawnMaterial::GenerateMaterialWithoutORM(
             // 可选：在母材质基础上创建实例
             if (bAutoCreateInstance)
             {
-                FString FinalInstName = MakeUniqueAssetName(TEXT("MI_") + BCRawName, SavePath);
+                FString FinalInstName = MakeUniqueAssetName(GetAppliedName(BCRawName, EAssetType::Instance), SavePath);
                 UMaterialInstanceConstant* NewMIC = Cast<UMaterialInstanceConstant>(
                     AT.CreateAsset(FinalInstName, SavePath, UMaterialInstanceConstant::StaticClass(),
                                    NewObject<UMaterialInstanceConstantFactoryNew>()));
@@ -932,7 +959,7 @@ UMaterialInterface* SSpawnMaterial::GenerateMaterialWithORM(
     // --- 分支 A：材质实例模式 ---
     if (bUseExistingParent && ParentMI)
     {
-        FString MIName = MakeUniqueAssetName(TEXT("MI_") + BCRawName, SavePath);
+        FString MIName = MakeUniqueAssetName(GetAppliedName(BCRawName, EAssetType::Instance), SavePath);
         UMaterialInstanceConstant* MIC = Cast<UMaterialInstanceConstant>(AT.DuplicateAsset(MIName, SavePath, ParentMI));
 
         if (MIC)
@@ -1013,7 +1040,7 @@ UMaterialInterface* SSpawnMaterial::GenerateMaterialWithORM(
     // --- 分支 B：母材质连线模式 ---
     else
     {
-        FString FinalMatName = MakeUniqueAssetName(TEXT("M_") + BCRawName, SavePath);
+        FString FinalMatName = MakeUniqueAssetName(GetAppliedName(BCRawName, EAssetType::Material), SavePath);
         UMaterial* NewMat = Cast<UMaterial>(AT.CreateAsset(FinalMatName, SavePath, UMaterial::StaticClass(), NewObject<UMaterialFactoryNew>()));
 
         if (NewMat)
@@ -1061,7 +1088,7 @@ UMaterialInterface* SSpawnMaterial::GenerateMaterialWithORM(
 
             if (bAutoCreateInstance)
             {
-                FString FinalInstName = MakeUniqueAssetName(TEXT("MI_") + BCRawName, SavePath);
+                FString FinalInstName = MakeUniqueAssetName(GetAppliedName(BCRawName, EAssetType::Instance), SavePath);
                 UMaterialInstanceConstant* NewMIC = Cast<UMaterialInstanceConstant>(
                     AT.CreateAsset(FinalInstName, SavePath, UMaterialInstanceConstant::StaticClass(),
                                    NewObject<UMaterialInstanceConstantFactoryNew>()));
@@ -1291,6 +1318,112 @@ void SSpawnMaterial::OnUseParentMIToggled(ECheckBoxState NewState)
     {
         AddLog(TEXT("已切换至 [新材质生成] 模式。程序将自动创建材质节点并连接。"), FLinearColor::Green);
     }
+}
+
+
+// ============================================================================
+// 命名规则 — CreateNamingRow / GetAppliedName / StripNamingAffixes
+// ============================================================================
+
+TSharedRef<SWidget> SSpawnMaterial::CreateNamingRow(EAssetType Type, const FString& Label, const FString& DefaultPrefix)
+{
+    FSpawnNamingWidgets Widgets;
+
+    TSharedRef<SVerticalBox> ContentBox = SNew(SVerticalBox);
+
+    // 第一行：资产类别标题
+    ContentBox->AddSlot().AutoHeight().Padding(0, 5, 0, 2)
+    [
+        SNew(STextBlock)
+        .Text(FText::FromString(Label))
+        .Font(FAppStyle::GetFontStyle("DetailsView.CategoryFontStyle"))
+        .ColorAndOpacity(FLinearColor(0.4f, 0.8f, 1.0f))
+    ];
+
+    // 第二行：前缀勾选 + 输入框
+    ContentBox->AddSlot().AutoHeight().Padding(15, 2)
+    [
+        SNew(SHorizontalBox)
+        + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+        [
+            SAssignNew(Widgets.bUsePrefix, SCheckBox).IsChecked(ECheckBoxState::Checked)
+        ]
+        + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(5, 0)
+        [
+            SNew(STextBlock).Text(LOCTEXT("PrefixLabel", "前缀:")).MinDesiredWidth(40)
+        ]
+        + SHorizontalBox::Slot().FillWidth(1.0f)
+        [
+            SAssignNew(Widgets.PrefixEntry, SEditableTextBox)
+            .Text(FText::FromString(DefaultPrefix))
+            .Visibility_Lambda([this, Type]() {
+                return NamingControlMap.Contains(Type) && NamingControlMap[Type].bUsePrefix->IsChecked() ? EVisibility::Visible : EVisibility::Hidden;
+            })
+        ]
+    ];
+
+    // 第三行：后缀勾选 + 输入框
+    ContentBox->AddSlot().AutoHeight().Padding(15, 2, 0, 8)
+    [
+        SNew(SHorizontalBox)
+        + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+        [
+            SAssignNew(Widgets.bUseSuffix, SCheckBox).IsChecked(ECheckBoxState::Unchecked)
+        ]
+        + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(5, 0)
+        [
+            SNew(STextBlock).Text(LOCTEXT("SuffixLabel", "后缀:")).MinDesiredWidth(40)
+        ]
+        + SHorizontalBox::Slot().FillWidth(1.0f)
+        [
+            SAssignNew(Widgets.SuffixEntry, SEditableTextBox)
+            .HintText(LOCTEXT("SuffixHint", "输入后缀内容..."))
+            .Visibility_Lambda([this, Type]() {
+                return NamingControlMap.Contains(Type) && NamingControlMap[Type].bUseSuffix->IsChecked() ? EVisibility::Visible : EVisibility::Hidden;
+            })
+        ]
+    ];
+
+    NamingControlMap.Add(Type, Widgets);
+    return ContentBox;
+}
+
+FString SSpawnMaterial::GetAppliedName(const FString& RawName, EAssetType Type)
+{
+    if (!NamingControlMap.Contains(Type)) return RawName;
+
+    const FSpawnNamingWidgets& Widgets = NamingControlMap[Type];
+    FString FinalName = RawName;
+
+    if (Widgets.bUsePrefix->IsChecked())
+        FinalName = Widgets.PrefixEntry->GetText().ToString() + FinalName;
+    if (Widgets.bUseSuffix->IsChecked())
+        FinalName = FinalName + Widgets.SuffixEntry->GetText().ToString();
+
+    return FinalName;
+}
+
+FString SSpawnMaterial::StripNamingAffixes(const FString& Name, EAssetType Type) const
+{
+    if (!NamingControlMap.Contains(Type)) return Name;
+
+    const FSpawnNamingWidgets& Widgets = NamingControlMap[Type];
+    FString Result = Name;
+
+    if (Widgets.bUseSuffix->IsChecked())
+    {
+        FString Suffix = Widgets.SuffixEntry->GetText().ToString();
+        if (!Suffix.IsEmpty() && Result.EndsWith(Suffix, ESearchCase::IgnoreCase))
+            Result = Result.LeftChop(Suffix.Len());
+    }
+    if (Widgets.bUsePrefix->IsChecked())
+    {
+        FString Prefix = Widgets.PrefixEntry->GetText().ToString();
+        if (!Prefix.IsEmpty() && Result.StartsWith(Prefix, ESearchCase::IgnoreCase))
+            Result = Result.RightChop(Prefix.Len());
+    }
+
+    return Result;
 }
 
 
