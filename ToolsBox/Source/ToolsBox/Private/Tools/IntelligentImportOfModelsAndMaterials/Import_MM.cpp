@@ -118,7 +118,9 @@ void SImport_MM::Construct(const FArguments& InArgs)
                         ]
                         + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
                         [
-                            SNew(STextBlock).Text(LOCTEXT("CreateMI", "创建实例并应用"))
+                            SNew(STextBlock)
+                            .Text(LOCTEXT("CreateMI", "创建实例并应用"))
+                            .ToolTipText(LOCTEXT("CreateMITip", "在母材质基础上生成材质实例"))
                         ]
                     ]
                     + SVerticalBox::Slot().AutoHeight().Padding(5)
@@ -152,7 +154,9 @@ void SImport_MM::Construct(const FArguments& InArgs)
                             ]
                             + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
                             [
-                                SNew(STextBlock).Text(LOCTEXT("UseMI", "使用父材质实例"))
+                                SNew(STextBlock)
+                                .Text(LOCTEXT("UseMI", "使用父材质实例"))
+                                .ToolTipText(LOCTEXT("UseMITip", "从已有父材质实例复制并设置贴图参数"))
                             ]
                         ]
                         + SVerticalBox::Slot().AutoHeight().Padding(5)
@@ -174,10 +178,20 @@ void SImport_MM::Construct(const FArguments& InArgs)
                             .OnClicked(this, &SImport_MM::OnCreateGenericMaterialClicked)
                             .ContentPadding(FMargin(10, 2))
                         ]
-                        // 贴图参数名配置区
+                        // 贴图参数名配置区（仅勾选「使用父材质实例」时显示）
                         + SVerticalBox::Slot().AutoHeight().Padding(5)
                         [
-                            SNew(SGridPanel)
+                            SNew(SVerticalBox)
+                            .Visibility_Lambda([this](){ return bUseParentMICheckbox->IsChecked() ? EVisibility::Visible : EVisibility::Collapsed; })
+                            + SVerticalBox::Slot().AutoHeight()
+                            [
+                                SNew(STextBlock)
+                                .Text(LOCTEXT("ParamConfig", "贴图参数名配置"))
+                                .ColorAndOpacity(FSlateColor(FLinearColor::Gray))
+                            ]
+                            + SVerticalBox::Slot().AutoHeight().Padding(0, 4)
+                            [
+                                SNew(SGridPanel)
                             .FillColumn(1, 1.0f)
                             // 从 ChannelMeta 数据中自动生成贴图参数名输入行
                             + SGridPanel::Slot(0, 0).Padding(2) [ CreateParamInputRow(GetAllChannelMeta()[0].UIDisplayLabel, GetAllChannelMeta()[0].DefaultTextureParam.ToString(), GetAllChannelMeta()[0].Key) ]
@@ -189,6 +203,7 @@ void SImport_MM::Construct(const FArguments& InArgs)
                             + SGridPanel::Slot(0, 3).Padding(2) [ CreateParamInputRow(GetAllChannelMeta()[6].UIDisplayLabel, GetAllChannelMeta()[6].DefaultTextureParam.ToString(), GetAllChannelMeta()[6].Key) ]
                             + SGridPanel::Slot(1, 3).Padding(2) [ CreateParamInputRow(GetAllChannelMeta()[7].UIDisplayLabel, GetAllChannelMeta()[7].DefaultTextureParam.ToString(), GetAllChannelMeta()[7].Key) ]
                             + SGridPanel::Slot(0, 4).Padding(2) [ CreateParamInputRow(GetAllChannelMeta()[8].UIDisplayLabel, GetAllChannelMeta()[8].DefaultTextureParam.ToString(), GetAllChannelMeta()[8].Key) ]
+                            ]
                         ]
                     ]
                     ]

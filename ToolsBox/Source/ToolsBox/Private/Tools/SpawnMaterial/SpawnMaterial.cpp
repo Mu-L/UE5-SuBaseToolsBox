@@ -96,29 +96,9 @@ void SSpawnMaterial::Construct(const FArguments& InArgs)
                                 "  1. 在内容浏览器中选中一个或多个纹理贴图（同一材质的贴图需包含至少一张基础色贴图）\n"
                                 "  2. 在下方设置保存路径与生成模式\n"
                                 "  3. 点击「生成材质」按钮\n"
-                                "  \n"
-                                "  提示：如果同时选中了模型（StaticMesh），生成材质后会自动按名称关键词\n"
-                                "  匹配并将对应材质赋予对应模型（如贴图 T_Door_BaseColor 匹配模型 SM_BalconyDoor_Door）\n"
-                                "  \n"
-                                "  命名规则：可在下方「资产命名详细规则」中配置各类型资产的前缀/后缀。\n"
-                                "  生成材质时会自动剥离贴图前缀（如 T_），再加材质前缀（如 M_），避免叠两层前缀。"))
+                                ))
                         ]
-                        + SVerticalBox::Slot().AutoHeight().Padding(0, 6, 0, 0)
-                        [
-                            SNew(STextBlock)
-                            .AutoWrapText(true)
-                            .ColorAndOpacity(FSlateColor(FLinearColor(0.7f, 0.8f, 1.0f)))
-                            .Text(LOCTEXT("Keywords",
-                                "关键词对照：\n"
-                                "  基础色: base / albedo / color / col / diffuse / diff\n"
-                                "  法线: normal / _n\n"
-                                "  ORM合并: orm / occlusion+roughness+metallic\n"
-                                "  环境光遮蔽: ao / occlusion\n"
-                                "  粗糙度: rough\n"
-                                "  金属度: metal\n"
-                                "  自发光: emissive / _em\n"
-                                "  透明度: opacity / alpha / mask"))
-                        ]
+                        
                     ]
                 ]
             ]
@@ -130,10 +110,13 @@ void SSpawnMaterial::Construct(const FArguments& InArgs)
                 + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
                 [
                     SAssignNew(bSaveNextToTexturesCheckbox, SCheckBox)
+                    .ToolTipText(LOCTEXT("SaveNextToTexturesTip", "勾选后忽略上方保存位置，材质球保存到选中贴图所在目录"))
                 ]
                 + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
                 [
-                    SNew(STextBlock).Text(LOCTEXT("SaveNextToTextures", "保存到贴图同级目录（勾选后忽略上方保存位置）"))
+                    SNew(STextBlock)
+                    .Text(LOCTEXT("SaveNextToTextures", "保存到贴图同级目录"))
+                    .ToolTipText(LOCTEXT("SaveNextToTexturesTip2", "勾选后忽略上方保存位置，材质球保存到选中贴图所在目录"))
                 ]
             ]
             + SVerticalBox::Slot().AutoHeight().Padding(10, 2)
@@ -185,7 +168,9 @@ void SSpawnMaterial::Construct(const FArguments& InArgs)
                 ]
                 + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
                 [
-                    SNew(STextBlock).Text(LOCTEXT("CreateMI", "创建实例并应用（在母材质基础上生成材质实例）"))
+                    SNew(STextBlock)
+                    .Text(LOCTEXT("CreateMI", "创建实例并应用"))
+                    .ToolTipText(LOCTEXT("CreateMITip", "在母材质基础上生成材质实例"))
                 ]
             ]
             + SVerticalBox::Slot().AutoHeight().Padding(5)
@@ -199,7 +184,9 @@ void SSpawnMaterial::Construct(const FArguments& InArgs)
                 ]
                 + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
                 [
-                    SNew(STextBlock).Text(LOCTEXT("UseMI", "使用父材质实例（从已有父MI复制并设置贴图参数）"))
+                    SNew(STextBlock)
+                    .Text(LOCTEXT("UseMI", "使用父材质实例"))
+                    .ToolTipText(LOCTEXT("UseMITip", "从已有父材质实例复制并设置贴图参数"))
                 ]
             ]
 
@@ -230,14 +217,16 @@ void SSpawnMaterial::Construct(const FArguments& InArgs)
                         .OnClicked(this, &SSpawnMaterial::OnCreateGenericMaterialClicked)
                         .ContentPadding(FMargin(10, 2))
                     ]
-                    // 贴图参数名配置区
+                    // 贴图参数名配置区（仅勾选「使用父材质实例」时显示）
                     + SVerticalBox::Slot().AutoHeight().Padding(5)
                     [
                         SNew(SVerticalBox)
+                        .Visibility_Lambda([this](){ return bUseParentMICheckbox->IsChecked() ? EVisibility::Visible : EVisibility::Collapsed; })
                         + SVerticalBox::Slot().AutoHeight()
                         [
                             SNew(STextBlock)
-                            .Text(LOCTEXT("ParamConfig", "贴图参数名配置（仅「使用父材质实例」模式生效）"))
+                            .Text(LOCTEXT("ParamConfig", "贴图参数名配置"))
+                            .ToolTipText(LOCTEXT("ParamConfigTip", "仅「使用父材质实例」模式生效"))
                             .ColorAndOpacity(FSlateColor(FLinearColor::Gray))
                         ]
                         + SVerticalBox::Slot().AutoHeight().Padding(0, 4)
