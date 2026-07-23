@@ -172,7 +172,7 @@ inline const TArray<FChannelMeta>& GetAllChannelMeta()
 		{ ChannelKey::OP, TEXT("透明度:"),    TextureParam::Opacity,          SwitchParam::Use_Opacity,    false, TC_Masks,       SAMPLERTYPE_Masks,        MP_OpacityMask,       0, TEXT("") },
 		{ ChannelKey::AO, TEXT("环境光遮蔽:"),TextureParam::AmbientOcclusion, SwitchParam::Use_AO,         false, TC_Masks,       SAMPLERTYPE_Masks,        MP_AmbientOcclusion,  1, TEXT("R") },
 		{ ChannelKey::R,  TEXT("粗糙度:"),    TextureParam::Roughness,        SwitchParam::Use_Roughness,  false, TC_Masks,       SAMPLERTYPE_Masks,        MP_Roughness,         2, TEXT("G") },
-		{ ChannelKey::M,  TEXT("金属度:"),    TextureParam::Metallic,         SwitchParam::Use_Metallic,   false, TC_Masks,       SAMPLERTYPE_LinearColor, MP_Metallic,          3, TEXT("B") },
+		{ ChannelKey::M,  TEXT("金属度:"),    TextureParam::Metallic,         SwitchParam::Use_Metallic,   false, TC_Masks,       SAMPLERTYPE_Masks,       MP_Metallic,          3, TEXT("B") },
 		{ ChannelKey::SP, TEXT("高光度:"),    TextureParam::Specular,         SwitchParam::Use_Specular,   false, TC_Default,     SAMPLERTYPE_LinearColor, MP_Specular,          0, TEXT("") },
 	};
 	return Meta;
