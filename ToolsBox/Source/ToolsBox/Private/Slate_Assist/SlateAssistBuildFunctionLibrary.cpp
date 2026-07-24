@@ -174,8 +174,10 @@ void SlateAssistBuildFunctionLibrary::SpawnNotifiy(const FText& InText, const fl
     
     FNotificationInfo Info(InText);
     
-    Info.ExpireDuration = 6.0f;
+    Info.ExpireDuration = 10.0f;
 
+
+    
     Info.FadeInDuration = TimeIn;
     Info.FadeOutDuration = TimeOut;
     

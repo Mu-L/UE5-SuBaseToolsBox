@@ -13,6 +13,7 @@
 			"ScriptedAction.cpp.obj",
 			"BlankTemplateTool.cpp.obj",
 			"Import_MM.cpp.obj",
+			"SpawnMaterial.cpp.obj",
 			"Tools.cpp.obj"
 		]
 	}

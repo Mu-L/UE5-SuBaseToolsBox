@@ -66,6 +66,7 @@
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/MaterialEditor/UnrealEditor-MaterialEditor.lib"
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/DesktopPlatform/UnrealEditor-DesktopPlatform.lib"
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/PropertyEditor/UnrealEditor-PropertyEditor.lib"
+"../Intermediate/Build/Win64/x64/UnrealEditor/Development/ContentBrowser/UnrealEditor-ContentBrowser.lib"
 "../Plugins/Editor/EditorScriptingUtilities/Intermediate/Build/Win64/x64/UnrealEditor/Development/EditorScriptingUtilities/UnrealEditor-EditorScriptingUtilities.lib"
 "delayimp.lib"
 "wininet.lib"

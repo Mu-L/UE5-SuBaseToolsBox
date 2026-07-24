@@ -37,10 +37,13 @@ public class ToolsBox : ModuleRules
 				"AssetRegistry", 
 				"MaterialEditor", 
 				"DesktopPlatform",
-			"PropertyEditor",
-			"ContentBrowser",
-			"EditorScriptingUtilities"
-			
+				"PropertyEditor",
+				"ContentBrowser",
+				"EditorScriptingUtilities",
+				"BlueprintEditorLibrary",
+				"GeometryFramework",     
+				"GeometryScriptingCore" ,
+				"GeometryScripting"
 			}
 			);
 			
@@ -52,7 +55,7 @@ public class ToolsBox : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"Blutility",
+				"Blutility", 
 				
 					
 			}

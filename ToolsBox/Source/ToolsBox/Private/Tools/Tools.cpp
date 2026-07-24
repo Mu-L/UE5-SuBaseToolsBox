@@ -1,9 +1,10 @@
 ﻿#include "Tools/Tools.h"
 #include "Internationalization/Internationalization.h"
 #include "Templates/SharedPointer.h"
-#include "Tools/AssetActionUtility/AAU.h"
+
 #include "Tools/BlankTemplateTool/BlankTemplateTool.h"
 #include "Tools/IntelligentImportOfModelsAndMaterials/Import_MM.h"
+#include "Tools/Right-ClickOperationTool/AAU.h"
 #include "Tools/SpawnMaterial/SpawnMaterial.h"
 
 #define LOCTEXT_NAMESPACE "Tools"
