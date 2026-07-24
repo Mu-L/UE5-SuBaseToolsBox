@@ -21,7 +21,6 @@
 #include "PhysicsEngine/BodySetup.h"
 #include "Slate_Assist/SlateAssistBuildFunctionLibrary.h"
 
-
 #include "Editor/Blutility/Public/EditorUtilityLibrary.h"
 #include "Editor/StaticMeshEditor/Public/StaticMeshEditorSubsystem.h"
 
@@ -160,7 +159,7 @@ void UAssetAction::SetConvexDecompositionCollision(int32 HullCount, int32 MaxHul
 {
 	
 	
-	if (UStaticMeshEditorSubsystem *SMESubsystem=GEditor()->GetEditorSubsystem<UStaticMeshEditorSubsystem>())
+	if (UStaticMeshEditorSubsystem *SMESubsystem=GEditor->GetEditorSubsystem<UStaticMeshEditorSubsystem>())
 	{
 		TArray<UObject*> SelectedAssets = UEditorUtilityLibrary::GetSelectedAssets();
 		for (UObject* Asset : SelectedAssets)
@@ -295,7 +294,7 @@ void UAssetAction::RemoveChar(int32 CharCount, bool Interval)
 
 void UAssetAction::SimplifyMesh(float Percent)
 {
-	/*TArray<UObject*> SelectedAssets = UEditorUtilityLibrary::GetSelectedAssets();
+	TArray<UObject*> SelectedAssets = UEditorUtilityLibrary::GetSelectedAssets();
 	for (UObject* Asset : SelectedAssets)
 	{
 		if (UStaticMesh* Mesh = Cast<UStaticMesh>(Asset))
@@ -303,7 +302,7 @@ void UAssetAction::SimplifyMesh(float Percent)
 			
 			
 		}
-	}*/
+	}
 }
 
 

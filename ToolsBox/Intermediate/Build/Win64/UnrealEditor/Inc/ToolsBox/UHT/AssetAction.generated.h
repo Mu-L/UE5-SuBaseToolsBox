@@ -20,7 +20,7 @@ class UPhysicalMaterial;
 enum class ENaniteFallbackTarget : uint8;
 
 // ********** Begin Class UAssetAction *************************************************************
-#define FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_AssetAction_h_20_RPC_WRAPPERS_NO_PURE_DECLS \
+#define FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_AssetAction_h_18_RPC_WRAPPERS_NO_PURE_DECLS \
 	DECLARE_FUNCTION(execSimplifyMesh); \
 	DECLARE_FUNCTION(execRemoveChar); \
 	DECLARE_FUNCTION(execSetNaniteSetting); \
@@ -38,7 +38,7 @@ enum class ENaniteFallbackTarget : uint8;
 struct Z_Construct_UClass_UAssetAction_Statics;
 TOOLSBOX_API UClass* Z_Construct_UClass_UAssetAction(ETypeConstructPhase);
 
-#define FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_AssetAction_h_20_INCLASS_NO_PURE_DECLS \
+#define FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_AssetAction_h_18_INCLASS_NO_PURE_DECLS \
 private: \
 	friend struct ::Z_Construct_UClass_UAssetAction_Statics; \
 	friend TOOLSBOX_API UClass* ::Z_Construct_UClass_UAssetAction(ETypeConstructPhase); \
@@ -47,7 +47,7 @@ public: \
 	DECLARE_SERIALIZER(UAssetAction)
 
 
-#define FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_AssetAction_h_20_ENHANCED_CONSTRUCTORS \
+#define FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_AssetAction_h_18_ENHANCED_CONSTRUCTORS \
 	/** Deleted move- and copy-constructors, should never be used */ \
 	UAssetAction(UAssetAction&&) = delete; \
 	UAssetAction(const UAssetAction&) = delete; \
@@ -57,13 +57,13 @@ public: \
 	NO_API virtual ~UAssetAction();
 
 
-#define FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_AssetAction_h_17_PROLOG
-#define FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_AssetAction_h_20_GENERATED_BODY \
+#define FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_AssetAction_h_15_PROLOG
+#define FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_AssetAction_h_18_GENERATED_BODY \
 PRAGMA_DISABLE_DEPRECATION_WARNINGS \
 public: \
-	FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_AssetAction_h_20_RPC_WRAPPERS_NO_PURE_DECLS \
-	FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_AssetAction_h_20_INCLASS_NO_PURE_DECLS \
-	FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_AssetAction_h_20_ENHANCED_CONSTRUCTORS \
+	FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_AssetAction_h_18_RPC_WRAPPERS_NO_PURE_DECLS \
+	FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_AssetAction_h_18_INCLASS_NO_PURE_DECLS \
+	FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_AssetAction_h_18_ENHANCED_CONSTRUCTORS \
 private: \
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 

@@ -57,8 +57,9 @@ public class ToolsBox : ModuleRules
 				"Slate",
 				"SlateCore",
 				"Blutility", 
-				
-					
+				"PhysicsCore",
+				"BlueprintGraph",
+				"StaticMeshEditor",
 			}
 			);
 		
