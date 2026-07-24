@@ -3,7 +3,1669 @@
     "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json",
     "runs": [
         {
-            "results": [],
+            "results": [
+                {
+                    "ruleId": "C4003",
+                    "level": "error",
+                    "message": {
+                        "text": "类函数宏的调用“max”参数不足"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 359,
+                                    "startColumn": 69,
+                                    "snippet": {
+                                        "text": "\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C4003",
+                    "level": "error",
+                    "message": {
+                        "text": "类函数宏的调用“max”参数不足"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 360,
+                                    "startColumn": 71,
+                                    "snippet": {
+                                        "text": "\t\t\t\tFReal CrossingHorizontalCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C4003",
+                    "level": "error",
+                    "message": {
+                        "text": "类函数宏的调用“max”参数不足"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 380,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C4003",
+                    "level": "error",
+                    "message": {
+                        "text": "类函数宏的调用“max”参数不足"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 406,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C4003",
+                    "level": "error",
+                    "message": {
+                        "text": "类函数宏的调用“max”参数不足"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 407,
+                                    "startColumn": 72,
+                                    "snippet": {
+                                        "text": "\t\t\t\t\tFReal CrossingHorizontalCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2589",
+                    "level": "error",
+                    "message": {
+                        "text": "“(”:“::”右边的非法标记"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 359,
+                                    "startColumn": 69,
+                                    "snippet": {
+                                        "text": "\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2760",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误: 此处出现意外的“)”；应为“表达式”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 359,
+                                    "startColumn": 69,
+                                    "snippet": {
+                                        "text": "\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2760",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误: 此处出现意外的“)”；应为“;”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 359,
+                                    "startColumn": 69,
+                                    "snippet": {
+                                        "text": "\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C3878",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误:“expression-statement”后出现意外标记“)”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 359,
+                                    "startColumn": 69,
+                                    "snippet": {
+                                        "text": "\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C3878",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误:“statement”后出现意外标记“)”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 359,
+                                    "startColumn": 69,
+                                    "snippet": {
+                                        "text": "\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C3878",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误:“statement-seq”后出现意外标记“)”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 359,
+                                    "startColumn": 69,
+                                    "snippet": {
+                                        "text": "\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "relatedLocations": [
+                        {
+                            "id": 0,
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 359,
+                                    "startColumn": 69,
+                                    "snippet": {
+                                        "text": "\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            },
+                            "message": {
+                                "text": "缺少以下项之一:  '}' ?"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2760",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误: 此处出现意外的“)”；应为“}”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 359,
+                                    "startColumn": 69,
+                                    "snippet": {
+                                        "text": "\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C3878",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误:“compound-statement”后出现意外标记“)”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 359,
+                                    "startColumn": 69,
+                                    "snippet": {
+                                        "text": "\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C3878",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误:“selection-statement”后出现意外标记“)”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 359,
+                                    "startColumn": 69,
+                                    "snippet": {
+                                        "text": "\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2589",
+                    "level": "error",
+                    "message": {
+                        "text": "“(”:“::”右边的非法标记"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 360,
+                                    "startColumn": 71,
+                                    "snippet": {
+                                        "text": "\t\t\t\tFReal CrossingHorizontalCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2760",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误: 此处出现意外的“)”；应为“表达式”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 360,
+                                    "startColumn": 71,
+                                    "snippet": {
+                                        "text": "\t\t\t\tFReal CrossingHorizontalCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2760",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误: 此处出现意外的“)”；应为“;”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 360,
+                                    "startColumn": 71,
+                                    "snippet": {
+                                        "text": "\t\t\t\tFReal CrossingHorizontalCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C3878",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误:“expression-statement”后出现意外标记“)”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 360,
+                                    "startColumn": 71,
+                                    "snippet": {
+                                        "text": "\t\t\t\tFReal CrossingHorizontalCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2065",
+                    "level": "error",
+                    "message": {
+                        "text": "“CrossingVerticleCellBorderT”: 未声明的标识符"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 361,
+                                    "startColumn": 5,
+                                    "snippet": {
+                                        "text": "\t\t\t\tCrossingVerticleCellBorderT = DtDx * ((FReal)(CurrentCellIndexX0 - ReferenceCellIndexX + (DeltaCelIndexX > 0 ? 1 : 0)) * DirtyElementGridCellSize - X0);"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2065",
+                    "level": "error",
+                    "message": {
+                        "text": "“CrossingVerticleCellBorderT”: 未声明的标识符"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 363,
+                                    "startColumn": 41,
+                                    "snippet": {
+                                        "text": "\t\t\t\tif (CrossingHorizontalCellBorderT < CrossingVerticleCellBorderT)"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2589",
+                    "level": "error",
+                    "message": {
+                        "text": "“(”:“::”右边的非法标记"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 380,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2760",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误: 此处出现意外的“)”；应为“表达式”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 380,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2760",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误: 此处出现意外的“)”；应为“;”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 380,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C3878",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误:“expression-statement”后出现意外标记“)”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 380,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C3878",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误:“statement”后出现意外标记“)”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 380,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C3878",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误:“statement-seq”后出现意外标记“)”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 380,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "relatedLocations": [
+                        {
+                            "id": 0,
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 380,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            },
+                            "message": {
+                                "text": "缺少以下项之一:  '}' ?"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2760",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误: 此处出现意外的“)”；应为“}”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 380,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C3878",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误:“compound-statement”后出现意外标记“)”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 380,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C3878",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误:“selection-statement”后出现意外标记“)”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 380,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2065",
+                    "level": "error",
+                    "message": {
+                        "text": "“CrossingVerticleCellBorderT”: 未声明的标识符"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 381,
+                                    "startColumn": 6,
+                                    "snippet": {
+                                        "text": "\t\t\t\t\tCrossingVerticleCellBorderT = DtDx * ((FReal)(CurrentCellIndexX0 - ReferenceCellIndexX + (DeltaCelIndexX > 0 ? 1 : 0)) * DirtyElementGridCellSize - X0);"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2065",
+                    "level": "error",
+                    "message": {
+                        "text": "“CrossingVerticleCellBorderT”: 未声明的标识符"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 382,
+                                    "startColumn": 12,
+                                    "snippet": {
+                                        "text": "\t\t\t\t\tX0 += CrossingVerticleCellBorderT * (1 / DtDx);"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2065",
+                    "level": "error",
+                    "message": {
+                        "text": "“CrossingVerticleCellBorderT”: 未声明的标识符"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 383,
+                                    "startColumn": 12,
+                                    "snippet": {
+                                        "text": "\t\t\t\t\tY0 += CrossingVerticleCellBorderT * (1 / DtDy);"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C3878",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误:“statement-seq”后出现意外标记“else”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 385,
+                                    "startColumn": 5,
+                                    "snippet": {
+                                        "text": "\t\t\t\telse"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "relatedLocations": [
+                        {
+                            "id": 0,
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 385,
+                                    "startColumn": 5,
+                                    "snippet": {
+                                        "text": "\t\t\t\telse"
+                                    }
+                                }
+                            },
+                            "message": {
+                                "text": "缺少以下项之一:  '}' ?"
+                            }
+                        },
+                        {
+                            "id": 1,
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 388,
+                                    "startColumn": 5,
+                                    "snippet": {
+                                        "text": "\t\t\t\t}"
+                                    }
+                                }
+                            },
+                            "message": {
+                                "text": "正在分析此处的简历"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C4003",
+                    "level": "error",
+                    "message": {
+                        "text": "类函数宏的调用“max”参数不足"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 578,
+                                    "startColumn": 68,
+                                    "snippet": {
+                                        "text": "\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C4003",
+                    "level": "error",
+                    "message": {
+                        "text": "类函数宏的调用“max”参数不足"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 579,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\tFReal CrossingHorizontalCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2589",
+                    "level": "error",
+                    "message": {
+                        "text": "“(”:“::”右边的非法标记"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 578,
+                                    "startColumn": 68,
+                                    "snippet": {
+                                        "text": "\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2760",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误: 此处出现意外的“)”；应为“表达式”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 578,
+                                    "startColumn": 68,
+                                    "snippet": {
+                                        "text": "\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2760",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误: 此处出现意外的“)”；应为“;”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 578,
+                                    "startColumn": 68,
+                                    "snippet": {
+                                        "text": "\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C3878",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误:“expression-statement”后出现意外标记“)”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 578,
+                                    "startColumn": 68,
+                                    "snippet": {
+                                        "text": "\t\t\tFReal CrossingVerticleCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2589",
+                    "level": "error",
+                    "message": {
+                        "text": "“(”:“::”右边的非法标记"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 579,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\tFReal CrossingHorizontalCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2760",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误: 此处出现意外的“)”；应为“表达式”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 579,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\tFReal CrossingHorizontalCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2760",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误: 此处出现意外的“)”；应为“;”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 579,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\tFReal CrossingHorizontalCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C3878",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误:“expression-statement”后出现意外标记“)”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/AABBTreeDirtyGridUtils.h"
+                                },
+                                "region": {
+                                    "startLine": 579,
+                                    "startColumn": 70,
+                                    "snippet": {
+                                        "text": "\t\t\tFReal CrossingHorizontalCellBorderT = std::numeric_limits<FReal>::max();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2039",
+                    "level": "error",
+                    "message": {
+                        "text": "\"GetObjectW\": 不是 \"Chaos::FImplicitObject\" 的成员"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/ImplicitObjectScaled.h"
+                                },
+                                "region": {
+                                    "startLine": 1224,
+                                    "startColumn": 73,
+                                    "snippet": {
+                                        "text": "\tif (const TImplicitObjectScaled<T>* ScaledImplicit = Implicit.template GetObject<TImplicitObjectScaled<T>>())"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "relatedLocations": [
+                        {
+                            "id": 0,
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/ImplicitObject.h"
+                                },
+                                "region": {
+                                    "startLine": 110,
+                                    "startColumn": 7,
+                                    "snippet": {
+                                        "text": "class FImplicitObject : public FChaosRefCountedObject"
+                                    }
+                                }
+                            },
+                            "message": {
+                                "text": "参见“Chaos::FImplicitObject”的声明"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2039",
+                    "level": "error",
+                    "message": {
+                        "text": "\"GetObjectW\": 不是 \"Chaos::FImplicitObject\" 的成员"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/ImplicitObjectScaled.h"
+                                },
+                                "region": {
+                                    "startLine": 1230,
+                                    "startColumn": 84,
+                                    "snippet": {
+                                        "text": "\telse if (const TImplicitObjectInstanced<T>* InstancedImplicit = Implicit.template GetObject<TImplicitObjectInstanced<T>>())"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "relatedLocations": [
+                        {
+                            "id": 0,
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/ImplicitObject.h"
+                                },
+                                "region": {
+                                    "startLine": 110,
+                                    "startColumn": 7,
+                                    "snippet": {
+                                        "text": "class FImplicitObject : public FChaosRefCountedObject"
+                                    }
+                                }
+                            },
+                            "message": {
+                                "text": "参见“Chaos::FImplicitObject”的声明"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2039",
+                    "level": "error",
+                    "message": {
+                        "text": "\"GetObjectW\": 不是 \"Chaos::FImplicitObject\" 的成员"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/ImplicitObjectScaled.h"
+                                },
+                                "region": {
+                                    "startLine": 1235,
+                                    "startColumn": 52,
+                                    "snippet": {
+                                        "text": "\telse if (const T* RawImplicit = Implicit.template GetObject<T>())"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "relatedLocations": [
+                        {
+                            "id": 0,
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/ImplicitObject.h"
+                                },
+                                "region": {
+                                    "startLine": 110,
+                                    "startColumn": 7,
+                                    "snippet": {
+                                        "text": "class FImplicitObject : public FChaosRefCountedObject"
+                                    }
+                                }
+                            },
+                            "message": {
+                                "text": "参见“Chaos::FImplicitObject”的声明"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C4003",
+                    "level": "error",
+                    "message": {
+                        "text": "类函数宏的调用“min”参数不足"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/HierarchicalSpatialHash.h"
+                                },
+                                "region": {
+                                    "startLine": 340,
+                                    "startColumn": 110,
+                                    "snippet": {
+                                        "text": "\t\tconst int32 MinAllowableLod = MinLodSize > (T)0 ? LodForCellSize(MinLodSize) : std::numeric_limits<int32>::min();"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2589",
+                    "level": "error",
+                    "message": {
+                        "text": "“(”:“::”右边的非法标记"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/HierarchicalSpatialHash.h"
+                                },
+                                "region": {
+                                    "startLine": 340,
+                                    "startColumn": 110,
+                                    "snippet": {
+                                        "text": "\t\tconst int32 MinAllowableLod = MinLodSize > (T)0 ? LodForCellSize(MinLodSize) : std::numeric_limits<int32>::min();"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "relatedLocations": [
+                        {
+                            "id": 0,
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/HierarchicalSpatialHash.h"
+                                },
+                                "region": {
+                                    "startLine": 332,
+                                    "startColumn": 7,
+                                    "snippet": {
+                                        "text": "\tvoid Initialize(const ParticlesType& Particles, const T MinLodSize = (T)0)"
+                                    }
+                                }
+                            },
+                            "message": {
+                                "text": "此诊断出现在编译器生成的函数“void Chaos::THierarchicalSpatialHash<PayloadType,T>::Initialize(const ParticlesType &,const T)”中"
+                            }
+                        },
+                        {
+                            "id": 1,
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/HierarchicalSpatialHash.h"
+                                },
+                                "region": {
+                                    "startLine": 340,
+                                    "startColumn": 110,
+                                    "snippet": {
+                                        "text": "\t\tconst int32 MinAllowableLod = MinLodSize > (T)0 ? LodForCellSize(MinLodSize) : std::numeric_limits<int32>::min();"
+                                    }
+                                }
+                            },
+                            "message": {
+                                "text": "模板实例化上下文(最早的实例化上下文)为"
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/HierarchicalSpatialHash.h"
+                                },
+                                "region": {
+                                    "startLine": 213,
+                                    "startColumn": 7,
+                                    "snippet": {
+                                        "text": "class THierarchicalSpatialHash : public TSpatialHashGridBase<PayloadType>"
+                                    }
+                                }
+                            },
+                            "message": {
+                                "text": "在编译类模板“Chaos::THierarchicalSpatialHash”时"
+                            },
+                            "properties": {
+                                "nestingLevel": 1
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2760",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误: 此处出现意外的“)”；应为“表达式”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/HierarchicalSpatialHash.h"
+                                },
+                                "region": {
+                                    "startLine": 340,
+                                    "startColumn": 110,
+                                    "snippet": {
+                                        "text": "\t\tconst int32 MinAllowableLod = MinLodSize > (T)0 ? LodForCellSize(MinLodSize) : std::numeric_limits<int32>::min();"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "relatedLocations": [
+                        {
+                            "id": 0,
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/HierarchicalSpatialHash.h"
+                                },
+                                "region": {
+                                    "startLine": 332,
+                                    "startColumn": 7,
+                                    "snippet": {
+                                        "text": "\tvoid Initialize(const ParticlesType& Particles, const T MinLodSize = (T)0)"
+                                    }
+                                }
+                            },
+                            "message": {
+                                "text": "此诊断出现在编译器生成的函数“void Chaos::THierarchicalSpatialHash<PayloadType,T>::Initialize(const ParticlesType &,const T)”中"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2760",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误: 此处出现意外的“)”；应为“;”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/HierarchicalSpatialHash.h"
+                                },
+                                "region": {
+                                    "startLine": 340,
+                                    "startColumn": 110,
+                                    "snippet": {
+                                        "text": "\t\tconst int32 MinAllowableLod = MinLodSize > (T)0 ? LodForCellSize(MinLodSize) : std::numeric_limits<int32>::min();"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "relatedLocations": [
+                        {
+                            "id": 0,
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/HierarchicalSpatialHash.h"
+                                },
+                                "region": {
+                                    "startLine": 332,
+                                    "startColumn": 7,
+                                    "snippet": {
+                                        "text": "\tvoid Initialize(const ParticlesType& Particles, const T MinLodSize = (T)0)"
+                                    }
+                                }
+                            },
+                            "message": {
+                                "text": "此诊断出现在编译器生成的函数“void Chaos::THierarchicalSpatialHash<PayloadType,T>::Initialize(const ParticlesType &,const T)”中"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C3878",
+                    "level": "error",
+                    "message": {
+                        "text": "语法错误:“expression-statement”后出现意外标记“)”"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/HierarchicalSpatialHash.h"
+                                },
+                                "region": {
+                                    "startLine": 340,
+                                    "startColumn": 110,
+                                    "snippet": {
+                                        "text": "\t\tconst int32 MinAllowableLod = MinLodSize > (T)0 ? LodForCellSize(MinLodSize) : std::numeric_limits<int32>::min();"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "relatedLocations": [
+                        {
+                            "id": 0,
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UE_5.8/Engine/Source/Runtime/Experimental/Chaos/Public/Chaos/HierarchicalSpatialHash.h"
+                                },
+                                "region": {
+                                    "startLine": 332,
+                                    "startColumn": 7,
+                                    "snippet": {
+                                        "text": "\tvoid Initialize(const ParticlesType& Particles, const T MinLodSize = (T)0)"
+                                    }
+                                }
+                            },
+                            "message": {
+                                "text": "此诊断出现在编译器生成的函数“void Chaos::THierarchicalSpatialHash<PayloadType,T>::Initialize(const ParticlesType &,const T)”中"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C2653",
+                    "level": "error",
+                    "message": {
+                        "text": "“UEditorAssetLibrary”: 不是类或命名空间名称"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                                },
+                                "region": {
+                                    "startLine": 60,
+                                    "startColumn": 7,
+                                    "snippet": {
+                                        "text": "\t\tif (UEditorAssetLibrary::RenameAsset(FullPath, NewObjectPath))"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C3861",
+                    "level": "error",
+                    "message": {
+                        "text": "“RenameAsset”: 找不到标识符"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                                },
+                                "region": {
+                                    "startLine": 60,
+                                    "startColumn": 28,
+                                    "snippet": {
+                                        "text": "\t\tif (UEditorAssetLibrary::RenameAsset(FullPath, NewObjectPath))"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "ruleId": "C1003",
+                    "level": "error",
+                    "message": {
+                        "text": "错误计数超过 100；正在停止编译"
+                    },
+                    "analysisTarget": {
+                        "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
+                                },
+                                "region": {
+                                    "startLine": 60,
+                                    "startColumn": 28,
+                                    "snippet": {
+                                        "text": "\t\tif (UEditorAssetLibrary::RenameAsset(FullPath, NewObjectPath))"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ],
             "tool": {
                 "driver": {
                     "name": "MSVC",

@@ -4,13 +4,11 @@
 #include "Tools/Right-ClickOperationTool/AssetAction.h"
 
 #include "AssetToolsModule.h"
-#include "BlueprintEditorLibrary.h"
-#include "BlueprintEditorLibrary.h"
+
 #include "Editor.h"
 #include "EditorAssetLibrary.h"
-#include "EditorUtilityLibrary.h" // 位于 Blutility 模块
 #include "K2Node_EditablePinBase.h"
-#include "StaticMeshEditorSubsystem.h"
+#include "Editor/BlueprintEditorLibrary/Public/BlueprintEditorLibrary.h"
 #include "Engine/Blueprint.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
@@ -22,8 +20,10 @@
 #include "Materials/MaterialInstanceConstant.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "Slate_Assist/SlateAssistBuildFunctionLibrary.h"
-#include "GeometryScript/MeshAssetFunctions.h"
-#include "UDynamicMesh.h"
+
+
+#include "Editor/Blutility/Public/EditorUtilityLibrary.h"
+#include "Editor/StaticMeshEditor/Public/StaticMeshEditorSubsystem.h"
 
 UAssetAction::UAssetAction(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)
@@ -295,15 +295,15 @@ void UAssetAction::RemoveChar(int32 CharCount, bool Interval)
 
 void UAssetAction::SimplifyMesh(float Percent)
 {
-	TArray<UObject*> SelectedAssets = UEditorUtilityLibrary::GetSelectedAssets();
+	/*TArray<UObject*> SelectedAssets = UEditorUtilityLibrary::GetSelectedAssets();
 	for (UObject* Asset : SelectedAssets)
 	{
 		if (UStaticMesh* Mesh = Cast<UStaticMesh>(Asset))
 		{
 			
-			UGeometryScriptLibrary_MeshSimplification::SimplifyMeshByPercentage() 
+			
 		}
-	}
+	}*/
 }
 
 

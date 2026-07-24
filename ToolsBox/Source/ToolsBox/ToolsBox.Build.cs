@@ -43,7 +43,8 @@ public class ToolsBox : ModuleRules
 				"BlueprintEditorLibrary",
 				"GeometryFramework",     
 				"GeometryScriptingCore" ,
-				"GeometryScripting"
+				
+		
 			}
 			);
 			
