@@ -6,7 +6,8 @@
 #include "AssetToolsModule.h"
 
 #include "Editor.h"
-#include "EditorAssetLibrary.h"
+#include "Editor/Blutility/Classes/AssetActionUtility.h"
+#include "Engine/EngineTypes.h"
 #include "K2Node_EditablePinBase.h"
 #include "Editor/BlueprintEditorLibrary/Public/BlueprintEditorLibrary.h"
 #include "Engine/Blueprint.h"
@@ -20,7 +21,7 @@
 #include "Materials/MaterialInstanceConstant.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "Slate_Assist/SlateAssistBuildFunctionLibrary.h"
-
+#include "EditorAssetLibrary.h"
 #include "Editor/Blutility/Public/EditorUtilityLibrary.h"
 #include "Editor/StaticMeshEditor/Public/StaticMeshEditorSubsystem.h"
 

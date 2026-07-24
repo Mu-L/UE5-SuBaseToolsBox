@@ -43,7 +43,10 @@ public class ToolsBox : ModuleRules
 				"BlueprintEditorLibrary",
 				"GeometryFramework",     
 				"GeometryScriptingCore" ,
-				
+				"Blutility", 
+				"PhysicsCore",
+				"BlueprintGraph",
+				"StaticMeshEditor",
 		
 			}
 			);
@@ -54,12 +57,7 @@ public class ToolsBox : ModuleRules
 			{
 				"CoreUObject",
 				"Engine",
-				"Slate",
-				"SlateCore",
-				"Blutility", 
-				"PhysicsCore",
-				"BlueprintGraph",
-				"StaticMeshEditor",
+				
 			}
 			);
 		
