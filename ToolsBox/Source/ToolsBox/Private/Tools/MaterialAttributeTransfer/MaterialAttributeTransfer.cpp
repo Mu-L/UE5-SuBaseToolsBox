@@ -275,137 +275,122 @@ void SMaterialTttributeTransfer::LoadSettings()
     }
 }
  
-FReply SMaterialTttributeTransfer::OnExecuteTransfer()
+	FReply SMaterialTttributeTransfer::OnExecuteTransfer()
 {
-    // 1. 获取选中的资产
-    TArray<UObject*> SelectedAssets;
-    GEditor->GetSelectedObjects()->GetSelectedObjects(UMaterialInterface::StaticClass(), SelectedAssets);
+    // 1. 【核心修复】直接从内容浏览器获取选中的资产数据
+    FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
+    TArray<FAssetData> SelectedAssetsData;
+    ContentBrowserModule.Get().GetSelectedAssets(SelectedAssetsData);
  
-    if (SelectedAssets.Num() == 0)
+    // 过滤出材质类资产
+    TArray<UMaterialInterface*> SelectedMaterials;
+    for (const FAssetData& AssetData : SelectedAssetsData)
     {
-        AppendLog(TEXT("错误: 未在内容浏览器选中任何要转移的材质资产！"));
+        if (UMaterialInterface* Mat = Cast<UMaterialInterface>(AssetData.GetAsset()))
+        {
+            SelectedMaterials.Add(Mat);
+        }
+    }
+ 
+    if (SelectedMaterials.Num() == 0)
+    {
+        AppendLog(TEXT("错误: 未在内容浏览器选中任何有效的材质或材质实例！"));
         return FReply::Handled();
     }
  
     if (!TargetMasterMaterial.IsValid())
     {
-        AppendLog(TEXT("错误: 请先选择目标母材质！"));
+        AppendLog(TEXT("错误: 请先在工具上方选择目标母材质！"));
         return FReply::Handled();
     }
  
-    // 2. 路径清理与格式化 (修复 TrimStartAndEnd 报错和 /All 问题)
-    FString FinalPath = TargetSavePath;
-    FinalPath = FinalPath.TrimStartAndEnd(); // 无参数调用，去除两端空白
- 
-    // 移除 UE 内部可能带有的 /All 前缀
+    // 2. 路径清理逻辑
+    FString FinalPath = TargetSavePath.TrimStartAndEnd();
     if (FinalPath.StartsWith(TEXT("/All")))
     {
         FinalPath.RemoveFromStart(TEXT("/All"));
     }
  
-    // 移除前后多余的斜杠
+    // 统一处理斜杠
     while (FinalPath.StartsWith(TEXT("/"))) { FinalPath.RemoveFromStart(TEXT("/")); }
     while (FinalPath.EndsWith(TEXT("/"))) { FinalPath.RemoveFromEnd(TEXT("/")); }
  
-    // 确保以 Game 开头并加上正确的根斜杠
     if (FinalPath.StartsWith(TEXT("Game")))
     {
         FinalPath = TEXT("/") + FinalPath;
     }
     else
     {
-        // 如果是空的或者是自定义文件夹，拼上 /Game/
-        if (FinalPath.IsEmpty())
-        {
-            FinalPath = TEXT("/Game");
-        }
-        else
-        {
-            FinalPath = TEXT("/Game/") + FinalPath;
-        }
+        FinalPath = FinalPath.IsEmpty() ? TEXT("/Game") : TEXT("/Game/") + FinalPath;
     }
+    
+    // 确保路径中没有 //
+    FinalPath.ReplaceInline(TEXT("//"), TEXT("/"));
  
     IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
-    AppendLog(FString::Printf(TEXT("开始处理... 目标目录: %s"), *FinalPath));
+    AppendLog(FString::Printf(TEXT("开始处理... 选中数量: %d, 目标路径: %s"), SelectedMaterials.Num(), *FinalPath));
  
     int32 SuccessCount = 0;
     int32 SkipCount = 0;
  
-    // 3. 循环处理选中的每一个材质
-    for (UObject* Asset : SelectedAssets)
+    // 3. 循环处理
+    for (UMaterialInterface* SourceMat : SelectedMaterials)
     {
-        UMaterialInterface* SourceMat = Cast<UMaterialInterface>(Asset);
-        
-        // 排除掉母材质本身，防止循环引用
-        if (!SourceMat || SourceMat == TargetMasterMaterial.Get())
+        // 排除母材质本身
+        if (SourceMat == TargetMasterMaterial.Get())
         {
+            AppendLog(FString::Printf(TEXT("跳过: %s (它是母材质本身)"), *SourceMat->GetName()));
             SkipCount++;
             continue;
         }
  
-        // 创建新资产名称 (原名 + _INST)
+        // 创建 MIC
         FString NewAssetName = SourceMat->GetName() + TEXT("_INST");
-        
-        // 使用 AssetTools 创建材质实例 (MIC)
         UMaterialInstanceConstantFactoryNew* Factory = NewObject<UMaterialInstanceConstantFactoryNew>();
+        
         UObject* NewAsset = AssetTools.CreateAsset(NewAssetName, FinalPath, UMaterialInstanceConstant::StaticClass(), Factory);
         UMaterialInstanceConstant* NewMIC = Cast<UMaterialInstanceConstant>(NewAsset);
  
         if (NewMIC)
         {
-            // 设置新的母材质
             NewMIC->SetParentEditorOnly(TargetMasterMaterial.Get());
  
-            // 遍历映射表转移参数
             for (const TSharedPtr<FParamMappingPair>& Mapping : MappingList)
             {
-                if (Mapping->TargetParamName.IsEmpty() || Mapping->SourceParamName.IsEmpty())
-                {
-                    continue;
-                }
+                if (Mapping->TargetParamName.IsEmpty() || Mapping->SourceParamName.IsEmpty()) continue;
  
                 FName DestName(*Mapping->TargetParamName);
                 FName SrcName(*Mapping->SourceParamName);
  
-                // --- 转移 Texture (贴图) ---
+                // 转移 Texture
                 UTexture* SourceTex = nullptr;
                 if (SourceMat->GetTextureParameterValue(SrcName, SourceTex))
-                {
                     NewMIC->SetTextureParameterValueEditorOnly(DestName, SourceTex);
-                }
  
-                // --- 转移 Scalar (浮点/标量) ---
+                // 转移 Scalar
                 float SourceScalar = 0.f;
                 if (SourceMat->GetScalarParameterValue(SrcName, SourceScalar))
-                {
                     NewMIC->SetScalarParameterValueEditorOnly(DestName, SourceScalar);
-                }
  
-                // --- 转移 Vector (颜色/向量) ---
+                // 转移 Vector
                 FLinearColor SourceVector;
                 if (SourceMat->GetVectorParameterValue(SrcName, SourceVector))
-                {
                     NewMIC->SetVectorParameterValueEditorOnly(DestName, SourceVector);
-                }
             }
  
-            // 通知编辑器资产已修改，需要更新
             NewMIC->PostEditChange();
             FAssetRegistryModule::AssetCreated(NewMIC);
             
             SuccessCount++;
-            AppendLog(FString::Printf(TEXT("已生成: %s"), *NewAssetName));
+            AppendLog(FString::Printf(TEXT("成功生成: %s"), *NewAssetName));
         }
         else
         {
-            AppendLog(FString::Printf(TEXT("跳过: %s (可能已存在或路径无效)"), *SourceMat->GetName()));
+            AppendLog(FString::Printf(TEXT("失败: 无法在路径 %s 下创建资产 %s"), *FinalPath, *NewAssetName));
         }
     }
  
-    // 4. 完成后的总结与保存
-    AppendLog(FString::Printf(TEXT("任务结束！成功: %d, 跳过: %d"), SuccessCount, SkipCount));
-    
-    // 强制保存新生成的包，防止掉电或崩溃丢失
+    AppendLog(FString::Printf(TEXT("任务完成！成功: %d, 跳过: %d"), SuccessCount, SkipCount));
     UEditorLoadingAndSavingUtils::SaveDirtyPackages(false, true);
  
     return FReply::Handled();
