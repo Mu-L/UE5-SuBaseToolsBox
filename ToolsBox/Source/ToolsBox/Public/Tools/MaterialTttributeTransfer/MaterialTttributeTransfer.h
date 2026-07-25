@@ -6,6 +6,7 @@
 #include "Components/VerticalBox.h"
 #include "Materials/MaterialInterface.h"
 #include "Widgets/SCompoundWidget.h"
+#include "Widgets/Text/SMultiLineEditableText.h"
 
 struct FParamMappingPair
 {
@@ -22,21 +23,19 @@ public:
 	void Construct(const FArguments& InArgs);
  
 private:
-	// UI 容器与数据
 	TSharedPtr<SVerticalBox> MappingContainer;
 	TArray<TSharedPtr<FParamMappingPair>> MappingList;
 	TWeakObjectPtr<UMaterialInterface> TargetMasterMaterial;
  
-	// 持久化变量
 	FString SaveConfigFileName;
-	FString TargetSavePath; // 新增：保存路径变量
+	FString TargetSavePath; 
  
-	// 日志相关
-	TSharedPtr<class SMultiLineEditableText> LogWindow;
+	// 日志组件修复：添加 ScrollBox 引用
+	TSharedPtr<SScrollBox> LogScrollBox;
+	TSharedPtr<SMultiLineEditableText> LogWindow;
 	FText LogContent;
 	void AppendLog(const FString& InLog);
  
-	// --- 内部辅助函数 ---
 	void AddMappingRow();
 	TSharedRef<SWidget> CreateMappingRowWidget(TSharedPtr<FParamMappingPair> InPair);
 	void RefreshMappingUI();
@@ -48,7 +47,7 @@ private:
 	void LoadSettings();
  
 	FReply OnExecuteTransfer();
-	void UpdateCurrentPathFromContentBrowser();
+	void UpdateCurrentPathFromContentBrowser(); 
  
 	void OnMasterMaterialChanged(const FAssetData& AssetData);
 	FString GetMasterMaterialPath() const;

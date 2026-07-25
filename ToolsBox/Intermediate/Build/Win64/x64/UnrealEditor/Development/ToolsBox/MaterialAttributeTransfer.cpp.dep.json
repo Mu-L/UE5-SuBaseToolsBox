@@ -166,6 +166,7 @@
             "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\umg\\uht\\userwidget.generated.h",
             "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\umg\\uht\\panelwidget.generated.h",
             "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\umg\\uht\\verticalbox.generated.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\slate\\public\\widgets\\text\\smultilineeditabletext.h",
             "f:\\ue_5.8\\engine\\source\\editor\\propertyeditor\\public\\propertycustomizationhelpers.h",
             "f:\\ue_5.8\\engine\\source\\editor\\propertyeditor\\public\\idetailcustomnodebuilder.h",
             "f:\\ue_5.8\\engine\\source\\editor\\propertyeditor\\public\\detailwidgetrow.h",
@@ -176,8 +177,7 @@
             "f:\\ue_5.8\\engine\\source\\editor\\propertyeditor\\public\\sresettodefaultmenu.h",
             "f:\\ue_5.8\\engine\\source\\editor\\actorpickermode\\public\\actorpickermode.h",
             "f:\\ue_5.8\\engine\\source\\editor\\scenedepthpickermode\\public\\scenedepthpickermode.h",
-            "f:\\ue_5.8\\engine\\source\\editor\\classviewer\\public\\classviewermodule.h",
-            "f:\\ue_5.8\\engine\\source\\runtime\\slate\\public\\widgets\\text\\smultilineeditabletext.h"
+            "f:\\ue_5.8\\engine\\source\\editor\\classviewer\\public\\classviewermodule.h"
         ],
         "ImportedModules": [],
         "ImportedHeaderUnits": []

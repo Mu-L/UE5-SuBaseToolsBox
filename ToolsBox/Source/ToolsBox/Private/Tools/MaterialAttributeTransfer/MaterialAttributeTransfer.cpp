@@ -26,14 +26,14 @@
  
 void SMaterialTttributeTransfer::Construct(const FArguments& InArgs)
 {
-    SaveConfigFileName = TEXT("MaterialAttributeTransfer_Data.json");
+    SaveConfigFileName = TEXT("DefaultSettings.json");
     TargetSavePath = TEXT("/Game/"); 
  
     ChildSlot
     [
         SNew(SVerticalBox)
  
-        // 1. 配置文件管理 (保存/加载 JSON)
+        // 1. 配置管理
         + SVerticalBox::Slot().AutoHeight().Padding(10, 5)
         [
             SNew(SBorder).BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
@@ -80,7 +80,7 @@ void SMaterialTttributeTransfer::Construct(const FArguments& InArgs)
             ]
         ]
  
-        // 3. 转移目标保存路径 (修复了 SAssignNew(nullptr) 错误)
+        // 3. 转移目标保存路径
         + SVerticalBox::Slot().AutoHeight().Padding(10, 5)
         [
             SNew(SHorizontalBox)
@@ -88,7 +88,6 @@ void SMaterialTttributeTransfer::Construct(const FArguments& InArgs)
             [ SNew(STextBlock).Text(LOCTEXT("PathLabel", "生成保存路径: ")).MinDesiredWidth(100) ]
             + SHorizontalBox::Slot().FillWidth(1.0f)
             [
-                // 这里改成了 SNew，因为不需要暴露该组件给变量
                 SNew(SEditableTextBox)
                 .HintText(LOCTEXT("PathHint", "例如 /Game/Materials/Generated"))
                 .Text_Lambda([this](){ return FText::FromString(TargetSavePath); })
@@ -118,7 +117,7 @@ void SMaterialTttributeTransfer::Construct(const FArguments& InArgs)
             ]
         ]
  
-        // 5. 日志窗口
+        // 5. 日志窗口 (修复滚动问题)
         + SVerticalBox::Slot().FillHeight(0.3f).Padding(10, 5)
         [
             SNew(SVerticalBox)
@@ -127,10 +126,14 @@ void SMaterialTttributeTransfer::Construct(const FArguments& InArgs)
             [
                 SNew(SBorder).BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
                 [
-                    SAssignNew(LogWindow, SMultiLineEditableText)
-                    .IsReadOnly(true)
-                    .Text_Lambda([this](){ return LogContent; })
-                    .AutoWrapText(true)
+                    SAssignNew(LogScrollBox, SScrollBox)
+                    + SScrollBox::Slot()
+                    [
+                        SAssignNew(LogWindow, SMultiLineEditableText)
+                        .IsReadOnly(true)
+                        .Text_Lambda([this](){ return LogContent; })
+                        .AutoWrapText(true)
+                    ]
                 ]
             ]
         ]
@@ -161,7 +164,12 @@ void SMaterialTttributeTransfer::AppendLog(const FString& InLog)
 {
     FString NewLine = FDateTime::Now().ToString(TEXT("[%H:%M:%S] ")) + InLog + TEXT("\n");
     LogContent = FText::FromString(LogContent.ToString() + NewLine);
-    if (LogWindow.IsValid()) { LogWindow->ScrollTo(FTextLocation(LogContent.ToString().Len())); }
+    
+    // 强制 UI 更新并在下一帧滚动到底部
+    if (LogScrollBox.IsValid())
+    {
+        LogScrollBox->ScrollToEnd();
+    }
 }
  
 void SMaterialTttributeTransfer::UpdateCurrentPathFromContentBrowser()
@@ -169,10 +177,25 @@ void SMaterialTttributeTransfer::UpdateCurrentPathFromContentBrowser()
     FContentBrowserModule& CBModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
     TArray<FString> SelectedPaths;
     CBModule.Get().GetSelectedPathViewFolders(SelectedPaths);
+    
     if (SelectedPaths.Num() > 0)
     {
-        TargetSavePath = SelectedPaths[0];
-        AppendLog(FString::Printf(TEXT("路径已同步: %s"), *TargetSavePath));
+        FString Path = SelectedPaths[0];
+        
+
+        if (Path.StartsWith(TEXT("/All")))
+        {
+            Path.RemoveFromStart(TEXT("/All"));
+        }
+        
+        // 如果裁剪后变空了（说明选中的是根目录），设为 /Game
+        if (Path.IsEmpty() || Path == TEXT("/")) 
+        {
+            Path = TEXT("/Game");
+        }
+ 
+        TargetSavePath = Path;
+        AppendLog(FString::Printf(TEXT("路径已获取并修正: %s"), *TargetSavePath));
     }
 }
  
@@ -254,62 +277,144 @@ void SMaterialTttributeTransfer::LoadSettings()
  
 FReply SMaterialTttributeTransfer::OnExecuteTransfer()
 {
+    // 1. 获取选中的资产
     TArray<UObject*> SelectedAssets;
     GEditor->GetSelectedObjects()->GetSelectedObjects(UMaterialInterface::StaticClass(), SelectedAssets);
  
-    if (SelectedAssets.Num() == 0) { AppendLog(TEXT("错误: 未选中任何源材质资产！")); return FReply::Handled(); }
- 
-    FString FinalPath = TargetSavePath.TrimStartAndEnd();
-    if (!FinalPath.StartsWith(TEXT("/Game")))
+    if (SelectedAssets.Num() == 0)
     {
-        FString CleanedPath = FinalPath.Replace(TEXT("/Game"), TEXT(""));
-        CleanedPath.TrimStartAndEndInline();
-        CleanedPath.RemoveFromStart(TEXT("/"));
-        CleanedPath.RemoveFromEnd(TEXT("/"));
-        FinalPath = TEXT("/Game/") + CleanedPath;
+        AppendLog(TEXT("错误: 未在内容浏览器选中任何要转移的材质资产！"));
+        return FReply::Handled();
     }
  
-    IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
-    AppendLog(FString::Printf(TEXT("开始批量处理到路径: %s"), *FinalPath));
- 
-    int32 Count = 0;
-    for (UObject* Asset : SelectedAssets)
+    if (!TargetMasterMaterial.IsValid())
     {
-        UMaterialInterface* Src = Cast<UMaterialInterface>(Asset);
-        if (!Src || Src == TargetMasterMaterial.Get()) continue;
+        AppendLog(TEXT("错误: 请先选择目标母材质！"));
+        return FReply::Handled();
+    }
  
-        FString NewName = Src->GetName() + "_INST";
-        UMaterialInstanceConstantFactoryNew* Factory = NewObject<UMaterialInstanceConstantFactoryNew>();
-        UObject* NewAsset = AssetTools.CreateAsset(NewName, FinalPath, UMaterialInstanceConstant::StaticClass(), Factory);
-        UMaterialInstanceConstant* MIC = Cast<UMaterialInstanceConstant>(NewAsset);
+    // 2. 路径清理与格式化 (修复 TrimStartAndEnd 报错和 /All 问题)
+    FString FinalPath = TargetSavePath;
+    FinalPath = FinalPath.TrimStartAndEnd(); // 无参数调用，去除两端空白
  
-        if (MIC)
+    // 移除 UE 内部可能带有的 /All 前缀
+    if (FinalPath.StartsWith(TEXT("/All")))
+    {
+        FinalPath.RemoveFromStart(TEXT("/All"));
+    }
+ 
+    // 移除前后多余的斜杠
+    while (FinalPath.StartsWith(TEXT("/"))) { FinalPath.RemoveFromStart(TEXT("/")); }
+    while (FinalPath.EndsWith(TEXT("/"))) { FinalPath.RemoveFromEnd(TEXT("/")); }
+ 
+    // 确保以 Game 开头并加上正确的根斜杠
+    if (FinalPath.StartsWith(TEXT("Game")))
+    {
+        FinalPath = TEXT("/") + FinalPath;
+    }
+    else
+    {
+        // 如果是空的或者是自定义文件夹，拼上 /Game/
+        if (FinalPath.IsEmpty())
         {
-            MIC->SetParentEditorOnly(TargetMasterMaterial.Get());
-            for (auto& M : MappingList)
-            {
-                if (M->TargetParamName.IsEmpty()) continue;
-                FName DN(*M->TargetParamName); FName SN(*M->SourceParamName);
-                UTexture* T = nullptr; if (Src->GetTextureParameterValue(SN, T)) MIC->SetTextureParameterValueEditorOnly(DN, T);
-                float S = 0.f; if (Src->GetScalarParameterValue(SN, S)) MIC->SetScalarParameterValueEditorOnly(DN, S);
-                FLinearColor V; if (Src->GetVectorParameterValue(SN, V)) MIC->SetVectorParameterValueEditorOnly(DN, V);
-            }
-            MIC->PostEditChange();
-            FAssetRegistryModule::AssetCreated(MIC);
-            Count++;
-            AppendLog(TEXT("生成成功: ") + MIC->GetName());
+            FinalPath = TEXT("/Game");
+        }
+        else
+        {
+            FinalPath = TEXT("/Game/") + FinalPath;
         }
     }
  
-    AppendLog(FString::Printf(TEXT("任务完成，共生成 %d 个材质实例。"), Count));
+    IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
+    AppendLog(FString::Printf(TEXT("开始处理... 目标目录: %s"), *FinalPath));
+ 
+    int32 SuccessCount = 0;
+    int32 SkipCount = 0;
+ 
+    // 3. 循环处理选中的每一个材质
+    for (UObject* Asset : SelectedAssets)
+    {
+        UMaterialInterface* SourceMat = Cast<UMaterialInterface>(Asset);
+        
+        // 排除掉母材质本身，防止循环引用
+        if (!SourceMat || SourceMat == TargetMasterMaterial.Get())
+        {
+            SkipCount++;
+            continue;
+        }
+ 
+        // 创建新资产名称 (原名 + _INST)
+        FString NewAssetName = SourceMat->GetName() + TEXT("_INST");
+        
+        // 使用 AssetTools 创建材质实例 (MIC)
+        UMaterialInstanceConstantFactoryNew* Factory = NewObject<UMaterialInstanceConstantFactoryNew>();
+        UObject* NewAsset = AssetTools.CreateAsset(NewAssetName, FinalPath, UMaterialInstanceConstant::StaticClass(), Factory);
+        UMaterialInstanceConstant* NewMIC = Cast<UMaterialInstanceConstant>(NewAsset);
+ 
+        if (NewMIC)
+        {
+            // 设置新的母材质
+            NewMIC->SetParentEditorOnly(TargetMasterMaterial.Get());
+ 
+            // 遍历映射表转移参数
+            for (const TSharedPtr<FParamMappingPair>& Mapping : MappingList)
+            {
+                if (Mapping->TargetParamName.IsEmpty() || Mapping->SourceParamName.IsEmpty())
+                {
+                    continue;
+                }
+ 
+                FName DestName(*Mapping->TargetParamName);
+                FName SrcName(*Mapping->SourceParamName);
+ 
+                // --- 转移 Texture (贴图) ---
+                UTexture* SourceTex = nullptr;
+                if (SourceMat->GetTextureParameterValue(SrcName, SourceTex))
+                {
+                    NewMIC->SetTextureParameterValueEditorOnly(DestName, SourceTex);
+                }
+ 
+                // --- 转移 Scalar (浮点/标量) ---
+                float SourceScalar = 0.f;
+                if (SourceMat->GetScalarParameterValue(SrcName, SourceScalar))
+                {
+                    NewMIC->SetScalarParameterValueEditorOnly(DestName, SourceScalar);
+                }
+ 
+                // --- 转移 Vector (颜色/向量) ---
+                FLinearColor SourceVector;
+                if (SourceMat->GetVectorParameterValue(SrcName, SourceVector))
+                {
+                    NewMIC->SetVectorParameterValueEditorOnly(DestName, SourceVector);
+                }
+            }
+ 
+            // 通知编辑器资产已修改，需要更新
+            NewMIC->PostEditChange();
+            FAssetRegistryModule::AssetCreated(NewMIC);
+            
+            SuccessCount++;
+            AppendLog(FString::Printf(TEXT("已生成: %s"), *NewAssetName));
+        }
+        else
+        {
+            AppendLog(FString::Printf(TEXT("跳过: %s (可能已存在或路径无效)"), *SourceMat->GetName()));
+        }
+    }
+ 
+    // 4. 完成后的总结与保存
+    AppendLog(FString::Printf(TEXT("任务结束！成功: %d, 跳过: %d"), SuccessCount, SkipCount));
+    
+    // 强制保存新生成的包，防止掉电或崩溃丢失
     UEditorLoadingAndSavingUtils::SaveDirtyPackages(false, true);
+ 
     return FReply::Handled();
 }
  
 FString SMaterialTttributeTransfer::GetSaveDirectory() const {
     FString Dir = FPaths::ProjectPluginsDir() + TEXT("ToolsBox/Source/ToolsBox/Public/Tools/ToolUserDataSave/");
-    IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
-    if (!PF.DirectoryExists(*Dir)) PF.CreateDirectoryTree(*Dir);
+    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+    if (!PlatformFile.DirectoryExists(*Dir)) PlatformFile.CreateDirectoryTree(*Dir);
     return Dir;
 }
  
