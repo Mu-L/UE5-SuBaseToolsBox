@@ -3,6 +3,9 @@
 
 #include "Tools/Right-ClickOperationTool/AssetAction.h"
 
+#include <functional>
+
+#include "AnimationModifiersAssetUserData.h"
 #include "AssetToolsModule.h"
 
 #include "Editor.h"
@@ -22,8 +25,21 @@
 #include "PhysicsEngine/BodySetup.h"
 #include "Slate_Assist/SlateAssistBuildFunctionLibrary.h"
 #include "EditorAssetLibrary.h"
+
+#include "K2Node_ConstructObjectFromClass.h"
 #include "Editor/Blutility/Public/EditorUtilityLibrary.h"
 #include "Editor/StaticMeshEditor/Public/StaticMeshEditorSubsystem.h"
+#include "GeometryScript/MeshAssetFunctions.h"
+#include "GeometryScript/MeshMaterialFunctions.h"
+#include "GeometryScript/MeshSimplifyFunctions.h"
+#include "EditorScriptingUtilities/Public/EditorDialogLibrary.h"
+#include "Modules/ModuleManager.h"
+
+#include "UDynamicMesh.h"                           
+#include "Animation/AnimSequence.h"
+
+#include "Kismet/KismetSystemLibrary.h"
+
 
 UAssetAction::UAssetAction(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)
@@ -300,11 +316,77 @@ void UAssetAction::SimplifyMesh(float Percent)
 	{
 		if (UStaticMesh* Mesh = Cast<UStaticMesh>(Asset))
 		{
+			// 创建临时 DynamicMesh
+			TObjectPtr<UDynamicMesh> DMesh = NewObject<UDynamicMesh>();
+			EGeometryScriptOutcomePins Result;
 			
-			
+			// 从 StaticMesh 拷贝数据
+			TObjectPtr<UDynamicMesh> NewDMesh = UGeometryScriptLibrary_StaticMeshFunctions::CopyMeshFromStaticMesh(
+				Mesh, 
+				DMesh, 
+				FGeometryScriptCopyMeshFromAssetOptions(true, true, true, true), 
+				FGeometryScriptMeshReadLOD(), 
+				Result);
+ 
+			if (NewDMesh && Result == EGeometryScriptOutcomePins::Success)
+			{
+				int32 OriginalTriangleCount = NewDMesh->GetTriangleCount();
+				int32 NewDMeshTriangleCount = FMath::TruncToInt(OriginalTriangleCount * Percent);
+ 
+				FString Message = FString::Format(
+					TEXT("当前网格体：{0}\n模型简化前三角面数量：{1}\n模型简化后三角面数量：{2}\n注意：简化后请再三确认后再保存！"),
+					{
+						Mesh->GetName(),
+						FString::FromInt(OriginalTriangleCount),
+						FString::FromInt(NewDMeshTriangleCount)
+					}
+				);
+ 
+				EAppReturnType::Type TypeReturn = UEditorDialogLibrary::ShowMessage(
+					FText::FromString(TEXT("提示")),
+					FText::FromString(Message), 
+					EAppMsgType::YesNo
+				);
+ 
+				switch (TypeReturn)
+				{
+				case EAppReturnType::Yes:
+					{ // <--- 修复 C2360 必须添加大括号以限制作用域
+						// 执行简化操作
+						UDynamicMesh* SimplifiedMesh = UGeometryScriptLibrary_MeshSimplifyFunctions::ApplySimplifyToTriangleCount(
+							NewDMesh,
+							NewDMeshTriangleCount,
+							FGeometryScriptSimplifyMeshOptions(EGeometryScriptRemoveMeshSimplificationType::StandardQEM));
+ 
+						
+						UGeometryScriptLibrary_StaticMeshFunctions::CopyMeshToStaticMesh(
+							SimplifiedMesh,
+							Mesh,
+							FGeometryScriptCopyMeshToAssetOptions(),
+							FGeometryScriptMeshWriteLOD(), 
+							Result);
+ 
+
+						if(Mesh->IsNaniteEnabled())
+						{
+							FMeshNaniteSettings CurrentSettings = Mesh->GetNaniteSettings();
+                            						
+							Mesh->SetNaniteSettings(CurrentSettings);
+							Mesh->PostEditChange();
+						}
+						
+					}
+					break;
+ 
+				case EAppReturnType::No:
+					
+					continue; 
+				}
+			}
 		}
 	}
 }
+
 
 
 void UAssetAction::SmartRenameAsset(UObject* Asset, const FString& NewPrefix, const FString& NewSuffix,

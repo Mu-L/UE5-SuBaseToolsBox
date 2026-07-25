@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AnimationModifier.h"
 #include "Editor/Blutility/Classes/AssetActionUtility.h"
 #include "Engine/EngineTypes.h"
 #include "AssetAction.generated.h"
@@ -92,6 +93,9 @@ public:
 	//简化模型
 	UFUNCTION(BlueprintCallable,DisplayName="简化模型",CallInEditor,Category="静态网格体")
 	void  SimplifyMesh(float Percent);
+
+
+
 	
 private:
 	/** 智能重命名核心逻辑 */

@@ -47,6 +47,11 @@ public class ToolsBox : ModuleRules
 				"PhysicsCore",
 				"BlueprintGraph",
 				"StaticMeshEditor",
+				"EditorScriptingUtilities", // 必须：支持动画修饰符
+				"AnimationBlueprintLibrary",
+				"AnimationModifiers",  // 必须：提供便捷的操作 API
+				"InputCore",
+				"PropertyEditor", 
 		
 			}
 			);

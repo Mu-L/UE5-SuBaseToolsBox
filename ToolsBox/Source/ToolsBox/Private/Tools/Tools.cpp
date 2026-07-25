@@ -4,6 +4,7 @@
 
 #include "Tools/BlankTemplateTool/BlankTemplateTool.h"
 #include "Tools/IntelligentImportOfModelsAndMaterials/Import_MM.h"
+#include "Tools/MaterialTttributeTransfer/MaterialTttributeTransfer.h"
 #include "Tools/Right-ClickOperationTool/AAU.h"
 #include "Tools/SpawnMaterial/SpawnMaterial.h"
 
@@ -47,8 +48,16 @@ const TSet<FTool> Tools::Get_ToolsData()
 			TEXT("SSpawnMaterialTab"),
 			TEXT("ToolsBox.Icon_Anon"),
 			[]() { return SNew(SSpawnMaterial);}
-			)		
+			),
 		
+		FTool(
+			TEXT("材质属性转移"),
+			LOCTEXT("ToolDetail", "选择若干材质球或材质实例并通过变量命名将引用转移到新的材质球或材质实例"),
+			TEXT("ToolsBox.Image_Anon_1K"),
+			TEXT("SMaterialAttributeTransferTab"),
+			TEXT("ToolsBox.Icon_Anon"),
+			[]() { return SNew(SMaterialTttributeTransfer);}
+			)
 	};
 	return InternalTools;
 }

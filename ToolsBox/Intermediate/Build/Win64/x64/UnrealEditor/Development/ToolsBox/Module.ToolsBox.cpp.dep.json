@@ -1,0 +1,43 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\toolsbox\\module.toolsbox.cpp",
+        "ProvidedModule": "",
+        "PCH": "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\intermediate\\build\\win64\\x64\\subasetoolsboxeditor\\development\\unrealed\\sharedpch.unrealed.project.valapi.valexpapi.cpp20.h.pch",
+        "Includes": [
+            "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\toolsbox\\definitions.toolsbox.h",
+            "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\intermediate\\build\\win64\\unrealeditor\\inc\\toolsbox\\uht\\actoraction.gen.cpp",
+            "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\source\\toolsbox\\public\\tools\\right-clickoperationtool\\actoraction.h",
+            "f:\\ue_5.8\\engine\\source\\editor\\blutility\\classes\\actoractionutility.h",
+            "f:\\ue_5.8\\engine\\source\\editor\\blutility\\classes\\editorutilityobject.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\engine\\public\\iassetregistrytagproviderinterface.h",
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\engine\\uht\\iassetregistrytagproviderinterface.generated.h",
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\blutility\\uht\\editorutilityobject.generated.h",
+            "f:\\ue_5.8\\engine\\source\\editor\\blutility\\public\\ieditorutilityextension.h",
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\blutility\\uht\\ieditorutilityextension.generated.h",
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\blutility\\uht\\actoractionutility.generated.h",
+            "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\intermediate\\build\\win64\\unrealeditor\\inc\\toolsbox\\uht\\actoraction.generated.h",
+            "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\intermediate\\build\\win64\\unrealeditor\\inc\\toolsbox\\uht\\assetaction.gen.cpp",
+            "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\source\\toolsbox\\public\\tools\\right-clickoperationtool\\assetaction.h",
+            "f:\\ue_5.8\\engine\\source\\editor\\animationmodifiers\\public\\animationmodifier.h",
+            "f:\\ue_5.8\\engine\\source\\editor\\animationblueprintlibrary\\public\\animationblueprintlibrary.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\engine\\classes\\animation\\animmetadata.h",
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\engine\\uht\\animmetadata.generated.h",
+            "f:\\ue_5.8\\engine\\source\\editor\\animgraph\\public\\animationgraph.h",
+            "f:\\ue_5.8\\engine\\source\\editor\\animgraph\\public\\animgraphnode_base.h",
+            "f:\\ue_5.8\\engine\\source\\editor\\unrealed\\public\\ipropertyaccesseditor.h",
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\animgraph\\uht\\animgraphnode_base.generated.h",
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\animgraph\\uht\\animationgraph.generated.h",
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\animationblueprintlibrary\\uht\\animationblueprintlibrary.generated.h",
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\animationmodifiers\\uht\\animationmodifier.generated.h",
+            "f:\\ue_5.8\\engine\\source\\editor\\blutility\\classes\\assetactionutility.h",
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\blutility\\uht\\assetactionutility.generated.h",
+            "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\intermediate\\build\\win64\\unrealeditor\\inc\\toolsbox\\uht\\assetaction.generated.h",
+            "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\intermediate\\build\\win64\\unrealeditor\\inc\\toolsbox\\uht\\toolsbox.init.gen.cpp",
+            "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\toolsbox\\permoduleinline.gen.cpp",
+            "f:\\ue_5.8\\engine\\source\\runtime\\core\\public\\hal\\permoduleinline.inl"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}
