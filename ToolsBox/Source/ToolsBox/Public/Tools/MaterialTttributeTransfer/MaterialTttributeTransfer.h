@@ -6,12 +6,11 @@
 #include "Components/VerticalBox.h"
 #include "Materials/MaterialInterface.h"
 #include "Widgets/SCompoundWidget.h"
-#include "Widgets/Text/STextBlock.h"
-// 映射参数的结构体
+
 struct FParamMappingPair
 {
-	FString TargetParamName; // 母材质里的参数名
-	FString SourceParamName; // 原始材质里的变量名
+	FString TargetParamName;
+	FString SourceParamName;
 };
  
 class SMaterialTttributeTransfer : public SCompoundWidget
@@ -23,22 +22,34 @@ public:
 	void Construct(const FArguments& InArgs);
  
 private:
-	// UI 组件引用
+	// UI 容器与数据
 	TSharedPtr<SVerticalBox> MappingContainer;
 	TArray<TSharedPtr<FParamMappingPair>> MappingList;
- 
-	// 选择的目标母材质
 	TWeakObjectPtr<UMaterialInterface> TargetMasterMaterial;
  
-	// 生成单行输入 UI
+	// 持久化变量
+	FString SaveConfigFileName;
+	FString TargetSavePath; // 新增：保存路径变量
+ 
+	// 日志相关
+	TSharedPtr<class SMultiLineEditableText> LogWindow;
+	FText LogContent;
+	void AppendLog(const FString& InLog);
+ 
+	// --- 内部辅助函数 ---
 	void AddMappingRow();
 	TSharedRef<SWidget> CreateMappingRowWidget(TSharedPtr<FParamMappingPair> InPair);
- 
-	// 核心逻辑
-	FReply OnExecuteTransfer();
-	FString GetCurrentContentBrowserPath();
+	void RefreshMappingUI();
     
-	// 属性器回调
+	FString GetSaveDirectory() const;
+	FString GetFullConfigPath() const;
+ 
+	void SaveSettings();
+	void LoadSettings();
+ 
+	FReply OnExecuteTransfer();
+	void UpdateCurrentPathFromContentBrowser();
+ 
 	void OnMasterMaterialChanged(const FAssetData& AssetData);
 	FString GetMasterMaterialPath() const;
 };

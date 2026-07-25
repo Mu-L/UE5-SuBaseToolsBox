@@ -176,7 +176,8 @@
             "f:\\ue_5.8\\engine\\source\\editor\\propertyeditor\\public\\sresettodefaultmenu.h",
             "f:\\ue_5.8\\engine\\source\\editor\\actorpickermode\\public\\actorpickermode.h",
             "f:\\ue_5.8\\engine\\source\\editor\\scenedepthpickermode\\public\\scenedepthpickermode.h",
-            "f:\\ue_5.8\\engine\\source\\editor\\classviewer\\public\\classviewermodule.h"
+            "f:\\ue_5.8\\engine\\source\\editor\\classviewer\\public\\classviewermodule.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\slate\\public\\widgets\\text\\smultilineeditabletext.h"
         ],
         "ImportedModules": [],
         "ImportedHeaderUnits": []

@@ -79,6 +79,8 @@
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/AnimationBlueprintLibrary/UnrealEditor-AnimationBlueprintLibrary.lib"
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/AnimationModifiers/UnrealEditor-AnimationModifiers.lib"
 "../Intermediate/Build/Win64/x64/UnrealEditor/Development/InputCore/UnrealEditor-InputCore.lib"
+"../Intermediate/Build/Win64/x64/UnrealEditor/Development/Json/UnrealEditor-Json.lib"
+"../Intermediate/Build/Win64/x64/UnrealEditor/Development/JsonUtilities/UnrealEditor-JsonUtilities.lib"
 "delayimp.lib"
 "wininet.lib"
 "rpcrt4.lib"

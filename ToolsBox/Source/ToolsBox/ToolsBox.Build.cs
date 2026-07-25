@@ -52,6 +52,8 @@ public class ToolsBox : ModuleRules
 				"AnimationModifiers",  // 必须：提供便捷的操作 API
 				"InputCore",
 				"PropertyEditor", 
+				"Json", 
+				"JsonUtilities" 
 		
 			}
 			);
