@@ -10,6 +10,7 @@
 			"FIconStyle.cpp.obj",
 			"SlateAssistBuildFunctionLibrary.cpp.obj",
 			"ToolsBox.cpp.obj",
+			"AssetImportAutoAllocation.cpp.obj",
 			"BlankTemplateTool.cpp.obj",
 			"Import_MM.cpp.obj",
 			"MaterialAttributeTransfer.cpp.obj",

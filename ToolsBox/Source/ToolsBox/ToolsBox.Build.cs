@@ -53,7 +53,8 @@ public class ToolsBox : ModuleRules
 				"InputCore",
 				"PropertyEditor", 
 				"Json", 
-				"JsonUtilities" 
+				"JsonUtilities" ,
+				"EditorWidgets"
 		
 			}
 			);

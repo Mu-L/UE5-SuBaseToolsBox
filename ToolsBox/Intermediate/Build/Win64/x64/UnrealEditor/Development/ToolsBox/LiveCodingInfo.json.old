@@ -12,6 +12,7 @@
 			"ToolsBox.cpp.obj",
 			"BlankTemplateTool.cpp.obj",
 			"Import_MM.cpp.obj",
+			"MaterialAttributeTransfer.cpp.obj",
 			"AAU.cpp.obj",
 			"ActorAction.cpp.obj",
 			"AssetAction.cpp.obj",

@@ -1,6 +1,7 @@
 ﻿#include "Tools/Tools.h"
 #include "Internationalization/Internationalization.h"
 #include "Templates/SharedPointer.h"
+#include "Tools/AssetImportAutoAllocation/AssetImportAutoAllocation.h"
 
 #include "Tools/BlankTemplateTool/BlankTemplateTool.h"
 #include "Tools/IntelligentImportOfModelsAndMaterials/Import_MM.h"
@@ -57,7 +58,16 @@ const TSet<FTool> Tools::Get_ToolsData()
 			TEXT("SMaterialAttributeTransferTab"),
 			TEXT("ToolsBox.Icon_Anon"),
 			[]() { return SNew(SMaterialTttributeTransfer);}
+			),
+		FTool(
+			TEXT("资产导入自动分配"),
+			LOCTEXT("ToolDetail", "选择若干材质球或材质实例并通过变量命名将引用转移到新的材质球或材质实例"),
+			TEXT("ToolsBox.Image_Anon_1K"),
+			TEXT("SMaterialAttributeTransferTab"),
+			TEXT("ToolsBox.Icon_Anon"),
+			[]() { return SNew(SAssetImportAutoAllocation);}
 			)
+		
 	};
 	return InternalTools;
 }
