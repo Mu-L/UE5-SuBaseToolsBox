@@ -30,6 +30,7 @@ const TSet<FTool> Tools::Get_ToolsData()
 			TEXT("ToolsBox.Image_Anon_1K"),
 			TEXT("SImport_MMTab"),
 			TEXT("ToolsBox.Icon_Anon"),
+			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SImport_MM);}
 			),
 
@@ -39,6 +40,7 @@ const TSet<FTool> Tools::Get_ToolsData()
 			TEXT("ToolsBox.Image_Anon_1K"),
 			TEXT("SAAUTab"),
 			TEXT("ToolsBox.Icon_Anon"),
+			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SAAU);}
 			),
 		
@@ -48,6 +50,7 @@ const TSet<FTool> Tools::Get_ToolsData()
 			TEXT("ToolsBox.Image_Anon_1K"),
 			TEXT("SSpawnMaterialTab"),
 			TEXT("ToolsBox.Icon_Anon"),
+			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SSpawnMaterial);}
 			),
 		
@@ -57,6 +60,7 @@ const TSet<FTool> Tools::Get_ToolsData()
 			TEXT("ToolsBox.Image_Anon_1K"),
 			TEXT("SMaterialAttributeTransferTab"),
 			TEXT("ToolsBox.Icon_Anon"),
+			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SMaterialTttributeTransfer);}
 			),
 		FTool(
@@ -65,6 +69,7 @@ const TSet<FTool> Tools::Get_ToolsData()
 			TEXT("ToolsBox.Image_Anon_1K"),
 			TEXT("SAssetImportAutoAllocationTab"),
 			TEXT("ToolsBox.Icon_Anon"),
+			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SAssetImportAutoAllocation);}
 			)
 		

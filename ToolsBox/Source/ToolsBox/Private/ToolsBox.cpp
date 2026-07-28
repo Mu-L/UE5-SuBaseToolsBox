@@ -106,7 +106,8 @@ TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& Sp
                         FText::FromName(Tool.ToolName),
                         Tool.ToolDescription,
                         Tool.ToolImage,
-                        Tool.ToolTabID
+                        Tool.ToolTabID,
+                        Tool.ToolURL
                     )
                 ];
             }

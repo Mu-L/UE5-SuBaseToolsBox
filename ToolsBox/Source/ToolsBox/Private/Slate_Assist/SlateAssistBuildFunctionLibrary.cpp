@@ -10,12 +10,15 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
+#include "HAL/PlatformProcess.h"
+#include "Internationalization/Text.h"
 
-TSharedRef<SWidget> SlateAssistBuildFunctionLibrary::MakeToolBlock(const FText& ToolName, const FText& Description, const FName& IconName, const FName& TabID)
+TSharedRef<SWidget> SlateAssistBuildFunctionLibrary::MakeToolBlock(const FText& ToolName, const FText& Description, const FName& IconName, const FName& TabID, const FString& URL)
 {
-    return SNew(SBox)
-        .Padding(FMargin(5.0f, 2.0f))
+    TSharedRef<SOverlay> BlockOverlay = SNew(SOverlay)
+        + SOverlay::Slot()
         [
             SNew(SBorder)
             .BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder")) // 使用编辑器面板边框
@@ -77,7 +80,7 @@ TSharedRef<SWidget> SlateAssistBuildFunctionLibrary::MakeToolBlock(const FText& 
                         SNew(SButton)
                         .HAlign(HAlign_Center)
                         .VAlign(VAlign_Center)
-                        .ButtonStyle(FAppStyle::Get(), "PrimaryButton") // 使用醒目的主要按钮样式
+                        .ButtonStyle(FAppStyle::Get(), "PrimaryButton") 
                         .OnClicked_Lambda([TabID]()
                         {
                             FGlobalTabmanager::Get()->TryInvokeTab(FTabId(TabID));
@@ -91,6 +94,36 @@ TSharedRef<SWidget> SlateAssistBuildFunctionLibrary::MakeToolBlock(const FText& 
                     ]
                 ]
             ]
+        ];
+
+    // 工具块右上角：打开作者页面的小链接图标按钮（仅当配置了 URL 时显示）
+    if (!URL.IsEmpty())
+    {
+        BlockOverlay->AddSlot()
+            .HAlign(HAlign_Right)
+            .VAlign(VAlign_Top)
+            .Padding(0.0f, 0.0f, 3.0f, 3.0f)
+            [
+                SNew(SButton)
+                .ButtonStyle(FAppStyle::Get(), "SimpleButton")
+                .ToolTipText(NSLOCTEXT("ToolsBox", "OpenAuthorURL", "打开作者页面"))
+                .OnClicked_Lambda([URL]()
+                {
+                    FPlatformProcess::LaunchURL(*URL, nullptr, nullptr);
+                    return FReply::Handled();
+                })
+                [
+                    SNew(SImage)
+                    .Image(FAppStyle::GetBrush("Icons.Link"))
+                    .DesiredSizeOverride(FVector2D(16.0f, 16.0f))
+                ]
+            ];
+    }
+
+    return SNew(SBox)
+        .Padding(FMargin(5.0f, 2.0f))
+        [
+            BlockOverlay
         ];
 }
 

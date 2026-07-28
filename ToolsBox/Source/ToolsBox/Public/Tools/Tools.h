@@ -16,12 +16,13 @@ struct FTool
 	FName ToolImage;
 	FName ToolTabID;
 	FName ToolDockTabIcon;
+	FString ToolURL; // 工具对应的帮助/说明页面链接（点击右上角图标按钮打开）
     
 
 	TFunction<TSharedRef<SWidget>()> WidgetFactory;
  
-	FTool(FName InName, const FText& InDesc, FName InImage, FName InTabID, FName Icon, TFunction<TSharedRef<SWidget>()> InFactory)
-		: ToolName(InName), ToolDescription(InDesc), ToolImage(InImage), ToolTabID(InTabID), WidgetFactory(InFactory), ToolDockTabIcon(Icon) {}
+	FTool(FName InName, const FText& InDesc, FName InImage, FName InTabID, FName Icon, FString InURL, TFunction<TSharedRef<SWidget>()> InFactory)
+		: ToolName(InName), ToolDescription(InDesc), ToolImage(InImage), ToolTabID(InTabID), ToolDockTabIcon(Icon), ToolURL(InURL), WidgetFactory(InFactory) {}
 	
 	bool operator==(const FTool& Other) const
 	{
