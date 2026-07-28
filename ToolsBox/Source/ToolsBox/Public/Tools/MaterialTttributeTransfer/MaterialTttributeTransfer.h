@@ -28,7 +28,10 @@ private:
 	TWeakObjectPtr<UMaterialInterface> TargetMasterMaterial;
  
 	FString SaveConfigFileName;
-	FString TargetSavePath; 
+	FString TargetSavePath;
+
+	// 勾选后：生成的新材质实例保存在源材质各自所在的文件夹中；默认勾选
+	bool bSaveToRespectiveFolders = true;
  
 	// 日志组件修复：添加 ScrollBox 引用
 	TSharedPtr<SScrollBox> LogScrollBox;

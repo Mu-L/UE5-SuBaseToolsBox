@@ -21,6 +21,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 #include "Widgets/Text/SMultiLineEditableText.h"
+#include "Widgets/Input/SCheckBox.h"
 
 
 #define LOCTEXT_NAMESPACE "MaterialTransferTool"
@@ -114,20 +115,40 @@ void SMaterialTttributeTransfer::Construct(const FArguments& InArgs)
         // 3. 转移目标保存路径
         + SVerticalBox::Slot().AutoHeight().Padding(10, 5)
         [
-            SNew(SHorizontalBox)
-            + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-            [ SNew(STextBlock).Text(LOCTEXT("PathLabel", "生成保存路径: ")).MinDesiredWidth(100) ]
-            + SHorizontalBox::Slot().FillWidth(1.0f)
+            SNew(SVerticalBox)
+            // 3.1 路径输入行
+            + SVerticalBox::Slot().AutoHeight()
             [
-                SNew(SEditableTextBox)
-                .HintText(LOCTEXT("PathHint", "例如 /Game/Materials/Generated"))
-                .Text_Lambda([this](){ return FText::FromString(TargetSavePath); })
-                .OnTextChanged_Lambda([this](const FText& T){ TargetSavePath = T.ToString(); })
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+                [ SNew(STextBlock).Text(LOCTEXT("PathLabel", "生成保存路径: ")).MinDesiredWidth(100) ]
+                + SHorizontalBox::Slot().FillWidth(1.0f)
+                [
+                    SNew(SEditableTextBox)
+                    .HintText(LOCTEXT("PathHint", "例如 /Game/Materials/Generated"))
+                    .Text_Lambda([this](){ return FText::FromString(TargetSavePath); })
+                    .OnTextChanged_Lambda([this](const FText& T){ TargetSavePath = T.ToString(); })
+                    .IsEnabled_Lambda([this](){ return !bSaveToRespectiveFolders; })
+                ]
+                + SHorizontalBox::Slot().AutoWidth().Padding(5, 0, 0, 0)
+                [
+                    SNew(SButton).Text(LOCTEXT("GetPathBtn", "获取当前路径"))
+                    .OnClicked_Lambda([this](){ UpdateCurrentPathFromContentBrowser(); return FReply::Handled(); })
+                    .IsEnabled_Lambda([this](){ return !bSaveToRespectiveFolders; })
+                ]
             ]
-            + SHorizontalBox::Slot().AutoWidth().Padding(5, 0, 0, 0)
+            // 3.2 保存到各自文件夹开关（默认打钩）
+            + SVerticalBox::Slot().AutoHeight().Padding(0, 4, 0, 0)
             [
-                SNew(SButton).Text(LOCTEXT("GetPathBtn", "获取当前路径"))
-                .OnClicked_Lambda([this](){ UpdateCurrentPathFromContentBrowser(); return FReply::Handled(); })
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+                [
+                    SNew(SCheckBox)
+                    .IsChecked_Lambda([this]() { return bSaveToRespectiveFolders ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
+                    .OnCheckStateChanged_Lambda([this](ECheckBoxState NewState) { bSaveToRespectiveFolders = (NewState == ECheckBoxState::Checked); })
+                ]
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(4, 0, 0, 0)
+                [ SNew(STextBlock).Text(LOCTEXT("SaveToFolderTip", "保存到各自文件夹中（按源材质所在位置生成，取消勾选则统一保存到上方路径）")) ]
             ]
         ]
  
@@ -252,6 +273,7 @@ void SMaterialTttributeTransfer::SaveSettings()
     TSharedPtr<FJsonObject> RootObject = MakeShareable(new FJsonObject());
     RootObject->SetStringField(TEXT("MasterMaterial"), TargetMasterMaterial.IsValid() ? TargetMasterMaterial->GetPathName() : TEXT(""));
     RootObject->SetStringField(TEXT("TargetSavePath"), TargetSavePath);
+    RootObject->SetBoolField(TEXT("SaveToRespectiveFolders"), bSaveToRespectiveFolders);
  
     TArray<TSharedPtr<FJsonValue>> JsonArray;
     for (const auto& Pair : MappingList)
@@ -287,6 +309,9 @@ void SMaterialTttributeTransfer::LoadSettings()
         TargetMasterMaterial = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, *MatPath));
         TargetSavePath = RootObject->GetStringField(TEXT("TargetSavePath"));
         if (TargetSavePath.IsEmpty()) TargetSavePath = TEXT("/Game/");
+
+        if (RootObject->HasField(TEXT("SaveToRespectiveFolders")))
+            bSaveToRespectiveFolders = RootObject->GetBoolField(TEXT("SaveToRespectiveFolders"));
  
         MappingList.Empty();
         const TArray<TSharedPtr<FJsonValue>>* JsonArray;
@@ -335,31 +360,14 @@ void SMaterialTttributeTransfer::LoadSettings()
         return FReply::Handled();
     }
  
-    // 2. 路径清理逻辑
-    FString FinalPath = TargetSavePath.TrimStartAndEnd();
-    if (FinalPath.StartsWith(TEXT("/All")))
-    {
-        FinalPath.RemoveFromStart(TEXT("/All"));
-    }
- 
-    // 统一处理斜杠
-    while (FinalPath.StartsWith(TEXT("/"))) { FinalPath.RemoveFromStart(TEXT("/")); }
-    while (FinalPath.EndsWith(TEXT("/"))) { FinalPath.RemoveFromEnd(TEXT("/")); }
- 
-    if (FinalPath.StartsWith(TEXT("Game")))
-    {
-        FinalPath = TEXT("/") + FinalPath;
-    }
-    else
-    {
-        FinalPath = FinalPath.IsEmpty() ? TEXT("/Game") : TEXT("/Game/") + FinalPath;
-    }
-    
-    // 确保路径中没有 //
-    FinalPath.ReplaceInline(TEXT("//"), TEXT("/"));
- 
+    // 2. 保存路径模式
+    const bool bSaveToRespective = bSaveToRespectiveFolders;
+
     IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
-    AppendLog(FString::Printf(TEXT("开始处理... 选中数量: %d, 目标路径: %s"), SelectedMaterials.Num(), *FinalPath));
+    AppendLog(FString::Printf(
+        TEXT("开始处理... 选中数量: %d, 保存模式: %s"),
+        SelectedMaterials.Num(),
+        bSaveToRespective ? TEXT("各自源文件夹") : *TargetSavePath));
  
     int32 SuccessCount = 0;
     int32 SkipCount = 0;
@@ -374,7 +382,38 @@ void SMaterialTttributeTransfer::LoadSettings()
             SkipCount++;
             continue;
         }
- 
+
+        // 计算本次生成的目标路径
+        FString FinalPath = TargetSavePath.TrimStartAndEnd();
+        if (bSaveToRespective)
+        {
+            // 使用源材质所在的包路径，生成的 MIC 保存到各自的文件夹中
+            FinalPath = FPaths::GetPath(SourceMat->GetPathName());
+        }
+        else
+        {
+            if (FinalPath.StartsWith(TEXT("/All")))
+            {
+                FinalPath.RemoveFromStart(TEXT("/All"));
+            }
+
+            // 统一处理斜杠
+            while (FinalPath.StartsWith(TEXT("/"))) { FinalPath.RemoveFromStart(TEXT("/")); }
+            while (FinalPath.EndsWith(TEXT("/"))) { FinalPath.RemoveFromEnd(TEXT("/")); }
+
+            if (FinalPath.StartsWith(TEXT("Game")))
+            {
+                FinalPath = TEXT("/") + FinalPath;
+            }
+            else
+            {
+                FinalPath = FinalPath.IsEmpty() ? TEXT("/Game") : TEXT("/Game/") + FinalPath;
+            }
+        }
+
+        // 确保路径中没有 //
+        FinalPath.ReplaceInline(TEXT("//"), TEXT("/"));
+
         // 创建 MIC
         FString NewAssetName = SourceMat->GetName() + TEXT("_INST");
         UMaterialInstanceConstantFactoryNew* Factory = NewObject<UMaterialInstanceConstantFactoryNew>();
@@ -413,7 +452,7 @@ void SMaterialTttributeTransfer::LoadSettings()
             FAssetRegistryModule::AssetCreated(NewMIC);
             
             SuccessCount++;
-            AppendLog(FString::Printf(TEXT("成功生成: %s"), *NewAssetName));
+            AppendLog(FString::Printf(TEXT("成功生成: %s -> %s"), *NewAssetName, *FinalPath));
         }
         else
         {
