@@ -22,7 +22,7 @@ struct FAssetImportRule
 };
  
 UCLASS(Config=Editor, DefaultConfig, meta=(DisplayName="资产自动分类设置"))
-class YOURPLUGIN_API UAssetAutoSaveSettings : public UDeveloperSettings
+class TOOLSBOX_API UAssetAutoSaveSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
  

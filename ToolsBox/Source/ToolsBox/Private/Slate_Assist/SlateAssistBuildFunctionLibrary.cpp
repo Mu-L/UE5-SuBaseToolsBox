@@ -48,7 +48,8 @@ TSharedRef<SWidget> SlateAssistBuildFunctionLibrary::MakeToolBlock(const FText& 
                     [
                         SNew(STextBlock)
                         .Text(ToolName)
-                        .Font(FAppStyle::GetFontStyle("NormalFontBold"))
+                        .Font(FCoreStyle::GetDefaultFontStyle("Bold", 12.0f))
+                        .ColorAndOpacity(FLinearColor::White)
                     ]
  
                     // 描述
@@ -58,8 +59,8 @@ TSharedRef<SWidget> SlateAssistBuildFunctionLibrary::MakeToolBlock(const FText& 
                         SNew(STextBlock)
                         .Text(Description)
                         .AutoWrapText(true)
-                        .Font(FAppStyle::GetFontStyle("NormalFont"))
-                        .ColorAndOpacity(FLinearColor(0.5f, 0.5f, 0.5f))
+                        .Font(FCoreStyle::GetDefaultFontStyle("Bold",8.5f))
+                        .ColorAndOpacity(FLinearColor::White)
                     ]
                 ]
  

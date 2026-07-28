@@ -15,7 +15,20 @@
             "f:\\ue_5.8\\engine\\source\\editor\\blutility\\public\\ieditorutilityextension.h",
             "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\blutility\\uht\\ieditorutilityextension.generated.h",
             "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\blutility\\uht\\actoractionutility.generated.h",
-            "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\intermediate\\build\\win64\\unrealeditor\\inc\\toolsbox\\uht\\actoraction.generated.h"
+            "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\intermediate\\build\\win64\\unrealeditor\\inc\\toolsbox\\uht\\actoraction.generated.h",
+            "f:\\ue_5.8\\engine\\source\\editor\\unrealed\\public\\selection.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\typedelementframework\\public\\elements\\framework\\typedelementlist.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\typedelementframework\\public\\elements\\framework\\typedelementcounter.h",
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\typedelementframework\\uht\\typedelementcounter.generated.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\typedelementruntime\\public\\elements\\framework\\typedelementselectionset.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\typedelementruntime\\public\\elements\\framework\\typedelementinterfacecustomization.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\typedelementruntime\\public\\elements\\framework\\typedelementlistobjectutil.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\typedelementruntime\\public\\elements\\interfaces\\typedelementselectioninterface.h",
+            "f:\\ue_5.8\\engine\\source\\runtime\\typedelementframework\\public\\elements\\framework\\typedelementlistproxy.h",
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\typedelementframework\\uht\\typedelementlistproxy.generated.h",
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\typedelementruntime\\uht\\typedelementselectioninterface.generated.h",
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\typedelementruntime\\uht\\typedelementselectionset.generated.h",
+            "f:\\ue_5.8\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\unrealed\\uht\\selection.generated.h"
         ],
         "ImportedModules": [],
         "ImportedHeaderUnits": []

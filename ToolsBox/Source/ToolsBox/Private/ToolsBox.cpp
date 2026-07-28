@@ -1,4 +1,6 @@
 #include "ToolsBox.h"
+
+#include "Editor.h"
 #include "ToolMenus.h"
 #include "OpenToolsBox_Command.h"
 #include "Framework/Application/SlateApplication.h"
@@ -14,6 +16,8 @@
 #include "Widgets/Layout/SWrapBox.h"
 
 #define LOCTEXT_NAMESPACE "FToolsBoxModule"
+
+#include "EditorAssetLibrary.h"
 
 void FToolsBoxModule::StartupModule()
 {
@@ -40,7 +44,7 @@ void FToolsBoxModule::StartupModule()
 	{
 		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(
 			Tool.ToolTabID, 
-			FOnSpawnTab::CreateRaw(this, &FToolsBoxModule::OnSpawnToolTab, Tool.WidgetFactory) // 绑定 Payload 参数
+			FOnSpawnTab::CreateRaw(this, &FToolsBoxModule::OnSpawnToolTab, Tool.WidgetFactory) 
 		)
 		.SetDisplayName(FText::FromName(Tool.ToolName))
 		.SetMenuType(ETabSpawnerMenuType::Hidden)
@@ -49,10 +53,12 @@ void FToolsBoxModule::StartupModule()
 	}
  
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FToolsBoxModule::RegisterMenu));
+
+	
 }
 
 
-//这个函数负责将按钮渲染到对应位置
+
 void FToolsBoxModule::RegisterMenu()
 {
 	
@@ -73,11 +79,10 @@ void FToolsBoxModule::RegisterMenu()
 
 TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& SpawnTabArgs)
 {
-    // 定义列表容器。
-    // 注意：这里必须是 TSharedPtr，因为 Lambda 需要捕获它。
+  
     TSharedPtr<SVerticalBox> ListContainer;
  
-    // 提前 AssignNew，这样我们在定义 RefreshList 时 ListContainer 已经有值了
+
     SAssignNew(ListContainer, SVerticalBox);
  
 
@@ -168,12 +173,12 @@ TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& Sp
             SNew(SScrollBox)
             + SScrollBox::Slot()
             [
-                ListContainer.ToSharedRef() // 直接放入预先创建好的容器
+                ListContainer.ToSharedRef() 
             ]
         ]
     ];
  
-    // 初始化加载
+
     RefreshList();
  
     return SpawnedTab;

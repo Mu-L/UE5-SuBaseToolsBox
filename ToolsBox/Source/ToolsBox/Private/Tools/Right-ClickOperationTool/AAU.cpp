@@ -26,7 +26,7 @@ void SAAU::Construct(const FArguments& InArgs)
 		.Padding(0,5,0,20)
 		[
 			SNew(STextBlock)
-			.Text(LOCTEXT("Title", "相关操作请在资产右键菜单中脚本资产操作中查看"))
+			.Text(LOCTEXT("Title", "相关操作请在资产（或场景Actor）右键菜单中脚本操作中查看"))
 			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
 		]
 		+ SScrollBox::Slot()

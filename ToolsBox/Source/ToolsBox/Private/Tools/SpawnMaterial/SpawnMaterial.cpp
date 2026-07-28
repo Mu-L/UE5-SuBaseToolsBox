@@ -93,9 +93,9 @@ void SSpawnMaterial::Construct(const FArguments& InArgs)
                             .AutoWrapText(true)
                             .Text(LOCTEXT("Usage",
                                 "使用方法：\n"
-                                "  1. 在内容浏览器中选中一个或多个纹理贴图（同一材质的贴图需包含至少一张基础色贴图）\n"
+                                "  1. 在内容浏览器中选中一个或多个纹理贴图（除此之外也可以加选一个或多个模型）\n"
                                 "  2. 在下方设置保存路径与生成模式\n"
-                                "  3. 点击「生成材质」按钮\n"
+                                "  3. 点击「生成材质」按钮（如果选择中包含模型，生成的材质会赋予给对应的模型，前提是模型命名规范）\n"
                                 ))
                         ]
                         
@@ -213,7 +213,7 @@ void SSpawnMaterial::Construct(const FArguments& InArgs)
                         .Text(LOCTEXT("CreateGenMat", "生成通用父材质及实例"))
                         .ToolTipText(LOCTEXT("CreateGenMatTip",
                             "自动创建一个带有标准参数(BaseColor, Normal, ORM, AO, Roughness, Metallic 等)\n"
-                            "和静态开关的父材质及其对应的实例，供「使用父材质实例」模式使用。"))
+                            "和静态开关的父材质及其对应的实例，供「使用父材质实例」模式使用。")) 
                         .OnClicked(this, &SSpawnMaterial::OnCreateGenericMaterialClicked)
                         .ContentPadding(FMargin(10, 2))
                     ]
@@ -226,7 +226,7 @@ void SSpawnMaterial::Construct(const FArguments& InArgs)
                         [
                             SNew(STextBlock)
                             .Text(LOCTEXT("ParamConfig", "贴图参数名配置"))
-                            .ToolTipText(LOCTEXT("ParamConfigTip", "仅「使用父材质实例」模式生效"))
+                            .ToolTipText(LOCTEXT("ParamConfigTip", "如果使用自己自定义的材质球，请根据对应通道填写参数名"))
                             .ColorAndOpacity(FSlateColor(FLinearColor::Gray))
                         ]
                         + SVerticalBox::Slot().AutoHeight().Padding(0, 4)

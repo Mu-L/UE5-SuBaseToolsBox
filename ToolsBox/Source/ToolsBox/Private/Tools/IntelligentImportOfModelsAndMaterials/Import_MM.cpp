@@ -188,6 +188,7 @@ void SImport_MM::Construct(const FArguments& InArgs)
                                 SNew(STextBlock)
                                 .Text(LOCTEXT("ParamConfig", "贴图参数名配置"))
                                 .ColorAndOpacity(FSlateColor(FLinearColor::Gray))
+                                .ToolTip(LOCTEXT("ToolTip", "如果使用自己自定义的材质球，请根据对应通道填写参数名"))
                             ]
                             + SVerticalBox::Slot().AutoHeight().Padding(0, 4)
                             [

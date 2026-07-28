@@ -15,14 +15,14 @@ const TSet<FTool> Tools::Get_ToolsData()
 {
 	static TSet<FTool> InternalTools = {
 		
-		FTool(
+		/*FTool(
 			TEXT("空白模版"),//标题
 			LOCTEXT("ToolDetail", "开发者可复制此空白模版编写新工具"),//描述
 			TEXT("ToolsBox.Image_Anon_1K"),
 			TEXT("SBlankTemplateToolTab"),
 			TEXT("ToolsBox.Icon_Anon"),//停靠栏Icon
 			[]() { return SNew(SBlankTemplateTool);}
-			),
+			),*/
 		
 		FTool(
 			TEXT("批量导入模型和材质"),
@@ -34,8 +34,8 @@ const TSet<FTool> Tools::Get_ToolsData()
 			),
 
 		FTool(
-			TEXT("资产操作工具"),
-			LOCTEXT("ToolDetail", "编辑器资产工具"),
+			TEXT("右键菜单操作脚本"),
+			LOCTEXT("ToolDetail", "右键菜单操作脚本"),
 			TEXT("ToolsBox.Image_Anon_1K"),
 			TEXT("SAAUTab"),
 			TEXT("ToolsBox.Icon_Anon"),
@@ -60,10 +60,10 @@ const TSet<FTool> Tools::Get_ToolsData()
 			[]() { return SNew(SMaterialTttributeTransfer);}
 			),
 		FTool(
-			TEXT("资产导入自动分配"),
-			LOCTEXT("ToolDetail", "选择若干材质球或材质实例并通过变量命名将引用转移到新的材质球或材质实例"),
+			TEXT("资产导入自动分配（当前不可用）"),
+			LOCTEXT("ToolDetail", ""),
 			TEXT("ToolsBox.Image_Anon_1K"),
-			TEXT("SMaterialAttributeTransferTab"),
+			TEXT("SAssetImportAutoAllocationTab"),
 			TEXT("ToolsBox.Icon_Anon"),
 			[]() { return SNew(SAssetImportAutoAllocation);}
 			)
