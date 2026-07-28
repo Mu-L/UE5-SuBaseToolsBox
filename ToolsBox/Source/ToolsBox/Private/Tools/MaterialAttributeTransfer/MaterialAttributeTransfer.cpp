@@ -16,6 +16,7 @@
 #include "PropertyCustomizationHelpers.h"
 #include "Dom/JsonObject.h"
 #include "HAL/PlatformFileManager.h"
+#include "HAL/PlatformProcess.h"
 #include "Misc/FileHelper.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
@@ -26,7 +27,7 @@
  
 void SMaterialTttributeTransfer::Construct(const FArguments& InArgs)
 {
-    SaveConfigFileName = TEXT("DefaultSettings.json");
+    SaveConfigFileName = TEXT("DefaultSettings");
     TargetSavePath = TEXT("/Game/"); 
  
     ChildSlot
@@ -52,14 +53,44 @@ void SMaterialTttributeTransfer::Construct(const FArguments& InArgs)
                     ]
                     + SHorizontalBox::Slot().AutoWidth()
                     [
-                        SNew(SButton).Text(LOCTEXT("SaveBtn", "保存配置"))
+                        SNew(SButton).Text(LOCTEXT("SaveBtn", "保存"))
                         .OnClicked_Lambda([this]() { SaveSettings(); return FReply::Handled(); })
+                        .ToolTipText(LOCTEXT("SaveBtnTip", "保存配置"))
                     ]
                     + SHorizontalBox::Slot().AutoWidth().Padding(5, 0, 0, 0)
                     [
-                        SNew(SButton).Text(LOCTEXT("LoadBtn", "加载配置"))
+                        SNew(SButton).Text(LOCTEXT("LoadBtn", "加载"))
                         .OnClicked_Lambda([this]() { LoadSettings(); return FReply::Handled(); })
+                        .ToolTipText(LOCTEXT("LoadBtnTip", "加载配置"))
                     ]
+                    + SHorizontalBox::Slot().AutoWidth().Padding(5, 0, 0, 0)
+                    [
+                        SNew(SButton).Text(LOCTEXT("OpenFolderBtn", "打开配置"))
+                        .OnClicked_Lambda([this]() {
+                            FString Dir = GetSaveDirectory();
+                            // 确保目录已存在（首次点击可能尚未创建）
+                            IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
+                            if (!PF.DirectoryExists(*Dir)) PF.CreateDirectoryTree(*Dir);
+                            // 转成 Windows 原生反斜杠路径，否则 ShellExecute 的 explore 动词对正斜杠路径会静默失败
+                            FString NativeDir = FPaths::ConvertRelativePathToFull(Dir).Replace(TEXT("/"), TEXT("\\"));
+                            FPlatformProcess::ExploreFolder(*NativeDir);
+                            AppendLog(TEXT("已打开配置文件夹: ") + NativeDir);
+                            return FReply::Handled();
+                        })
+                        .ToolTipText(LOCTEXT("OpenFolderBtnTip", "打开配置文件夹"))
+                    ]
+                ]
+                + SVerticalBox::Slot().AutoHeight().Padding(5)
+                [
+                    SNew(STextBlock)
+                    .AutoWrapText(true)
+                    .Text(LOCTEXT("MaterialAttributeTransferHelper",
+                        "使用方法：\n"
+                        "  1. 选择需要继承自哪个材质类\n"
+                        "  2. 内容浏览器中选择一个或多个需要转移参数值的材质示例\n"
+                        "  3. 点击 开始转移参数 后会生成材质实例并将被转换的材质实例参数赋值给以母材质为父类新生成的材质实例\n"
+                        ))
+                   
                 ]
             ]
         ]

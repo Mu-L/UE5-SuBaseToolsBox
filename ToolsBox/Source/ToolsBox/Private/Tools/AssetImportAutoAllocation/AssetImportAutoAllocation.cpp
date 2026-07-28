@@ -22,7 +22,7 @@ void SAssetImportAutoAllocation::Construct(const FArguments& InArgs)
         + SVerticalBox::Slot().AutoHeight().Padding(10)
         [
             SNew(STextBlock)
-            .Text(LOCTEXT("Title", "资产自动分类规则配置 (UE 5.8兼容版)"))
+            .Text(LOCTEXT("Title", "资产自动分类规则配置"))
             .Font(FAppStyle::GetFontStyle("BoldFont"))
         ]
         + SVerticalBox::Slot().FillHeight(1.0f).Padding(5)
