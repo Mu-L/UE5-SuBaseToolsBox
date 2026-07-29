@@ -1,7 +1,7 @@
 # ===== Unreal Engine 构建产物 =====
 #Binaries/
-Intermediate/
-Saved/
+ToolsBox/Intermediate/
+ToolsBox/Saved/
 DerivedDataCache/
 .vs/
 .vscode/
@@ -22,7 +22,7 @@ Source/merged_code.txt
 
 # ===== 代理 / 工作区记忆（不属于插件本体） =====
 .workbuddy/
-Source/.git/
+.git/
 
 # ===== 操作系统垃圾文件 =====
 Thumbs.db

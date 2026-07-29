@@ -149,7 +149,7 @@ TSharedRef<SWindow> SlateAssistBuildFunctionLibrary::MakeInfoWindow()
                 .AutoHeight()
                 [
 
-                    MakeClickableImageLink(FIconStyle::Get_Images().GetBrush("Info.Info_github"), FText::FromString(TEXT("前往github")), "https://github.com/dashboard",FVector2D(1143.0f,295.0f))
+                    MakeClickableImageLink(FIconStyle::Get_Images().GetBrush("Info.Info_github"), FText::FromString(TEXT("前往github")), "https://github.com/SuBase/UE5-SuBaseToolsBox",FVector2D(1143.0f,295.0f))
 
                 ]
                 + SVerticalBox::Slot()
