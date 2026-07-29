@@ -56,7 +56,6 @@ void FIconStyle::Initialize()
 		Icons = MakeShareable(new FSlateStyleSet("EditorToolsBoxIconStyle"));
 		Icons->SetContentRoot(ContentDir_Icon);
 
-		// 【关键修改点】
 		// 这个 Key 的名字必须是 "Context名.变量名"
 		// 对应 FOpenToolsBox_Command 里的定义
 		Icons->Set("ToolsBox.ToolsBox_OpenToolsBox",// 如果图标要作用在按钮上命名规则为  [按钮的ID名，如TEXT("ToolsBox")] . [按钮指针变量名，如TSharedPtr<FUICommandInfo> ToolsBox_CommandInfo]
@@ -66,6 +65,9 @@ void FIconStyle::Initialize()
 		// 修正：使用 Icons 自己的指针去拼路径，不要跨变量引用
 		Icons->Set("ToolsBox.Icon_Anon",
 			new FSlateImageBrush(Icons->RootToContentDir(TEXT("Icon_Anon"), TEXT(".png")), FVector2D(20.0f, 20.0f)));
+
+		Icons->Set("ToolsBox.Icon_Anon2",
+			new FSlateImageBrush(Icons->RootToContentDir(TEXT("Icon_Anon2"), TEXT(".png")), FVector2D(20.0f, 20.0f)));
  
 		FSlateStyleRegistry::RegisterSlateStyle(*Icons);
 	}

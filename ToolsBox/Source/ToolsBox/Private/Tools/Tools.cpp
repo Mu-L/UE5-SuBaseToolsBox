@@ -29,7 +29,7 @@ const TSet<FTool> Tools::Get_ToolsData()
 			LOCTEXT("ToolDetail", "批量导入模型和材质，同文件下的模型以及附属的纹理贴图会自动连接材质球并赋予模型"),
 			TEXT("ToolsBox.Image_KitaIkuyo"),
 			TEXT("SImport_MMTab"),
-			TEXT("ToolsBox.Image_KitaIkuyo"),
+			TEXT("ToolsBox.Icon_Anon2"),
 			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SImport_MM);}
 			),
@@ -39,7 +39,7 @@ const TSet<FTool> Tools::Get_ToolsData()
 			LOCTEXT("ToolDetail", "右键菜单操作脚本"),
 			TEXT("ToolsBox.Image_YamadaRyo"),
 			TEXT("SAAUTab"),
-			TEXT("ToolsBox.Image_YamadaRyo"),
+			TEXT("ToolsBox.Icon_Anon2"),
 			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SAAU);}
 			),
@@ -49,7 +49,7 @@ const TSet<FTool> Tools::Get_ToolsData()
 			LOCTEXT("ToolDetail", "选择若干纹理生成材质球或材质实例并赋予模型"),
 			TEXT("ToolsBox.Image_IjichiNijika"),
 			TEXT("SSpawnMaterialTab"),
-			TEXT("ToolsBox.Image_IjichiNijika"),
+			TEXT("ToolsBox.Icon_Anon2"),
 			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SSpawnMaterial);}
 			),
@@ -59,7 +59,7 @@ const TSet<FTool> Tools::Get_ToolsData()
 			LOCTEXT("ToolDetail", "选择若干材质球或材质实例并通过变量命名将引用转移到新的材质球或材质实例"),
 			TEXT("ToolsBox.Image_GotohHitori"),
 			TEXT("SMaterialAttributeTransferTab"),
-			TEXT("ToolsBox.Image_GotohHitori"),
+			TEXT("ToolsBox.Icon_Anon2"),
 			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SMaterialTttributeTransfer);}
 			),
