@@ -16,20 +16,20 @@ const TSet<FTool> Tools::Get_ToolsData()
 	static TSet<FTool> InternalTools = {
 		
 		/*FTool(
-			TEXT("空白模版"),//标题
-			LOCTEXT("ToolDetail", "开发者可复制此空白模版编写新工具"),//描述
-			TEXT("ToolsBox.Image_Anon_1K"),
-			TEXT("SBlankTemplateToolTab"),
-			TEXT("ToolsBox.Icon_Anon"),//停靠栏Icon
+			TEXT("空白模版"),                                       //标题
+			LOCTEXT("ToolDetail", "开发者可复制此空白模版编写新工具"), //描述
+			TEXT("ToolsBox.Image_Anon_1K"),						  //工具图标
+			TEXT("SBlankTemplateToolTab"),						  //工具停靠栏名称
+			TEXT("ToolsBox.Icon_Anon"),                           //停靠栏Icon
 			[]() { return SNew(SBlankTemplateTool);}
 			),*/
 		
 		FTool(
 			TEXT("批量导入模型和材质"),
 			LOCTEXT("ToolDetail", "批量导入模型和材质，同文件下的模型以及附属的纹理贴图会自动连接材质球并赋予模型"),
-			TEXT("ToolsBox.Image_Anon_1K"),
+			TEXT("ToolsBox.Image_KitaIkuyo"),
 			TEXT("SImport_MMTab"),
-			TEXT("ToolsBox.Icon_Anon"),
+			TEXT("ToolsBox.Image_KitaIkuyo"),
 			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SImport_MM);}
 			),
@@ -37,9 +37,9 @@ const TSet<FTool> Tools::Get_ToolsData()
 		FTool(
 			TEXT("右键菜单操作脚本"),
 			LOCTEXT("ToolDetail", "右键菜单操作脚本"),
-			TEXT("ToolsBox.Image_Anon_1K"),
+			TEXT("ToolsBox.Image_YamadaRyo"),
 			TEXT("SAAUTab"),
-			TEXT("ToolsBox.Icon_Anon"),
+			TEXT("ToolsBox.Image_YamadaRyo"),
 			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SAAU);}
 			),
@@ -47,9 +47,9 @@ const TSet<FTool> Tools::Get_ToolsData()
 		FTool(
 			TEXT("批量材质球生成"),
 			LOCTEXT("ToolDetail", "选择若干纹理生成材质球或材质实例并赋予模型"),
-			TEXT("ToolsBox.Image_Anon_1K"),
+			TEXT("ToolsBox.Image_IjichiNijika"),
 			TEXT("SSpawnMaterialTab"),
-			TEXT("ToolsBox.Icon_Anon"),
+			TEXT("ToolsBox.Image_IjichiNijika"),
 			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SSpawnMaterial);}
 			),
@@ -57,13 +57,13 @@ const TSet<FTool> Tools::Get_ToolsData()
 		FTool(
 			TEXT("材质属性转移"),
 			LOCTEXT("ToolDetail", "选择若干材质球或材质实例并通过变量命名将引用转移到新的材质球或材质实例"),
-			TEXT("ToolsBox.Image_Anon_1K"),
+			TEXT("ToolsBox.Image_GotohHitori"),
 			TEXT("SMaterialAttributeTransferTab"),
-			TEXT("ToolsBox.Icon_Anon"),
+			TEXT("ToolsBox.Image_GotohHitori"),
 			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SMaterialTttributeTransfer);}
 			),
-		FTool(
+		/*FTool(
 			TEXT("资产导入自动分配（当前不可用）"),
 			LOCTEXT("ToolDetail", ""),
 			TEXT("ToolsBox.Image_Anon_1K"),
@@ -71,7 +71,7 @@ const TSet<FTool> Tools::Get_ToolsData()
 			TEXT("ToolsBox.Icon_Anon"),
 			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SAssetImportAutoAllocation);}
-			)
+			)*/
 		
 	};
 	return InternalTools;

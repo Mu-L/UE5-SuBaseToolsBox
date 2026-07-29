@@ -31,6 +31,21 @@ void FIconStyle::Initialize()
 
 		Images->Set("Info.Info_zf",
 			new FSlateImageBrush(Images->RootToContentDir(TEXT("Image_zf"), TEXT(".png")), FVector2D(821, 605)));
+
+
+		//孤独摇滚
+		Images->Set("ToolsBox.Image_GotohHitori",
+			new FSlateImageBrush(Images->RootToContentDir(TEXT("Image_GotohHitori"), TEXT(".jpg")), FVector2D(1080, 1080)));
+
+		Images->Set("ToolsBox.Image_IjichiNijika",
+			new FSlateImageBrush(Images->RootToContentDir(TEXT("Image_IjichiNijika"), TEXT(".jpg")), FVector2D(1080, 1080)));
+
+		Images->Set("ToolsBox.Image_KitaIkuyo",
+			new FSlateImageBrush(Images->RootToContentDir(TEXT("Image_KitaIkuyo"), TEXT(".jpg")), FVector2D(1080, 1080)));
+
+		Images->Set("ToolsBox.Image_YamadaRyo",
+			new FSlateImageBrush(Images->RootToContentDir(TEXT("Image_YamadaRyo"), TEXT(".jpg")), FVector2D(1080, 1080)));
+
 		
 		FSlateStyleRegistry::RegisterSlateStyle(*Images);
 	}

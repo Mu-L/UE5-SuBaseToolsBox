@@ -156,7 +156,7 @@ TSharedRef<SWindow> SlateAssistBuildFunctionLibrary::MakeInfoWindow()
                 .AutoHeight()
                 [
 
-                    MakeClickableImageLink(FIconStyle::Get_Images().GetBrush("Info.Info_zf"), FText::FromString(TEXT("制作不易，恳求打赏，谢谢勒喵ฅ^•ﻌ•^ฅ")), "",FVector2D(400, 300))
+                    MakeClickableImageLink(FIconStyle::Get_Images().GetBrush("Info.Info_zf"), FText::FromString(TEXT("制作不易，恳求打赏，谢谢喵ฅ^•ﻌ•^ฅ")), "",FVector2D(400, 300))
 
                 ]
             ]

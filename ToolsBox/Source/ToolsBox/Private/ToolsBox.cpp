@@ -129,7 +129,7 @@ TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& Sp
             .VAlign(VAlign_Center)
             [
                 SNew(SSearchBox)
-                .HintText(NSLOCTEXT("ToolsBox", "SearchHint", "窝里giao"))
+                .HintText(NSLOCTEXT("ToolsBox", "SearchHint", "工具名称"))
                 .OnTextChanged_Lambda([RefreshList](const FText& InText) {
                     RefreshList(InText.ToString()); 
                 })
@@ -140,7 +140,7 @@ TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& Sp
 			.Padding(2.0f, 0, 2.0f, 0)
 	        [
 		        SNew(STextBlock)
-		        .Text(LOCTEXT("打赏", "打赏"))
+		        .Text(LOCTEXT("ToolBoxAuthor", "详情"))
 	        ]
  
             + SHorizontalBox::Slot()

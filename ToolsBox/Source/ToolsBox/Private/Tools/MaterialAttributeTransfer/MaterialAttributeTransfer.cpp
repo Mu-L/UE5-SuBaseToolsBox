@@ -11,6 +11,8 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Factories/MaterialInstanceConstantFactoryNew.h"
 #include "Materials/MaterialInstanceConstant.h"
+#include "Materials/Material.h"
+#include "UObject/Package.h"
 #include "Tools/MaterialTttributeTransfer/MaterialTttributeTransfer.h"
 #include "Widgets/Input/SEditableTextBox.h"
 #include "PropertyCustomizationHelpers.h"
@@ -87,9 +89,9 @@ void SMaterialTttributeTransfer::Construct(const FArguments& InArgs)
                     .AutoWrapText(true)
                     .Text(LOCTEXT("MaterialAttributeTransferHelper",
                         "使用方法：\n"
-                        "  1. 选择需要继承自哪个材质类\n"
-                        "  2. 内容浏览器中选择一个或多个需要转移参数值的材质示例\n"
-                        "  3. 点击 开始转移参数 后会生成材质实例并将被转换的材质实例参数赋值给以母材质为父类新生成的材质实例\n"
+                        "  1. 选择需要继承自的哪个材质或材质实例类\n"
+                        "  2. 内容浏览器中选择一个或多个需要被转移参数值的材质实例或材质类\n"
+                        "  3. 点击 开始转移参数 后会生成材质并将被转换的材质参数赋值给以母材质为父类新生成的材质\n"
                         ))
                    
                 ]
@@ -148,10 +150,51 @@ void SMaterialTttributeTransfer::Construct(const FArguments& InArgs)
                     .OnCheckStateChanged_Lambda([this](ECheckBoxState NewState) { bSaveToRespectiveFolders = (NewState == ECheckBoxState::Checked); })
                 ]
                 + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(4, 0, 0, 0)
-                [ SNew(STextBlock).Text(LOCTEXT("SaveToFolderTip", "保存到各自文件夹中（按源材质所在位置生成，取消勾选则统一保存到上方路径）")) ]
+                [ SNew(STextBlock).Text(LOCTEXT("SaveToFolderTip", "保存到各自文件夹中")) ]
             ]
         ]
  
+        
+        + SVerticalBox::Slot().AutoHeight().Padding(10, 0, 10, 5)
+        [
+            SNew(SVerticalBox)
+            + SVerticalBox::Slot().AutoHeight()
+            [
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+                [
+                    SNew(SCheckBox)
+                    .IsChecked_Lambda([this]() { return bForceGenerateMaterial ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
+                    .OnCheckStateChanged_Lambda([this](ECheckBoxState NewState)
+                    {
+                        bForceGenerateMaterial = (NewState == ECheckBoxState::Checked);
+                        if (bForceGenerateMaterial) bForceGenerateInstance = false; // 互斥
+                    })
+                ]
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(4, 0, 20, 0)
+                [ SNew(STextBlock).Text(LOCTEXT("GenMatChk", "转换后统一生成材质类")) ]
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+                [
+                    SNew(SCheckBox)
+                    .IsChecked_Lambda([this]() { return bForceGenerateInstance ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
+                    .OnCheckStateChanged_Lambda([this](ECheckBoxState NewState)
+                    {
+                        bForceGenerateInstance = (NewState == ECheckBoxState::Checked);
+                        if (bForceGenerateInstance) bForceGenerateMaterial = false; // 互斥
+                    })
+                    
+                ]
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(4, 0, 0, 0)
+                [ SNew(STextBlock).Text(LOCTEXT("GenInstChk", "转换后统一生成材质实例")) ]
+            ]
+            + SVerticalBox::Slot().AutoHeight()
+            [
+                SNew(STextBlock)
+                .Text(LOCTEXT("CkeckTip", "两者都不勾选：按源材质类型生成（实例→实例，材质类→材质类）。"))
+            ]
+           
+        ]
+
         // 4. 参数映射列表
         + SVerticalBox::Slot().FillHeight(0.6f).Padding(10, 5)
         [
@@ -274,6 +317,8 @@ void SMaterialTttributeTransfer::SaveSettings()
     RootObject->SetStringField(TEXT("MasterMaterial"), TargetMasterMaterial.IsValid() ? TargetMasterMaterial->GetPathName() : TEXT(""));
     RootObject->SetStringField(TEXT("TargetSavePath"), TargetSavePath);
     RootObject->SetBoolField(TEXT("SaveToRespectiveFolders"), bSaveToRespectiveFolders);
+    RootObject->SetBoolField(TEXT("ForceGenerateMaterial"), bForceGenerateMaterial);
+    RootObject->SetBoolField(TEXT("ForceGenerateInstance"), bForceGenerateInstance);
  
     TArray<TSharedPtr<FJsonValue>> JsonArray;
     for (const auto& Pair : MappingList)
@@ -312,6 +357,11 @@ void SMaterialTttributeTransfer::LoadSettings()
 
         if (RootObject->HasField(TEXT("SaveToRespectiveFolders")))
             bSaveToRespectiveFolders = RootObject->GetBoolField(TEXT("SaveToRespectiveFolders"));
+
+        if (RootObject->HasField(TEXT("ForceGenerateMaterial")))
+            bForceGenerateMaterial = RootObject->GetBoolField(TEXT("ForceGenerateMaterial"));
+        if (RootObject->HasField(TEXT("ForceGenerateInstance")))
+            bForceGenerateInstance = RootObject->GetBoolField(TEXT("ForceGenerateInstance"));
  
         MappingList.Empty();
         const TArray<TSharedPtr<FJsonValue>>* JsonArray;
@@ -360,14 +410,20 @@ void SMaterialTttributeTransfer::LoadSettings()
         return FReply::Handled();
     }
  
-    // 2. 保存路径模式
+    // 2. 保存路径模式 & 输出类型
     const bool bSaveToRespective = bSaveToRespectiveFolders;
+
+    FString OutputModeStr;
+    if (bForceGenerateInstance) OutputModeStr = TEXT("统一材质实例");
+    else if (bForceGenerateMaterial) OutputModeStr = TEXT("统一材质类");
+    else OutputModeStr = TEXT("按源材质类型");
 
     IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
     AppendLog(FString::Printf(
-        TEXT("开始处理... 选中数量: %d, 保存模式: %s"),
+        TEXT("开始处理... 选中数量: %d, 保存模式: %s, 输出类型: %s"),
         SelectedMaterials.Num(),
-        bSaveToRespective ? TEXT("各自源文件夹") : *TargetSavePath));
+        bSaveToRespective ? TEXT("各自源文件夹") : *TargetSavePath,
+        *OutputModeStr));
  
     int32 SuccessCount = 0;
     int32 SkipCount = 0;
@@ -414,49 +470,74 @@ void SMaterialTttributeTransfer::LoadSettings()
         // 确保路径中没有 //
         FinalPath.ReplaceInline(TEXT("//"), TEXT("/"));
 
-        // 创建 MIC
-        FString NewAssetName = SourceMat->GetName() + TEXT("_INST");
-        UMaterialInstanceConstantFactoryNew* Factory = NewObject<UMaterialInstanceConstantFactoryNew>();
-        
-        UObject* NewAsset = AssetTools.CreateAsset(NewAssetName, FinalPath, UMaterialInstanceConstant::StaticClass(), Factory);
-        UMaterialInstanceConstant* NewMIC = Cast<UMaterialInstanceConstant>(NewAsset);
- 
-        if (NewMIC)
+        // 决定本次输出类型
+        enum class EOutputType { MatchSource, Instance, Material };
+        EOutputType OutType = bForceGenerateInstance ? EOutputType::Instance
+            : (bForceGenerateMaterial ? EOutputType::Material : EOutputType::MatchSource);
+        if (OutType == EOutputType::MatchSource)
         {
-            NewMIC->SetParentEditorOnly(TargetMasterMaterial.Get());
- 
-            for (const TSharedPtr<FParamMappingPair>& Mapping : MappingList)
+            // 按源材质类型：材质实例 → 实例；材质类 → 材质类
+            OutType = Cast<UMaterialInstanceConstant>(SourceMat) ? EOutputType::Instance : EOutputType::Material;
+        }
+
+        if (OutType == EOutputType::Instance)
+        {
+            // 统一/匹配生成材质实例
+            FString NewAssetName = SourceMat->GetName() + TEXT("_INST");
+            MakeUniqueAssetName(FinalPath, NewAssetName, NewAssetName);
+
+            UMaterialInstanceConstantFactoryNew* Factory = NewObject<UMaterialInstanceConstantFactoryNew>();
+            UObject* NewAsset = AssetTools.CreateAsset(NewAssetName, FinalPath, UMaterialInstanceConstant::StaticClass(), Factory);
+            UMaterialInstanceConstant* NewMIC = Cast<UMaterialInstanceConstant>(NewAsset);
+
+            if (NewMIC)
             {
-                if (Mapping->TargetParamName.IsEmpty() || Mapping->SourceParamName.IsEmpty()) continue;
- 
-                FName DestName(*Mapping->TargetParamName);
-                FName SrcName(*Mapping->SourceParamName);
- 
-                // 转移 Texture
-                UTexture* SourceTex = nullptr;
-                if (SourceMat->GetTextureParameterValue(SrcName, SourceTex))
-                    NewMIC->SetTextureParameterValueEditorOnly(DestName, SourceTex);
- 
-                // 转移 Scalar
-                float SourceScalar = 0.f;
-                if (SourceMat->GetScalarParameterValue(SrcName, SourceScalar))
-                    NewMIC->SetScalarParameterValueEditorOnly(DestName, SourceScalar);
- 
-                // 转移 Vector
-                FLinearColor SourceVector;
-                if (SourceMat->GetVectorParameterValue(SrcName, SourceVector))
-                    NewMIC->SetVectorParameterValueEditorOnly(DestName, SourceVector);
+                NewMIC->SetParentEditorOnly(TargetMasterMaterial.Get());
+                ApplyParameterValues(NewMIC, SourceMat);
+                NewMIC->PostEditChange();
+                FAssetRegistryModule::AssetCreated(NewMIC);
+
+                SuccessCount++;
+                AppendLog(FString::Printf(TEXT("成功生成(实例): %s -> %s"), *NewAssetName, *FinalPath));
             }
- 
-            NewMIC->PostEditChange();
-            FAssetRegistryModule::AssetCreated(NewMIC);
-            
-            SuccessCount++;
-            AppendLog(FString::Printf(TEXT("成功生成: %s -> %s"), *NewAssetName, *FinalPath));
+            else
+            {
+                AppendLog(FString::Printf(TEXT("失败: 无法在路径 %s 下创建资产 %s"), *FinalPath, *NewAssetName));
+            }
         }
         else
         {
-            AppendLog(FString::Printf(TEXT("失败: 无法在路径 %s 下创建资产 %s"), *FinalPath, *NewAssetName));
+            // 统一/匹配生成材质类：复制母材质（基础材质）并烘焙参数值
+            UMaterial* Template = FindBaseMaterialTemplate(TargetMasterMaterial.Get());
+            if (!Template)
+            {
+                AppendLog(FString::Printf(
+                    TEXT("跳过: %s (统一生成材质类需要母材质为材质类，或能向上追溯到材质类)"), *SourceMat->GetName()));
+                SkipCount++;
+                continue;
+            }
+
+            FString NewAssetName = SourceMat->GetName() + TEXT("_MAT");
+            MakeUniqueAssetName(FinalPath, NewAssetName, NewAssetName);
+
+            FString PackagePath = FinalPath / NewAssetName;
+            UPackage* Pkg = CreatePackage(*PackagePath);
+            UMaterial* NewMat = DuplicateObject<UMaterial>(Template, Pkg, *NewAssetName);
+            if (NewMat)
+            {
+                NewMat->SetFlags(RF_Public | RF_Standalone);
+                ApplyParameterValues(NewMat, SourceMat);
+                NewMat->PostEditChange();
+                NewMat->MarkPackageDirty();
+                FAssetRegistryModule::AssetCreated(NewMat);
+
+                SuccessCount++;
+                AppendLog(FString::Printf(TEXT("成功生成(材质类): %s -> %s"), *NewAssetName, *FinalPath));
+            }
+            else
+            {
+                AppendLog(FString::Printf(TEXT("失败: 无法在路径 %s 下复制材质 %s"), *FinalPath, *NewAssetName));
+            }
         }
     }
  
@@ -466,6 +547,74 @@ void SMaterialTttributeTransfer::LoadSettings()
     return FReply::Handled();
 }
  
+UMaterial* SMaterialTttributeTransfer::FindBaseMaterialTemplate(UMaterialInterface* InMat) const
+{
+    UMaterialInterface* Cur = InMat;
+    while (Cur)
+    {
+        if (UMaterial* Mat = Cast<UMaterial>(Cur))
+        {
+            return Mat;
+        }
+        // 材质实例可向上追溯到其父材质
+        UMaterialInstance* MI = Cast<UMaterialInstance>(Cur);
+        Cur = MI ? MI->Parent.Get() : nullptr;
+    }
+    return nullptr;
+}
+
+void SMaterialTttributeTransfer::MakeUniqueAssetName(const FString& PackagePath, const FString& BaseName, FString& OutName) const
+{
+    OutName = BaseName;
+    int32 Suffix = 1;
+    bool bExists = false;
+    do
+    {
+        FString Full = PackagePath / OutName;
+        bExists = (FindObject<UPackage>(nullptr, *Full) != nullptr)
+               || FPackageName::DoesPackageExist(Full);
+        if (bExists)
+        {
+            OutName = FString::Printf(TEXT("%s_%d"), *BaseName, Suffix++);
+        }
+    } while (bExists);
+}
+
+void SMaterialTttributeTransfer::ApplyParameterValues(UMaterialInterface* Target, UMaterialInterface* Source) const
+{
+    for (const TSharedPtr<FParamMappingPair>& Mapping : MappingList)
+    {
+        if (Mapping->TargetParamName.IsEmpty() || Mapping->SourceParamName.IsEmpty()) continue;
+
+        FName DestName(*Mapping->TargetParamName);
+        FName SrcName(*Mapping->SourceParamName);
+
+        // 转移 Texture
+        UTexture* SourceTex = nullptr;
+        if (Source->GetTextureParameterValue(SrcName, SourceTex))
+        {
+            if (UMaterialInstanceConstant* MIC = Cast<UMaterialInstanceConstant>(Target)) MIC->SetTextureParameterValueEditorOnly(DestName, SourceTex);
+            else if (UMaterial* Mat = Cast<UMaterial>(Target)) Mat->SetTextureParameterValueEditorOnly(DestName, SourceTex);
+        }
+
+        // 转移 Scalar
+        float SourceScalar = 0.f;
+        if (Source->GetScalarParameterValue(SrcName, SourceScalar))
+        {
+            if (UMaterialInstanceConstant* MIC = Cast<UMaterialInstanceConstant>(Target)) MIC->SetScalarParameterValueEditorOnly(DestName, SourceScalar);
+            else if (UMaterial* Mat = Cast<UMaterial>(Target)) Mat->SetScalarParameterValueEditorOnly(DestName, SourceScalar);
+        }
+
+        // 转移 Vector
+        FLinearColor SourceVector;
+        if (Source->GetVectorParameterValue(SrcName, SourceVector))
+        {
+            if (UMaterialInstanceConstant* MIC = Cast<UMaterialInstanceConstant>(Target)) MIC->SetVectorParameterValueEditorOnly(DestName, SourceVector);
+            else if (UMaterial* Mat = Cast<UMaterial>(Target)) Mat->SetVectorParameterValueEditorOnly(DestName, SourceVector);
+        }
+    }
+}
+
 FString SMaterialTttributeTransfer::GetSaveDirectory() const {
     FString Dir = FPaths::ProjectPluginsDir() + TEXT("ToolsBox/Source/ToolsBox/Public/Tools/ToolUserDataSave/");
     IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
