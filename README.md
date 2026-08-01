@@ -4,6 +4,7 @@
 
 - **引擎版本**：Unreal Engine 5.8
 - **作者**：SuBase
+- **前往B站** https://space.bilibili.com/391627131/
 
 ---
 
@@ -47,7 +48,6 @@ UE_5.8/Engine/Plugins/Marketplace/ToolsBox/
 1. 启用插件并重启编辑器。
 2. 在 **关卡编辑器（Level Editor）顶部工具条**（靠近 Play 工具条的位置）会出现一个 **「ToolsBox」** 按钮。
 3. 点击按钮打开工具箱面板，面板中列出上述工具，点击对应工具块即可展开使用。
-4. 每个工具块右上角有一个链接图标，可打开该工具的说明页面（当前默认指向作者 B 站主页占位，可在 `Tools.cpp` 的 `FTool` 中替换为实际地址）。
 
 ---
 

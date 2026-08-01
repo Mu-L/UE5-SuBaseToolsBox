@@ -2,6 +2,7 @@
 #include "Internationalization/Internationalization.h"
 #include "Templates/SharedPointer.h"
 #include "Tools/AssetImportAutoAllocation/AssetImportAutoAllocation.h"
+#include "Tools/AutoPrefix/AutoPrefix.h"
 
 #include "Tools/BlankTemplateTool/BlankTemplateTool.h"
 #include "Tools/IntelligentImportOfModelsAndMaterials/Import_MM.h"
@@ -63,6 +64,16 @@ const TSet<FTool> Tools::Get_ToolsData()
 			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SMaterialTttributeTransfer);}
 			),
+		FTool(
+			TEXT("自动前缀"),
+			LOCTEXT("ToolDetail", "常见新蓝图类时自动添加该类前缀"),
+			TEXT("ToolsBox.Image_GotohHitori"),
+			TEXT("SAutoPrefixTab"),
+			TEXT("ToolsBox.Icon_Anon2"),
+			TEXT("https://space.bilibili.com/391627131/"), 
+			[]() { return SNew(SAutoPrefix);}
+			),
+		
 		/*FTool(
 			TEXT("资产导入自动分配（当前不可用）"),
 			LOCTEXT("ToolDetail", ""),

@@ -168,7 +168,7 @@ void SMaterialTttributeTransfer::Construct(const FArguments& InArgs)
                     .OnCheckStateChanged_Lambda([this](ECheckBoxState NewState)
                     {
                         bForceGenerateMaterial = (NewState == ECheckBoxState::Checked);
-                        if (bForceGenerateMaterial) bForceGenerateInstance = false; // 互斥
+                        if (bForceGenerateMaterial) bForceGenerateInstance = false; 
                     })
                 ]
                 + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(4, 0, 20, 0)
@@ -180,7 +180,7 @@ void SMaterialTttributeTransfer::Construct(const FArguments& InArgs)
                     .OnCheckStateChanged_Lambda([this](ECheckBoxState NewState)
                     {
                         bForceGenerateInstance = (NewState == ECheckBoxState::Checked);
-                        if (bForceGenerateInstance) bForceGenerateMaterial = false; // 互斥
+                        if (bForceGenerateInstance) bForceGenerateMaterial = false; 
                     })
                     
                 ]
