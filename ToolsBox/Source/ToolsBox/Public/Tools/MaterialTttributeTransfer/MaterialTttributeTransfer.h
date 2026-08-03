@@ -32,11 +32,11 @@ private:
 	FString TargetSavePath;
 
 	// 勾选后：生成的新材质实例保存在源材质各自所在的文件夹中；默认勾选
-	uint8 bSaveToRespectiveFolders = true;
+	bool bSaveToRespectiveFolders = true;
 
 	// 输出类型控制：两个不能同时打钩，默认都不勾选（按源材质类型生成）
-	uint8 bForceGenerateMaterial = false;  // 统一生成材质类
-	uint8 bForceGenerateInstance = false; // 统一生成材质实例
+	bool bForceGenerateMaterial = false;  // 统一生成材质类
+	bool bForceGenerateInstance = false; // 统一生成材质实例
  
 	// 日志组件修复：添加 ScrollBox 引用
 	TSharedPtr<SScrollBox> LogScrollBox;

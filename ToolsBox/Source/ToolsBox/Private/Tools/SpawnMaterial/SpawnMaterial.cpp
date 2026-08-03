@@ -68,7 +68,7 @@ void SSpawnMaterial::Construct(const FArguments& InArgs)
                 + SVerticalBox::Slot().AutoHeight()
                 [
                     SNew(STextBlock)
-                    .Text(LOCTEXT("Title", "批量材质球生成 V1"))
+                    .Text(LOCTEXT("Title", "批量材质球生成"))
                     .Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
                 ]
                 + SVerticalBox::Slot().AutoHeight().Padding(0, 8, 0, 0)

@@ -55,7 +55,7 @@ void SImport_MM::Construct(const FArguments& InArgs)
                     SNew(SVerticalBox)
                     + SVerticalBox::Slot().AutoHeight().Padding(10)
                     [
-                        SNew(STextBlock).Text(LOCTEXT("Title", "批量导入工具 V1")).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
+                        SNew(STextBlock).Text(LOCTEXT("Title", "批量导入工具")).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
                     ]
                     + SVerticalBox::Slot().AutoHeight().Padding(10, 5)
                     [

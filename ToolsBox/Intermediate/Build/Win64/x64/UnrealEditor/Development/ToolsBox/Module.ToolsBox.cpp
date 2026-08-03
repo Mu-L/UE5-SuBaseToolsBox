@@ -2,5 +2,6 @@
 #include "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/UnrealEditor/Inc/ToolsBox/UHT/ActorAction.gen.cpp"
 #include "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/UnrealEditor/Inc/ToolsBox/UHT/AssetAction.gen.cpp"
 #include "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/UnrealEditor/Inc/ToolsBox/UHT/AssetAutoSaveSettings.gen.cpp"
+#include "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/UnrealEditor/Inc/ToolsBox/UHT/DveloperSetting_AutoPrefix.gen.cpp"
 #include "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/UnrealEditor/Inc/ToolsBox/UHT/ToolsBox.init.gen.cpp"
 #include "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/x64/UnrealEditor/Development/ToolsBox/PerModuleInline.gen.cpp"

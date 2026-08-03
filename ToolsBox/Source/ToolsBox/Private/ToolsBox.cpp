@@ -8,6 +8,7 @@
 #include "Slate_Assist/FIconStyle.h"
 #include "Slate_Assist/SlateAssistBuildFunctionLibrary.h"
 #include "Tools/Tools.h"
+#include "Tools/AutoPrefix/AutoPrefixHook.h"
 
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
@@ -25,6 +26,8 @@ void FToolsBoxModule::StartupModule()
 	FIconStyle::Initialize();
 
 	FOpenToolsBox_Command::Register();
+
+	FAutoPrefixHook::Register();
 
 	OpenToolsBoxDockTab_CommandList = MakeShareable(new FUICommandList);
 	OpenToolsBoxDockTab_CommandList->MapAction
@@ -211,6 +214,7 @@ void FToolsBoxModule::ShutdownModule()
 	UToolMenus::UnregisterOwner(this);
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner("ToolsBox");
 	FOpenToolsBox_Command::Unregister();
+	FAutoPrefixHook::Unregister();
 	FIconStyle::Shutdown();
 	for (const FTool& Tool : Tools::Get_ToolsData())
 	{
