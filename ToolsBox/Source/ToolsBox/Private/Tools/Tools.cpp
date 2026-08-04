@@ -8,6 +8,7 @@
 #include "Tools/IntelligentImportOfModelsAndMaterials/Import_MM.h"
 #include "Tools/MaterialTttributeTransfer/MaterialTttributeTransfer.h"
 #include "Tools/Right-ClickOperationTool/AAU.h"
+#include "Tools/Right-ClickOperationTool/VariableCopier.h"
 #include "Tools/SpawnMaterial/SpawnMaterial.h"
 
 #define LOCTEXT_NAMESPACE "Tools"
@@ -43,6 +44,16 @@ const TSet<FTool> Tools::Get_ToolsData()
 			TEXT("ToolsBox.Icon_Anon2"),
 			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SAAU);}
+			),
+
+		FTool(
+			TEXT("蓝图变量复印机"),
+			LOCTEXT("ToolDetail", "多选源蓝图的变量，复制/剪切后一次性粘贴到另一个蓝图；支持右键菜单与快捷键 Ctrl+C/X/V"),
+			TEXT("ToolsBox.Image_YamadaRyo"),
+			TEXT("SVariableCopierTab"),
+			TEXT("ToolsBox.Icon_Anon2"),
+			TEXT("https://space.bilibili.com/391627131/"),
+			[]() { return SNew(SVariableCopier);}
 			),
 		
 		FTool(

@@ -19,6 +19,7 @@
 #include "Widgets/Text/SMultiLineEditableText.h"
 #include "Tools/AutoPrefix/AutoPrefixHook.h"
 #include "Tools/AutoPrefix/DveloperSetting_AutoPrefix.h"
+#include "Tools/ToolUserSaveHelper.h"
 
 #define LOCTEXT_NAMESPACE "AutoPrefixTool"
 
@@ -298,14 +299,8 @@ void SAutoPrefix::AppendLog(const FString& Message)
 
 FString SAutoPrefix::GetSaveDirectory() const
 {
-	// 存到插件目录下的一个固定文件夹里
-	FString Dir = FPaths::ProjectPluginsDir() + TEXT("ToolsBox/Source/ToolsBox/Public/Tools/ToolUserDataSave/");
-	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-	if (!PlatformFile.DirectoryExists(*Dir))
-	{
-		PlatformFile.CreateDirectoryTree(*Dir);
-	}
-	return Dir;
+	// 每个工具在自己的子目录里存文件，互不干扰；目录不存在会被自动建好
+	return FToolUserSave::GetToolSaveDir(TEXT("AutoPrefix"));
 }
 
 FString SAutoPrefix::GetFullConfigPath() const
@@ -317,6 +312,9 @@ FString SAutoPrefix::GetFullConfigPath() const
 
 void SAutoPrefix::LoadAllSetsFromJson()
 {
+	// 升级兼容：把老版本直接放在根目录的 AutoPrefixSettings.json 搬到新的工具子目录
+	FToolUserSave::MigrateLegacyFile(TEXT("AutoPrefix"), AutoPrefixJsonFileName);
+
 	PrefixSets.Empty();
 
 	FString JsonString;

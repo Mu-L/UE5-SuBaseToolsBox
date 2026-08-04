@@ -14,6 +14,7 @@
 #include "Materials/Material.h"
 #include "UObject/Package.h"
 #include "Tools/MaterialTttributeTransfer/MaterialTttributeTransfer.h"
+#include "Tools/ToolUserSaveHelper.h"
 #include "Widgets/Input/SEditableTextBox.h"
 #include "PropertyCustomizationHelpers.h"
 #include "Dom/JsonObject.h"
@@ -616,15 +617,15 @@ void SMaterialTttributeTransfer::ApplyParameterValues(UMaterialInterface* Target
 }
 
 FString SMaterialTttributeTransfer::GetSaveDirectory() const {
-    FString Dir = FPaths::ProjectPluginsDir() + TEXT("ToolsBox/Source/ToolsBox/Public/Tools/ToolUserDataSave/");
-    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-    if (!PlatformFile.DirectoryExists(*Dir)) PlatformFile.CreateDirectoryTree(*Dir);
-    return Dir;
+    // 每个工具在自己的子目录里存文件，互不干扰；目录不存在会被自动建好
+    return FToolUserSave::GetToolSaveDir(TEXT("MaterialAttributeTransfer"));
 }
  
 FString SMaterialTttributeTransfer::GetFullConfigPath() const {
     FString FileName = SaveConfigFileName;
     if (!FileName.EndsWith(TEXT(".json"))) FileName += TEXT(".json");
+    // 升级兼容：把老版本直接放在根目录的配置文件搬到新的工具子目录
+    FToolUserSave::MigrateLegacyFile(TEXT("MaterialAttributeTransfer"), FileName);
     return GetSaveDirectory() + FileName;
 }
  
