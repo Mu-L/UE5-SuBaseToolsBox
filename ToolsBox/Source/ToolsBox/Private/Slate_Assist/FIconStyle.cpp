@@ -46,6 +46,13 @@ void FIconStyle::Initialize()
 		Images->Set("ToolsBox.Image_YamadaRyo",
 			new FSlateImageBrush(Images->RootToContentDir(TEXT("Image_YamadaRyo"), TEXT(".jpg")), FVector2D(1080, 1080)));
 
+
+		Images->Set("ToolsBox.Image_Mustumi",
+			new FSlateImageBrush(Images->RootToContentDir(TEXT("Image_Mustumi"), TEXT(".png")), FVector2D(500, 500)));
+
+
+		Images->Set("ToolsBox.Image_Tomori",
+			new FSlateImageBrush(Images->RootToContentDir(TEXT("Image_Tomori"), TEXT(".jpg")), FVector2D(980, 908)));
 		
 		FSlateStyleRegistry::RegisterSlateStyle(*Images);
 	}

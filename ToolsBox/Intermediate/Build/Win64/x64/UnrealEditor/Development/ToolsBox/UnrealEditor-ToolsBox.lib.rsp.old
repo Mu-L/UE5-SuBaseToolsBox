@@ -26,5 +26,6 @@
 "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/x64/UnrealEditor/Development/ToolsBox/AAU.cpp.obj"
 "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/x64/UnrealEditor/Development/ToolsBox/ActorAction.cpp.obj"
 "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/x64/UnrealEditor/Development/ToolsBox/AssetAction.cpp.obj"
+"F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/x64/UnrealEditor/Development/ToolsBox/VariableCopier.cpp.obj"
 "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/x64/UnrealEditor/Development/ToolsBox/SpawnMaterial.cpp.obj"
 /OUT:"F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/x64/UnrealEditor/Development/ToolsBox/UnrealEditor-ToolsBox.lib"

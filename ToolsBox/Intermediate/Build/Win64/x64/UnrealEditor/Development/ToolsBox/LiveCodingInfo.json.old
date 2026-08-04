@@ -23,6 +23,7 @@
 			"AAU.cpp.obj",
 			"ActorAction.cpp.obj",
 			"AssetAction.cpp.obj",
+			"VariableCopier.cpp.obj",
 			"SpawnMaterial.cpp.obj",
 			"Tools.cpp.obj",
 			"ToolUserSaveHelper.cpp.obj"

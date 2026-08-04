@@ -1,15 +1,15 @@
 ﻿#include "Tools/Tools.h"
 #include "Internationalization/Internationalization.h"
 #include "Templates/SharedPointer.h"
-#include "Tools/AssetImportAutoAllocation/AssetImportAutoAllocation.h"
 #include "Tools/AutoPrefix/AutoPrefix.h"
 
 #include "Tools/BlankTemplateTool/BlankTemplateTool.h"
 #include "Tools/IntelligentImportOfModelsAndMaterials/Import_MM.h"
 #include "Tools/MaterialTttributeTransfer/MaterialTttributeTransfer.h"
 #include "Tools/Right-ClickOperationTool/AAU.h"
-#include "Tools/Right-ClickOperationTool/VariableCopier.h"
+
 #include "Tools/SpawnMaterial/SpawnMaterial.h"
+#include "Tools/VariableCopier/VariableCopier.h"
 
 #define LOCTEXT_NAMESPACE "Tools"
 
@@ -47,9 +47,9 @@ const TSet<FTool> Tools::Get_ToolsData()
 			),
 
 		FTool(
-			TEXT("蓝图变量复印机"),
-			LOCTEXT("ToolDetail", "多选源蓝图的变量，复制/剪切后一次性粘贴到另一个蓝图；支持右键菜单与快捷键 Ctrl+C/X/V"),
-			TEXT("ToolsBox.Image_YamadaRyo"),
+			TEXT("蓝图变量批量复制"),
+			LOCTEXT("ToolDetail", "多选源蓝图的变量（函数，宏等），复制/剪切后一次性粘贴到另一个蓝图"),
+			TEXT("ToolsBox.Image_Tomori"),
 			TEXT("SVariableCopierTab"),
 			TEXT("ToolsBox.Icon_Anon2"),
 			TEXT("https://space.bilibili.com/391627131/"),
@@ -78,23 +78,14 @@ const TSet<FTool> Tools::Get_ToolsData()
 		FTool(
 			TEXT("自动前缀"),
 			LOCTEXT("ToolDetail", "常见新蓝图类时自动添加该类前缀"),
-			TEXT("ToolsBox.Image_GotohHitori"),
+			TEXT("ToolsBox.Image_Mustumi"),
 			TEXT("SAutoPrefixTab"),
 			TEXT("ToolsBox.Icon_Anon2"),
 			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SAutoPrefix);}
 			),
 		
-		/*FTool(
-			TEXT("资产导入自动分配（当前不可用）"),
-			LOCTEXT("ToolDetail", ""),
-			TEXT("ToolsBox.Image_Anon_1K"),
-			TEXT("SAssetImportAutoAllocationTab"),
-			TEXT("ToolsBox.Icon_Anon"),
-			TEXT("https://space.bilibili.com/391627131/"), 
-			[]() { return SNew(SAssetImportAutoAllocation);}
-			)*/
-		
+
 	};
 	return InternalTools;
 }
