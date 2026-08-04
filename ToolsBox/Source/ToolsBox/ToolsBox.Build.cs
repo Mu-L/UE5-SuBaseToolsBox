@@ -56,7 +56,8 @@ public class ToolsBox : ModuleRules
 				"Json", 
 				"JsonUtilities" ,
 				"EditorWidgets",
-				"DeveloperSettings"
+				"DeveloperSettings",
+				"EditorFramework"          // FEditorModeInfo / FEditorModeRegistry（注册物理摆放生成模式）
 		
 			}
 			);

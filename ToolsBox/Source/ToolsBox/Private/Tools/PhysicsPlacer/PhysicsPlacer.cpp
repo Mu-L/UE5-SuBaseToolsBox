@@ -4,12 +4,19 @@
 #include "Tools/PhysicsPlacer/PhysicsPlacer.h"
 
 #include "Editor.h"                                       // GEditor
+#include "EditorModeManager.h"                            // GLevelEditorModeTools
+#include "EditorModeRegistry.h"                           // FEditorModeRegistry
 #include "Engine/World.h"                                 // UWorld, ELevelTick, TActorIterator, ETeleportType
 #include "Engine/Selection.h"                             // USelection::GetSelectedObjects
+#include "Engine/StaticMesh.h"                             // UStaticMesh
 #include "GameFramework/Actor.h"                          // AActor, GetActorLabel, SetActorTransform
 #include "Components/PrimitiveComponent.h"                // SetSimulatePhysics / SetEnableGravity / WakeAllRigidBodies
 #include "Components/SceneComponent.h"                   // SetMobility
 #include "LevelEditorViewport.h"                          // FLevelEditorViewportClient
+#include "PropertyCustomizationHelpers.h"                 // SObjectPropertyEntryBox（生成网格选择器）
+#include "Tools/PhysicsPlacer/PhysicsPlacerEdMode.h"      // FPhysicsPlacerEdMode
+#include "UObject/SoftObjectPath.h"                       // FSoftObjectPath（网格选择器路径）
+#include "Widgets/Input/SSpinBox.h"                      // SSpinBox（生成偏移 X/Y/Z）
 
 #include "Physics/Experimental/PhysScene_Chaos.h"        // FPhysScene_Chaos / FPhysicsSolverBase 等
 #include "Chaos/Framework/PhysicsSolverBase.h"           // Chaos::FPhysicsSolverBase::AdvanceAndDispatch_External
@@ -72,9 +79,9 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 				.AutoWrapText(true)
 				.Text(LOCTEXT("Help",
 					"物理摆放工具：\n"
-					"  1. 在视口里框选/点选若干场景物体，点「获取编辑器选中」把它们加入下方列表\n"
-					"  2. 点「启动模拟」让这些物体开启物理自由掉落；点「停止模拟」停下并保留当前位置\n"
-					"  3. 模拟前/中/后都可「保存当前位置」记成一份带名字的摆位；不理想时用「位置回溯」套回\n"
+					"  1. 进入「生成模式」后，在视口里移动光标会从光标向前检测地面，点击即在该处生成物理物体（带偏移，默认上方 2 米掉落）。Alt+点击不生成。\n"
+					"  2. 或在视口里框选/点选若干已有物体，点「获取编辑器选中」加入下方列表，再「启动模拟」让它们自由掉落；「停止模拟」停下并保留当前位置。\n"
+					"  3. 模拟前/中/后都可「保存当前位置」记成一份带名字的摆位；不理想时用「位置回溯」套回。\n"
 					"  （物体需带网格等 PrimitiveComponent；模拟时物体会被设为可移动并开启重力）"))
 			]
 		]
@@ -126,6 +133,105 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 			]
 		]
 
+		// ---------- 2.5 生成模式（光标检测地面，点击生成物理物体）----------
+		+ SVerticalBox::Slot().AutoHeight().Padding(10, 5)
+		[
+			SNew(SBorder).BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+			[
+				SNew(SVerticalBox)
+
+				+ SVerticalBox::Slot().AutoHeight().Padding(5)
+				[
+					SNew(STextBlock).Text(LOCTEXT("SpawnTitle", "生成模式（光标检测地面，点击生成物理物体）"))
+				]
+
+				+ SVerticalBox::Slot().AutoHeight().Padding(5, 0)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						SNew(SButton)
+						.Text_Lambda([this]()
+						{
+							return bSpawnMode
+								? LOCTEXT("ExitSpawnBtn", "退出生成模式（点击地面生成）")
+								: LOCTEXT("EnterSpawnBtn", "进入生成模式");
+						})
+						.ButtonStyle(FAppStyle::Get(), "PrimaryButton")
+						.ToolTipText(LOCTEXT("SpawnBtnTip", "进入后在视口点击地面即生成物理物体；Alt+点击不生成"))
+						.OnClicked_Lambda([this]() { ToggleSpawnMode(); return FReply::Handled(); })
+					]
+				]
+
+				+ SVerticalBox::Slot().AutoHeight().Padding(5, 4, 5, 0)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					[
+						SNew(STextBlock).Text(LOCTEXT("MeshLabel", "生成网格: ")).MinDesiredWidth(70)
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.0f)
+					[
+						SNew(SObjectPropertyEntryBox)
+						.AllowedClass(UStaticMesh::StaticClass())
+						.AllowClear(true)
+						.DisplayUseSelected(true)
+						.DisplayBrowse(true)
+						.ObjectPath(TAttribute<FString>::CreateLambda([this]()
+						{
+							return SpawnMeshAsset ? FSoftObjectPath(SpawnMeshAsset).ToString() : FString();
+						}))
+						.OnObjectChanged_Lambda([this](const FAssetData& A) { OnSpawnMeshPicked(A); })
+					]
+				]
+
+				+ SVerticalBox::Slot().AutoHeight().Padding(5, 4, 5, 0)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					[
+						SNew(STextBlock).Text(LOCTEXT("OffsetLabel", "生成偏移(米): ")).MinDesiredWidth(90)
+					]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(0, 0, 4, 0)
+					[
+						SNew(STextBlock).Text(LOCTEXT("OffX", "X"))
+					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						SNew(SSpinBox<float>)
+						.MinValue(-10000.f).MaxValue(10000.f)
+						.Value_Lambda([this]() { return SpawnOffset.X; })
+						.OnValueChanged_Lambda([this](float V) { OnSpawnOffsetChanged(V, 0); })
+						.MinDesiredWidth(60)
+					]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(4, 0, 4, 0)
+					[
+						SNew(STextBlock).Text(LOCTEXT("OffY", "Y"))
+					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						SNew(SSpinBox<float>)
+						.MinValue(-10000.f).MaxValue(10000.f)
+						.Value_Lambda([this]() { return SpawnOffset.Y; })
+						.OnValueChanged_Lambda([this](float V) { OnSpawnOffsetChanged(V, 1); })
+						.MinDesiredWidth(60)
+					]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(4, 0, 4, 0)
+					[
+						SNew(STextBlock).Text(LOCTEXT("OffZ", "Z(上方)"))
+					]
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						SNew(SSpinBox<float>)
+						.MinValue(-10000.f).MaxValue(10000.f)
+						.Value_Lambda([this]() { return SpawnOffset.Z; })
+						.OnValueChanged_Lambda([this](float V) { OnSpawnOffsetChanged(V, 2); })
+						.MinDesiredWidth(60)
+					]
+				]
+			]
+		]
+
 		// ---------- 3. 物理模拟 ----------
 		+ SVerticalBox::Slot().AutoHeight().Padding(10, 5)
 		[
@@ -144,8 +250,14 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
 						SNew(SButton)
-						.Text(LOCTEXT("StartBtn", "启动模拟"))
+						.Text_Lambda([this]()
+						{
+							return bSimulating
+								? LOCTEXT("SimulatingBtn", "正在模拟...")
+								: LOCTEXT("StartBtn", "启动模拟");
+						})
 						.ButtonStyle(FAppStyle::Get(), "PrimaryButton")
+						.IsEnabled_Lambda([this]() { return !bSimulating; })
 						.ToolTipText(LOCTEXT("StartBtnTip", "让列表里的物体开启物理、开始自由掉落"))
 						.OnClicked_Lambda([this]() { StartSimulation(); return FReply::Handled(); })
 					]
@@ -153,6 +265,7 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 					[
 						SNew(SButton)
 						.Text(LOCTEXT("StopBtn", "停止模拟"))
+						.IsEnabled_Lambda([this]() { return bSimulating; })
 						.ToolTipText(LOCTEXT("StopBtnTip", "停下物理模拟，物体保留在当前（掉落到的）位置"))
 						.OnClicked_Lambda([this]() { StopSimulation(); return FReply::Handled(); })
 					]
@@ -403,6 +516,55 @@ TSharedRef<ITableRow> SPhysicsPlacer::OnGenerateActorRow(TSharedPtr<FSelectedAct
 
 // ============================ 物理模拟 ============================
 
+void SPhysicsPlacer::EnableActorPhysics(AActor* A)
+{
+	if (!A)
+	{
+		return;
+	}
+
+	// 必须可移动才能被物理驱动
+	if (USceneComponent* Root = A->GetRootComponent())
+	{
+		Root->SetMobility(EComponentMobility::Movable);
+	}
+
+	TArray<UPrimitiveComponent*> PrimComps;
+	A->GetComponents<UPrimitiveComponent>(PrimComps);
+	for (UPrimitiveComponent* PC : PrimComps)
+	{
+		if (!PC)
+		{
+			continue;
+		}
+
+		// 去重：避免重复登记（例如同一个 Actor 多次进入模拟）
+		bool bAlready = false;
+		for (const TWeakObjectPtr<UPrimitiveComponent>& WC : SimComponents)
+		{
+			if (WC.Get() == PC)
+			{
+				bAlready = true;
+				break;
+			}
+		}
+
+		PC->SetMobility(EComponentMobility::Movable);
+		PC->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		PC->SetEnableGravity(true);
+		PC->SetSimulatePhysics(true);
+		PC->WakeAllRigidBodies();
+		// 确保带"模拟"标记的物理体被（重新）创建出来，否则在编辑器中刚开启
+		// 模拟时物体不会真正进入动力学求解
+		PC->RecreatePhysicsState();
+
+		if (!bAlready)
+		{
+			SimComponents.Add(PC);
+		}
+	}
+}
+
 void SPhysicsPlacer::StartSimulation()
 {
 	if (bSimulating)
@@ -412,8 +574,8 @@ void SPhysicsPlacer::StartSimulation()
 	}
 	if (SelectedActors.Num() == 0)
 	{
-		AppendLog(TEXT("启动失败：请先加入至少一个场景物体"));
-		return;
+		// 列表为空也允许开启物理步进：生成模式下点击生成的物体会立刻掉落
+		AppendLog(TEXT("提示：当前列表没有物体，已开启物理步进（生成模式下的物体会掉落）；可先加入物体或点击地面生成"));
 	}
 
 	UWorld* World = (GEditor ? GEditor->GetEditorWorldContext().World() : nullptr);
@@ -432,38 +594,16 @@ void SPhysicsPlacer::StartSimulation()
 		{
 			continue;
 		}
-
-		// 必须可移动才能被物理驱动
-		if (USceneComponent* Root = A->GetRootComponent())
-		{
-			Root->SetMobility(EComponentMobility::Movable);
-		}
-
-		TArray<UPrimitiveComponent*> PrimComps;
-		A->GetComponents<UPrimitiveComponent>(PrimComps);
-		for (UPrimitiveComponent* PC : PrimComps)
-		{
-			if (!PC)
-			{
-				continue;
-			}
-			PC->SetMobility(EComponentMobility::Movable);
-			PC->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-			PC->SetEnableGravity(true);
-			PC->SetSimulatePhysics(true);
-			PC->WakeAllRigidBodies();
-			// 确保带"模拟"标记的物理体被（重新）创建出来，否则在编辑器中刚开启
-			// 模拟时物体不会真正进入动力学求解
-			PC->RecreatePhysicsState();
-			SimComponents.Add(PC);
-			++SimCount;
-		}
+		EnableActorPhysics(A);
+		++SimCount;
 	}
 
+	// 注意：列表为空也照常启动步进。生成模式下点击生成的物体自身会开启物理，
+	// 由下面的每帧求解器步进驱动掉落；因此不能因为 SimCount==0 就直接退出（旧逻辑会
+	// 导致"进入生成模式"后物体根本不掉落）。
 	if (SimCount == 0)
 	{
-		AppendLog(TEXT("启动失败：列表里的物体都没有可模拟物理的组件（需要有 StaticMesh /  skeletalMesh 等 PrimitiveComponent）"));
-		return;
+		AppendLog(TEXT("提示：当前列表没有物体，已开启物理步进（生成模式下的物体会掉落）；可先加入物体或点击地面生成"));
 	}
 
 	// 模拟期间把各关卡视口"强制实时"打开：让 FChaosScene::Tick 把求解器推进出来的
@@ -576,9 +716,129 @@ void SPhysicsPlacer::StopSimulation()
 	const bool bWasSimulating = bSimulating;
 	bSimulating = false;
 
+	// 停止模拟时如果还在生成模式，一并退出（否则生成的物体将不再掉落，容易误解）
+	if (bSpawnMode)
+	{
+		if (FPhysicsPlacerEdMode* Mode = GLevelEditorModeTools().GetActiveModeTyped<FPhysicsPlacerEdMode>(FPhysicsPlacerEdMode::EM_PhysicsPlacerEdModeId))
+		{
+			Mode->OnActorSpawned.Clear();
+		}
+		GLevelEditorModeTools().DeactivateMode(FPhysicsPlacerEdMode::EM_PhysicsPlacerEdModeId);
+		bSpawnMode = false;
+	}
+
 	if (bWasSimulating)
 	{
 		AppendLog(TEXT("已停止模拟，物体保持在停止时的位置（不满意可「位置回溯」套回之前保存的摆位）"));
+	}
+}
+
+// ============================ 生成模式（光标检测地面生成）============================
+
+void SPhysicsPlacer::ToggleSpawnMode()
+{
+	if (!bSpawnMode)
+	{
+		// 激活编辑器模式（FEditorModeRegistry 里注册的那个），进入后它会每帧从光标做射线检测
+		GLevelEditorModeTools().ActivateMode(FPhysicsPlacerEdMode::EM_PhysicsPlacerEdModeId);
+
+		if (FPhysicsPlacerEdMode* Mode = GLevelEditorModeTools().GetActiveModeTyped<FPhysicsPlacerEdMode>(FPhysicsPlacerEdMode::EM_PhysicsPlacerEdModeId))
+		{
+			Mode->SpawnMesh   = SpawnMeshAsset;
+			Mode->SpawnOffset = SpawnOffset;
+			// 生成物体时回调到本工具：加入列表并自动开启物理步进，让物体立刻掉落
+			Mode->OnActorSpawned.AddLambda(
+				[WeakThis = TWeakPtr<SPhysicsPlacer>(SharedThis(this))](AActor* A)
+				{
+					if (TSharedPtr<SPhysicsPlacer> S = WeakThis.Pin())
+					{
+						S->HandleSpawnedActor(A);
+					}
+				});
+		}
+
+		bSpawnMode = true;
+		// 进入生成模式即开始物理步进，使生成的物体一出现就开始自由掉落
+		if (!bSimulating)
+		{
+			StartSimulation();
+		}
+		AppendLog(TEXT("已进入生成模式：在视口里点击地面即可生成物理物体（Alt+点击不生成）"));
+	}
+	else
+	{
+		// 退出生成模式：清理回调并取消激活编辑器模式
+		if (FPhysicsPlacerEdMode* Mode = GLevelEditorModeTools().GetActiveModeTyped<FPhysicsPlacerEdMode>(FPhysicsPlacerEdMode::EM_PhysicsPlacerEdModeId))
+		{
+			Mode->OnActorSpawned.Clear();
+		}
+		GLevelEditorModeTools().DeactivateMode(FPhysicsPlacerEdMode::EM_PhysicsPlacerEdModeId);
+		bSpawnMode = false;
+		AppendLog(TEXT("已退出生成模式"));
+	}
+}
+
+void SPhysicsPlacer::HandleSpawnedActor(AActor* Spawned)
+{
+	if (!Spawned)
+	{
+		return;
+	}
+
+	// 确保物理步进在跑，物体生成后才会真的掉落（进入生成模式时通常已经开，这里兜底）
+	if (!bSimulating)
+	{
+		StartSimulation();
+	}
+
+	// 把这个新生成的物体也登记进模拟管理：开启物理并加入 SimComponents，
+	// 这样"停止模拟"时会一并把它的物理关掉，避免残留 SimulatePhysics 状态。
+	EnableActorPhysics(Spawned);
+
+	// 去重后加入列表
+	for (const TSharedPtr<FSelectedActorItem>& It : SelectedActors)
+	{
+		if (It.IsValid() && It->Actor.Get() == Spawned)
+		{
+			return;
+		}
+	}
+
+	TSharedPtr<FSelectedActorItem> NewItem = MakeShared<FSelectedActorItem>();
+	NewItem->Actor = Spawned;
+	NewItem->DisplayLabel = Spawned->GetActorLabel() + TEXT("  (生成)");
+	SelectedActors.Add(NewItem);
+	RefreshActorList();
+
+	AppendLog(FString::Printf(TEXT("已生成物体「%s」，列表共 %d 个"), *Spawned->GetActorLabel(), SelectedActors.Num()));
+}
+
+void SPhysicsPlacer::OnSpawnMeshPicked(const FAssetData& Data)
+{
+	SpawnMeshAsset = Cast<UStaticMesh>(Data.GetAsset());
+	// 若正处于生成模式，把新网格实时推给激活中的模式
+	if (bSpawnMode)
+	{
+		if (FPhysicsPlacerEdMode* Mode = GLevelEditorModeTools().GetActiveModeTyped<FPhysicsPlacerEdMode>(FPhysicsPlacerEdMode::EM_PhysicsPlacerEdModeId))
+		{
+			Mode->SpawnMesh = SpawnMeshAsset;
+		}
+	}
+}
+
+void SPhysicsPlacer::OnSpawnOffsetChanged(float NewValue, int32 Axis)
+{
+	if (Axis == 0)      { SpawnOffset.X = NewValue; }
+	else if (Axis == 1) { SpawnOffset.Y = NewValue; }
+	else                { SpawnOffset.Z = NewValue; }
+
+	// 实时推给激活中的生成模式
+	if (bSpawnMode)
+	{
+		if (FPhysicsPlacerEdMode* Mode = GLevelEditorModeTools().GetActiveModeTyped<FPhysicsPlacerEdMode>(FPhysicsPlacerEdMode::EM_PhysicsPlacerEdModeId))
+		{
+			Mode->SpawnOffset = SpawnOffset;
+		}
 	}
 }
 

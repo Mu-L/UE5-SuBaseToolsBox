@@ -10,9 +10,11 @@
 
 class AActor;
 class UPrimitiveComponent;
+class UStaticMesh;
 class SMultiLineEditableText;
 class SVerticalBox;
 class FLevelEditorViewportClient;
+class FPhysicsPlacerEdMode;
 
 /**
  * 列表里的一个已选物体（工具内部维护，避免直接依赖编辑器选中状态）。
@@ -89,9 +91,21 @@ private:
 	FTSTicker::FDelegateHandle TickHandle;                          // 每帧步进求解器的 FTSTicker 句柄
 
 	void StartSimulation();
+	/** 把单个 Actor 的 PrimitiveComponent 设为可移动/重力/物理模拟，并登记到 SimComponents（去重），供 StopSimulation 统一关掉 */
+	void EnableActorPhysics(AActor* A);
 	void StopSimulation();
 	/** FTSTicker 每帧回调：直接步进编辑器世界的 Chaos 求解器，让物体自由掉落 */
 	bool TickPhysics(float DeltaTime);
+
+	// ---------- 生成模式（光标检测地面，点击生成物理物体）----------
+	bool bSpawnMode = false;                          // 当前是否处于"生成模式"
+	UStaticMesh* SpawnMeshAsset = nullptr;            // 要生成的网格（nullptr=默认立方体）
+	FVector SpawnOffset = FVector(0.f, 0.f, 200.f);   // 命中点之上的偏移（默认上方 2 米）
+
+	void ToggleSpawnMode();                           // 进入/退出生成模式（激活/取消编辑器模式）
+	void HandleSpawnedActor(AActor* Spawned);         // 生成模式的物体生成后回调：加入列表并自动开物理
+	void OnSpawnMeshPicked(const FAssetData& Data);   // 网格选择器变化
+	void OnSpawnOffsetChanged(float NewValue, int32 Axis); // 偏移 X/Y/Z 改变时推给激活中的模式
 
 	// ---------- 位置回溯（JSON 存档，仿 AutoPrefix）----------
 	TArray<TSharedPtr<FSavedPose>> SavedPoses;

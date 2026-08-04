@@ -9,6 +9,7 @@
 #include "Slate_Assist/SlateAssistBuildFunctionLibrary.h"
 #include "Tools/Tools.h"
 #include "Tools/AutoPrefix/AutoPrefixHook.h"
+#include "Tools/PhysicsPlacer/PhysicsPlacerEdMode.h"
 
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
@@ -57,7 +58,11 @@ void FToolsBoxModule::StartupModule()
  
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FToolsBoxModule::RegisterMenu));
 
-	
+	// 注册「物理摆放 - 生成模式」编辑器模式（供物理摆放工具激活，用光标检测地面生成物体）
+	FEditorModeRegistry::Get().RegisterMode<FPhysicsPlacerEdMode>(
+		FPhysicsPlacerEdMode::EM_PhysicsPlacerEdModeId,
+		LOCTEXT("PhysicsPlacerSpawnMode", "物理摆放生成"));
+
 }
 
 
@@ -216,6 +221,8 @@ void FToolsBoxModule::ShutdownModule()
 	FOpenToolsBox_Command::Unregister();
 	FAutoPrefixHook::Unregister();
 	FIconStyle::Shutdown();
+	// 注销「物理摆放 - 生成模式」编辑器模式
+	FEditorModeRegistry::Get().UnregisterMode(FPhysicsPlacerEdMode::EM_PhysicsPlacerEdModeId);
 	for (const FTool& Tool : Tools::Get_ToolsData())
 	{
 		FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(Tool.ToolTabID);

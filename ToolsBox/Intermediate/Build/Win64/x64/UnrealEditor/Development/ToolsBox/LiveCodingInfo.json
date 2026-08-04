@@ -18,6 +18,7 @@
 			"Import_MM.cpp.obj",
 			"MaterialAttributeTransfer.cpp.obj",
 			"PhysicsPlacer.cpp.obj",
+			"PhysicsPlacerEdMode.cpp.obj",
 			"AAU.cpp.obj",
 			"ActorAction.cpp.obj",
 			"AssetAction.cpp.obj",
