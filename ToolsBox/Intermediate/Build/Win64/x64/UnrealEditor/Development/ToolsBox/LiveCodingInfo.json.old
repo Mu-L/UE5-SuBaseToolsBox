@@ -4,7 +4,6 @@
 		"Module.ToolsBox.cpp.obj": [
 			"ActorAction.gen.cpp.obj",
 			"AssetAction.gen.cpp.obj",
-			"AssetAutoSaveSettings.gen.cpp.obj",
 			"DveloperSetting_AutoPrefix.gen.cpp.obj",
 			"ToolsBox.init.gen.cpp.obj",
 			"PerModuleInline.gen.cpp.obj",
@@ -12,8 +11,6 @@
 			"FIconStyle.cpp.obj",
 			"SlateAssistBuildFunctionLibrary.cpp.obj",
 			"ToolsBox.cpp.obj",
-			"AssetAutoSaveSettings.cpp.obj",
-			"AssetImportAutoAllocation.cpp.obj",
 			"AutoPrefix.cpp.obj",
 			"AutoPrefixHook.cpp.obj",
 			"DveloperSetting_AutoPrefix.cpp.obj",
@@ -23,10 +20,10 @@
 			"AAU.cpp.obj",
 			"ActorAction.cpp.obj",
 			"AssetAction.cpp.obj",
-			"VariableCopier.cpp.obj",
 			"SpawnMaterial.cpp.obj",
 			"Tools.cpp.obj",
-			"ToolUserSaveHelper.cpp.obj"
+			"ToolUserSaveHelper.cpp.obj",
+			"VariableCopier.cpp.obj"
 		]
 	}
 }

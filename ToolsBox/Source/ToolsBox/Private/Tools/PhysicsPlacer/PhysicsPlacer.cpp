@@ -1,0 +1,909 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Tools/PhysicsPlacer/PhysicsPlacer.h"
+
+#include "Editor.h"                                       // GEditor
+#include "Engine/World.h"                                 // UWorld, ELevelTick, TActorIterator, ETeleportType
+#include "Engine/Selection.h"                             // USelection::GetSelectedObjects
+#include "GameFramework/Actor.h"                          // AActor, GetActorLabel, SetActorTransform
+#include "Components/PrimitiveComponent.h"                // SetSimulatePhysics / SetEnableGravity / WakeAllRigidBodies
+#include "Components/SceneComponent.h"                   // SetMobility
+#include "LevelEditorViewport.h"                          // FLevelEditorViewportClient
+
+#include "Physics/Experimental/PhysScene_Chaos.h"        // FPhysScene_Chaos / FPhysicsSolverBase 等
+#include "Chaos/Framework/PhysicsSolverBase.h"           // Chaos::FPhysicsSolverBase::AdvanceAndDispatch_External
+#include "PBDRigidsSolver.h"                             // Chaos::FPBDRigidsSolver 完整定义（GetSolver 返回类型）
+
+#include "Containers/Ticker.h"                            // FTSTicker
+#include "Dom/JsonObject.h"
+#include "HAL/PlatformFileManager.h"
+#include "HAL/PlatformProcess.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SComboBox.h"
+#include "Widgets/Input/SEditableTextBox.h"
+#include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SScrollBox.h"
+#include "Widgets/Text/SMultiLineEditableText.h"
+#include "Widgets/Text/STextBlock.h"
+#include "Widgets/Views/SListView.h"
+#include "Tools/ToolUserSaveHelper.h"
+
+#define LOCTEXT_NAMESPACE "PhysicsPlacerTool"
+
+namespace
+{
+	/** JSON 文件名：所有摆位都追加在同一个文件里 */
+	const TCHAR* PhysicsPlacerJsonFileName = TEXT("PhysicsPlacerPoses.json");
+
+	/** 模拟期间给视口临时加的实时覆盖，名字用来 RemoveRealtimeOverride 时精准移除 */
+	const FText SimRealtimeOverrideName = LOCTEXT("SimRealtimeOverride", "物理摆放模拟");
+}
+
+void SPhysicsPlacer::Construct(const FArguments& InArgs)
+{
+	// 载入之前保存的摆位
+	LoadAllPosesFromJson();
+	if (SavedPoses.Num() == 0)
+	{
+		// 给一个空提示用的默认项，避免下拉框完全空白
+		CurrentPose.Reset();
+	}
+	else
+	{
+		CurrentPose = SavedPoses[0];
+	}
+	EditingPoseName = CurrentPose.IsValid() ? CurrentPose->Name : TEXT("摆位1");
+
+	ChildSlot
+	[
+		SNew(SVerticalBox)
+
+		// ---------- 1. 说明 ----------
+		+ SVerticalBox::Slot().AutoHeight().Padding(10, 5)
+		[
+			SNew(SBorder).BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+			[
+				SNew(STextBlock)
+				.AutoWrapText(true)
+				.Text(LOCTEXT("Help",
+					"物理摆放工具：\n"
+					"  1. 在视口里框选/点选若干场景物体，点「获取编辑器选中」把它们加入下方列表\n"
+					"  2. 点「启动模拟」让这些物体开启物理自由掉落；点「停止模拟」停下并保留当前位置\n"
+					"  3. 模拟前/中/后都可「保存当前位置」记成一份带名字的摆位；不理想时用「位置回溯」套回\n"
+					"  （物体需带网格等 PrimitiveComponent；模拟时物体会被设为可移动并开启重力）"))
+			]
+		]
+
+		// ---------- 2. 选择物体 ----------
+		+ SVerticalBox::Slot().AutoHeight().Padding(10, 5)
+		[
+			SNew(SBorder).BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+			[
+				SNew(SVerticalBox)
+
+				+ SVerticalBox::Slot().AutoHeight().Padding(5)
+				[
+					SNew(STextBlock).Text(LOCTEXT("SelTitle", "选择场景物体（可多选）"))
+				]
+
+				+ SVerticalBox::Slot().AutoHeight().Padding(5, 0)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						SNew(SButton)
+						.Text(LOCTEXT("CaptureBtn", "获取编辑器选中"))
+						.ToolTipText(LOCTEXT("CaptureBtnTip", "把当前视口里选中的 Actor 加入下方列表"))
+						.OnClicked_Lambda([this]() { CaptureEditorSelection(); return FReply::Handled(); })
+					]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(5, 0, 0, 0)
+					[
+						SNew(SButton)
+						.Text(LOCTEXT("ClearBtn", "清空列表"))
+						.OnClicked_Lambda([this]() { ClearActors(); return FReply::Handled(); })
+					]
+				]
+
+				+ SVerticalBox::Slot().FillHeight(1.0f).Padding(5)
+				[
+					SNew(SBox).HeightOverride(160.f)
+					[
+						SNew(SScrollBox)
+						+ SScrollBox::Slot()
+						[
+							SAssignNew(ActorListView, SListView<TSharedPtr<FSelectedActorItem>>)
+							.ListItemsSource(&SelectedActors)
+							.OnGenerateRow(this, &SPhysicsPlacer::OnGenerateActorRow)
+							.SelectionMode(ESelectionMode::None)
+						]
+					]
+				]
+			]
+		]
+
+		// ---------- 3. 物理模拟 ----------
+		+ SVerticalBox::Slot().AutoHeight().Padding(10, 5)
+		[
+			SNew(SBorder).BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+			[
+				SNew(SVerticalBox)
+
+				+ SVerticalBox::Slot().AutoHeight().Padding(5)
+				[
+					SNew(STextBlock).Text(LOCTEXT("SimTitle", "物理模拟"))
+				]
+
+				+ SVerticalBox::Slot().AutoHeight().Padding(5)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						SNew(SButton)
+						.Text(LOCTEXT("StartBtn", "启动模拟"))
+						.ButtonStyle(FAppStyle::Get(), "PrimaryButton")
+						.ToolTipText(LOCTEXT("StartBtnTip", "让列表里的物体开启物理、开始自由掉落"))
+						.OnClicked_Lambda([this]() { StartSimulation(); return FReply::Handled(); })
+					]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(5, 0, 0, 0)
+					[
+						SNew(SButton)
+						.Text(LOCTEXT("StopBtn", "停止模拟"))
+						.ToolTipText(LOCTEXT("StopBtnTip", "停下物理模拟，物体保留在当前（掉落到的）位置"))
+						.OnClicked_Lambda([this]() { StopSimulation(); return FReply::Handled(); })
+					]
+				]
+			]
+		]
+
+		// ---------- 4. 位置回溯（摆位存档）----------
+		+ SVerticalBox::Slot().AutoHeight().Padding(10, 5)
+		[
+			SNew(SBorder).BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+			[
+				SNew(SVerticalBox)
+
+				+ SVerticalBox::Slot().AutoHeight().Padding(5)
+				[
+					SNew(STextBlock).Text(LOCTEXT("PoseTitle", "位置回溯（摆位存档）"))
+				]
+
+				// 存档下拉框
+				+ SVerticalBox::Slot().AutoHeight().Padding(5)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					[
+						SNew(STextBlock).Text(LOCTEXT("PoseLabel", "选择存档: ")).MinDesiredWidth(80)
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.0f)
+					[
+						SAssignNew(PoseComboBox, SComboBox<TSharedPtr<FSavedPose>>)
+						.OptionsSource(&SavedPoses)
+						.OnGenerateWidget(this, &SPhysicsPlacer::OnGeneratePoseComboWidget)
+						.OnSelectionChanged(this, &SPhysicsPlacer::OnPoseSelectionChanged)
+						[
+							SNew(STextBlock).Text(this, &SPhysicsPlacer::GetCurrentPoseNameText)
+						]
+					]
+				]
+
+				// 存档名输入
+				+ SVerticalBox::Slot().AutoHeight().Padding(5)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					[
+						SNew(STextBlock).Text(LOCTEXT("PoseNameLabel", "存档名称: ")).MinDesiredWidth(80)
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.0f)
+					[
+						SNew(SEditableTextBox)
+						.HintText(LOCTEXT("PoseNameHint", "保存时使用的名字，可自定义"))
+						.Text_Lambda([this]() { return FText::FromString(EditingPoseName); })
+						.OnTextChanged_Lambda([this](const FText& InText) { EditingPoseName = InText.ToString(); })
+					]
+				]
+
+				// 操作按钮
+				+ SVerticalBox::Slot().AutoHeight().Padding(5)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth()
+					[
+						SNew(SButton)
+						.Text(LOCTEXT("SavePoseBtn", "保存当前位置"))
+						.ToolTipText(LOCTEXT("SavePoseBtnTip", "把列表里物体的 位置/旋转/缩放 记成一份带名字的摆位（同名覆盖，不同名追加）"))
+						.OnClicked_Lambda([this]() { SaveCurrentPose(); return FReply::Handled(); })
+					]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(5, 0, 0, 0)
+					[
+						SNew(SButton)
+						.Text(LOCTEXT("RestoreBtn", "位置回溯"))
+						.ToolTipText(LOCTEXT("RestoreBtnTip", "把选中的那套摆位重新套回当前关卡里标签匹配的物体"))
+						.OnClicked_Lambda([this]() { RestorePose(); return FReply::Handled(); })
+					]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(5, 0, 0, 0)
+					[
+						SNew(SButton)
+						.Text(LOCTEXT("DeletePoseBtn", "删除存档"))
+						.OnClicked_Lambda([this]()
+						{
+							if (CurrentPose.IsValid()) { DeletePose(CurrentPose); }
+							else { AppendLog(TEXT("请先在下拉框选择要删除的存档")); }
+							return FReply::Handled();
+						})
+					]
+					+ SHorizontalBox::Slot().AutoWidth().Padding(5, 0, 0, 0)
+					[
+						SNew(SButton)
+						.Text(LOCTEXT("OpenFolderBtn", "打开配置文件夹"))
+						.OnClicked_Lambda([this]()
+						{
+							FString Dir = GetSaveDirectory();
+							IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
+							if (!PF.DirectoryExists(*Dir)) { PF.CreateDirectoryTree(*Dir); }
+							const FString NativeDir = FPaths::ConvertRelativePathToFull(Dir).Replace(TEXT("/"), TEXT("\\"));
+							FPlatformProcess::ExploreFolder(*NativeDir);
+							AppendLog(TEXT("已打开配置文件夹: ") + NativeDir);
+							return FReply::Handled();
+						})
+					]
+				]
+			]
+		]
+
+		// ---------- 5. 日志 ----------
+		+ SVerticalBox::Slot().AutoHeight().Padding(10, 5, 10, 10)
+		[
+			SNew(SBox).HeightOverride(110.f)
+			[
+				SNew(SBorder).BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+				[
+					SNew(SScrollBox)
+					+ SScrollBox::Slot()
+					[
+						SAssignNew(LogBox, SMultiLineEditableText)
+						.IsReadOnly(true)
+						.Text(FText::GetEmpty())
+					]
+				]
+			]
+		]
+	];
+
+	if (PoseComboBox.IsValid() && CurrentPose.IsValid())
+	{
+		PoseComboBox->SetSelectedItem(CurrentPose);
+	}
+
+	AppendLog(FString::Printf(TEXT("已载入 %d 份摆位，已就绪"), SavedPoses.Num()));
+}
+
+SPhysicsPlacer::~SPhysicsPlacer()
+{
+	// 工具被关掉时，如果还在模拟，务必停掉，避免物体残留"模拟中"状态
+	StopSimulation();
+}
+
+// ============================ 选择物体 ============================
+
+void SPhysicsPlacer::RefreshActorList()
+{
+	if (ActorListView.IsValid())
+	{
+		ActorListView->RequestListRefresh();
+	}
+}
+
+void SPhysicsPlacer::CaptureEditorSelection()
+{
+	if (!GEditor)
+	{
+		AppendLog(TEXT("获取失败：找不到编辑器"));
+		return;
+	}
+
+	USelection* Selection = GEditor->GetSelectedActors();
+	if (!Selection)
+	{
+		AppendLog(TEXT("获取失败：没有选中任何物体"));
+		return;
+	}
+
+	TArray<AActor*> Selected;
+	Selection->GetSelectedObjects<AActor>(Selected);
+
+	int32 Added = 0;
+	for (AActor* A : Selected)
+	{
+		if (!A)
+		{
+			continue;
+		}
+		// 去重：已经在列表里的不再加
+		bool bExists = false;
+		for (const TSharedPtr<FSelectedActorItem>& It : SelectedActors)
+		{
+			if (It->Actor.Get() == A)
+			{
+				bExists = true;
+				break;
+			}
+		}
+		if (bExists)
+		{
+			continue;
+		}
+
+		TSharedPtr<FSelectedActorItem> NewItem = MakeShared<FSelectedActorItem>();
+		NewItem->Actor = A;
+		NewItem->DisplayLabel = A->GetActorLabel() + TEXT("  (") + A->GetClass()->GetName() + TEXT(")");
+		SelectedActors.Add(NewItem);
+		++Added;
+	}
+
+	RefreshActorList();
+	AppendLog(FString::Printf(TEXT("已从编辑器选中加入 %d 个物体，列表共 %d 个"), Added, SelectedActors.Num()));
+}
+
+void SPhysicsPlacer::RemoveActor(TSharedPtr<FSelectedActorItem> Item)
+{
+	if (!Item.IsValid())
+	{
+		return;
+	}
+	SelectedActors.Remove(Item);
+	RefreshActorList();
+}
+
+void SPhysicsPlacer::ClearActors()
+{
+	SelectedActors.Empty();
+	RefreshActorList();
+	AppendLog(TEXT("已清空物体列表"));
+}
+
+TSharedRef<ITableRow> SPhysicsPlacer::OnGenerateActorRow(TSharedPtr<FSelectedActorItem> Item, const TSharedRef<STableViewBase>& OwnerTable)
+{
+	return SNew(STableRow<TSharedPtr<FSelectedActorItem>>, OwnerTable)
+		[
+			SNew(SHorizontalBox)
+
+			+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center).Padding(4, 2)
+			[
+				SNew(STextBlock)
+				.Text_Lambda([Item]()
+				{
+					// 物体被删了就在列表里标灰提示
+					if (!Item.IsValid() || !Item->Actor.IsValid())
+					{
+						return FText::FromString(TEXT("<已失效>"));
+					}
+					return FText::FromString(Item->DisplayLabel);
+				})
+			]
+
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			[
+				SNew(SButton)
+				.Text(LOCTEXT("RemoveActorBtn", "移除"))
+				.OnClicked_Lambda([this, Item]()
+				{
+					RemoveActor(Item);
+					return FReply::Handled();
+				})
+			]
+		];
+}
+
+// ============================ 物理模拟 ============================
+
+void SPhysicsPlacer::StartSimulation()
+{
+	if (bSimulating)
+	{
+		AppendLog(TEXT("已经在模拟中，先点「停止模拟」再重启"));
+		return;
+	}
+	if (SelectedActors.Num() == 0)
+	{
+		AppendLog(TEXT("启动失败：请先加入至少一个场景物体"));
+		return;
+	}
+
+	UWorld* World = (GEditor ? GEditor->GetEditorWorldContext().World() : nullptr);
+	if (!World)
+	{
+		AppendLog(TEXT("启动失败：找不到编辑器世界"));
+		return;
+	}
+
+	SimComponents.Empty();
+	int32 SimCount = 0;
+	for (const TSharedPtr<FSelectedActorItem>& Item : SelectedActors)
+	{
+		AActor* A = Item.IsValid() ? Item->Actor.Get() : nullptr;
+		if (!A)
+		{
+			continue;
+		}
+
+		// 必须可移动才能被物理驱动
+		if (USceneComponent* Root = A->GetRootComponent())
+		{
+			Root->SetMobility(EComponentMobility::Movable);
+		}
+
+		TArray<UPrimitiveComponent*> PrimComps;
+		A->GetComponents<UPrimitiveComponent>(PrimComps);
+		for (UPrimitiveComponent* PC : PrimComps)
+		{
+			if (!PC)
+			{
+				continue;
+			}
+			PC->SetMobility(EComponentMobility::Movable);
+			PC->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			PC->SetEnableGravity(true);
+			PC->SetSimulatePhysics(true);
+			PC->WakeAllRigidBodies();
+			// 确保带"模拟"标记的物理体被（重新）创建出来，否则在编辑器中刚开启
+			// 模拟时物体不会真正进入动力学求解
+			PC->RecreatePhysicsState();
+			SimComponents.Add(PC);
+			++SimCount;
+		}
+	}
+
+	if (SimCount == 0)
+	{
+		AppendLog(TEXT("启动失败：列表里的物体都没有可模拟物理的组件（需要有 StaticMesh /  skeletalMesh 等 PrimitiveComponent）"));
+		return;
+	}
+
+	// 模拟期间把各关卡视口"强制实时"打开：让 FChaosScene::Tick 把求解器推进出来的
+	// 结果同步回组件，并刷新视口显示。同时记下每个视口原本的实时状态，停止时再精准恢复。
+	// （物体真正"掉落"靠下面注册的每帧求解器步进，而不是依赖编辑器世界的物理 tick 组）
+	ViewportRealtimeBackup.Empty();
+	if (GEditor)
+	{
+		for (FLevelEditorViewportClient* VC : GEditor->GetLevelViewportClients())
+		{
+			if (VC)
+			{
+				ViewportRealtimeBackup.Add(TPair<FLevelEditorViewportClient*, bool>(VC, VC->IsRealtime()));
+				VC->AddRealtimeOverride(true, SimRealtimeOverrideName);
+			}
+		}
+	}
+
+	// 注册每帧回调：直接步进编辑器世界的 Chaos 求解器（参考 PhysicalLayout 做法）。
+	// 用 FTSTicker 是因为本工具是普通 Slate 面板，没有 FEdMode::Tick 那样现成的每帧入口。
+	TickHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateSP(this, &SPhysicsPlacer::TickPhysics));
+
+	bSimulating = true;
+	AppendLog(FString::Printf(TEXT("已启动物理模拟：%d 个组件开始自由掉落（直接步进 Chaos 求解器）"), SimCount));
+}
+
+bool SPhysicsPlacer::TickPhysics(float DeltaTime)
+{
+	if (!bSimulating)
+	{
+		return false; // 取消注册，停止每帧回调
+	}
+
+	// 同帧重入守卫（FTSTicker 理论上不会重入，但求稳）
+	if (bStepping)
+	{
+		return true;
+	}
+	bStepping = true;
+
+	UWorld* World = (GEditor ? GEditor->GetEditorWorldContext().World() : nullptr);
+	if (!World)
+	{
+		bStepping = false;
+		StopSimulation();
+		return false;
+	}
+
+	// 直接步进世界里的 Chaos 求解器，让开启了 SimulatePhysics 的刚体真正下落。
+	// 这一步绕开了编辑器世界默认的 bShouldSimulatePhysics=false 门控——编辑器自带的
+	// FChaosScene::StartFrame 对"非模拟世界"用 dt=0 步进（零移动），而 PhysicalLayout
+	// 插件正是靠每帧手动 AdvanceAndDispatch_External 才真正掉落的。
+	// 同步回组件（OnSyncBodies）则交给"强制实时"下编辑器自己的 FChaosScene::EndFrame。
+	FPhysScene* PhysScene = World->GetPhysicsScene();
+	if (PhysScene)
+	{
+		if (auto* Solver = PhysScene->GetSolver())
+		{
+			// 与 PhysicalLayout 一致：先拉碰撞数据，再按真实帧时间步进。
+			// GetSolver 返回基类指针，StartingSceneSimulation 在 FPBDRigidsSolver 上，故向下转换。
+			if (auto* RigidsSolver = static_cast<Chaos::FPBDRigidsSolver*>(Solver))
+			{
+				RigidsSolver->StartingSceneSimulation();
+			}
+			// 夹紧单帧步长，避免首帧/卡顿时一次跳太大导致穿模或数值爆炸
+			const Chaos::FReal StepDt = static_cast<Chaos::FReal>(FMath::Min(DeltaTime, 1.f / 30.f));
+			Solver->AdvanceAndDispatch_External(StepDt);
+		}
+	}
+
+	// 实时视口会随求解结果刷新；保险起见再强制重绘一次
+	if (GEditor)
+	{
+		GEditor->RedrawLevelEditingViewports();
+	}
+
+	bStepping = false;
+	return true; // 继续每帧
+}
+
+void SPhysicsPlacer::StopSimulation()
+{
+	// 注销每帧求解器步进
+	if (TickHandle.IsValid())
+	{
+		FTSTicker::GetCoreTicker().RemoveTicker(TickHandle);
+		TickHandle.Reset();
+	}
+
+	// 关掉各组件的物理：组件会保留当前（被物理带到的）变换，物体就停在那里
+	for (TWeakObjectPtr<UPrimitiveComponent>& WC : SimComponents)
+	{
+		if (UPrimitiveComponent* PC = WC.Get())
+		{
+			PC->SetSimulatePhysics(false);
+		}
+	}
+	SimComponents.Empty();
+
+	// 恢复视口实时状态（移除我们加的"强制实时"覆盖即可回到原来的值）
+	for (const TPair<FLevelEditorViewportClient*, bool>& Pair : ViewportRealtimeBackup)
+	{
+		if (Pair.Key)
+		{
+			Pair.Key->RemoveRealtimeOverride(SimRealtimeOverrideName);
+		}
+	}
+	ViewportRealtimeBackup.Empty();
+
+	const bool bWasSimulating = bSimulating;
+	bSimulating = false;
+
+	if (bWasSimulating)
+	{
+		AppendLog(TEXT("已停止模拟，物体保持在停止时的位置（不满意可「位置回溯」套回之前保存的摆位）"));
+	}
+}
+
+// ============================ 位置回溯（JSON 存档）============================
+
+FString SPhysicsPlacer::GetSaveDirectory() const
+{
+	return FToolUserSave::GetToolSaveDir(TEXT("PhysicsPlacer"));
+}
+
+FString SPhysicsPlacer::GetFullConfigPath() const
+{
+	return GetSaveDirectory() + PhysicsPlacerJsonFileName;
+}
+
+void SPhysicsPlacer::LoadAllPosesFromJson()
+{
+	SavedPoses.Empty();
+
+	FString JsonString;
+	if (!FFileHelper::LoadFileToString(JsonString, *GetFullConfigPath()))
+	{
+		return;
+	}
+
+	TSharedPtr<FJsonObject> Root;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+	if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid())
+	{
+		return;
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* PosesArray = nullptr;
+	if (!Root->TryGetArrayField(TEXT("Poses"), PosesArray) || !PosesArray)
+	{
+		return;
+	}
+
+	for (const TSharedPtr<FJsonValue>& PoseValue : *PosesArray)
+	{
+		const TSharedPtr<FJsonObject>* PoseObject = nullptr;
+		if (!PoseValue.IsValid() || !PoseValue->TryGetObject(PoseObject) || !PoseObject)
+		{
+			continue;
+		}
+
+		TSharedPtr<FSavedPose> NewPose = MakeShared<FSavedPose>();
+		NewPose->Name = (*PoseObject)->GetStringField(TEXT("Name"));
+
+		const TArray<TSharedPtr<FJsonValue>>* ActorsArray = nullptr;
+		if ((*PoseObject)->TryGetArrayField(TEXT("Actors"), ActorsArray) && ActorsArray)
+		{
+			for (const TSharedPtr<FJsonValue>& ActorValue : *ActorsArray)
+			{
+				const TSharedPtr<FJsonObject>* ActorObject = nullptr;
+				if (!ActorValue.IsValid() || !ActorValue->TryGetObject(ActorObject) || !ActorObject)
+				{
+					continue;
+				}
+
+				FSavedPose::FActorTransform T;
+				T.Label = (*ActorObject)->GetStringField(TEXT("Label"));
+				T.Location = FVector(
+					(*ActorObject)->GetNumberField(TEXT("LocX")),
+					(*ActorObject)->GetNumberField(TEXT("LocY")),
+					(*ActorObject)->GetNumberField(TEXT("LocZ")));
+				T.Rotation = FQuat(
+					(*ActorObject)->GetNumberField(TEXT("RotX")),
+					(*ActorObject)->GetNumberField(TEXT("RotY")),
+					(*ActorObject)->GetNumberField(TEXT("RotZ")),
+					(*ActorObject)->GetNumberField(TEXT("RotW")));
+				T.Scale = FVector(
+					(*ActorObject)->GetNumberField(TEXT("SclX")),
+					(*ActorObject)->GetNumberField(TEXT("SclY")),
+					(*ActorObject)->GetNumberField(TEXT("SclZ")));
+				NewPose->Actors.Add(T);
+			}
+		}
+
+		SavedPoses.Add(NewPose);
+	}
+}
+
+bool SPhysicsPlacer::WriteAllPosesToJson()
+{
+	const TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
+	TArray<TSharedPtr<FJsonValue>> PosesArray;
+
+	for (const TSharedPtr<FSavedPose>& Pose : SavedPoses)
+	{
+		if (!Pose.IsValid())
+		{
+			continue;
+		}
+
+		const TSharedRef<FJsonObject> PoseObject = MakeShared<FJsonObject>();
+		PoseObject->SetStringField(TEXT("Name"), Pose->Name);
+
+		TArray<TSharedPtr<FJsonValue>> ActorsArray;
+		for (const FSavedPose::FActorTransform& T : Pose->Actors)
+		{
+			const TSharedRef<FJsonObject> ActorObject = MakeShared<FJsonObject>();
+			ActorObject->SetStringField(TEXT("Label"), T.Label);
+			ActorObject->SetNumberField(TEXT("LocX"), T.Location.X);
+			ActorObject->SetNumberField(TEXT("LocY"), T.Location.Y);
+			ActorObject->SetNumberField(TEXT("LocZ"), T.Location.Z);
+			ActorObject->SetNumberField(TEXT("RotX"), T.Rotation.X);
+			ActorObject->SetNumberField(TEXT("RotY"), T.Rotation.Y);
+			ActorObject->SetNumberField(TEXT("RotZ"), T.Rotation.Z);
+			ActorObject->SetNumberField(TEXT("RotW"), T.Rotation.W);
+			ActorObject->SetNumberField(TEXT("SclX"), T.Scale.X);
+			ActorObject->SetNumberField(TEXT("SclY"), T.Scale.Y);
+			ActorObject->SetNumberField(TEXT("SclZ"), T.Scale.Z);
+			ActorsArray.Add(MakeShared<FJsonValueObject>(ActorObject));
+		}
+		PoseObject->SetArrayField(TEXT("Actors"), ActorsArray);
+
+		PosesArray.Add(MakeShared<FJsonValueObject>(PoseObject));
+	}
+
+	Root->SetArrayField(TEXT("Poses"), PosesArray);
+
+	FString OutputString;
+	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+	if (!FJsonSerializer::Serialize(Root, Writer))
+	{
+		return false;
+	}
+
+	return FFileHelper::SaveStringToFile(OutputString, *GetFullConfigPath());
+}
+
+void SPhysicsPlacer::SaveCurrentPose()
+{
+	if (SelectedActors.Num() == 0)
+	{
+		AppendLog(TEXT("保存失败：列表里没有物体"));
+		return;
+	}
+
+	const FString Name = EditingPoseName.TrimStartAndEnd();
+	if (Name.IsEmpty())
+	{
+		AppendLog(TEXT("保存失败：请输入存档名称"));
+		return;
+	}
+
+	TSharedPtr<FSavedPose> Pose = MakeShared<FSavedPose>();
+	Pose->Name = Name;
+	for (const TSharedPtr<FSelectedActorItem>& Item : SelectedActors)
+	{
+		AActor* A = Item.IsValid() ? Item->Actor.Get() : nullptr;
+		if (!A)
+		{
+			continue;
+		}
+		FSavedPose::FActorTransform T;
+		T.Label = A->GetActorLabel();
+		const FTransform Xf = A->GetActorTransform();
+		T.Location = Xf.GetLocation();
+		T.Rotation = Xf.GetRotation();
+		T.Scale = Xf.GetScale3D();
+		Pose->Actors.Add(T);
+	}
+
+	if (Pose->Actors.Num() == 0)
+	{
+		AppendLog(TEXT("保存失败：列表里的物体都已失效"));
+		return;
+	}
+
+	// 同名则覆盖，不同名则追加
+	for (int32 i = 0; i < SavedPoses.Num(); ++i)
+	{
+		if (SavedPoses[i]->Name.Equals(Name, ESearchCase::IgnoreCase))
+		{
+			SavedPoses[i] = Pose;
+			CurrentPose = Pose;
+			if (PoseComboBox.IsValid()) { PoseComboBox->RefreshOptions(); PoseComboBox->SetSelectedItem(Pose); }
+			if (WriteAllPosesToJson())
+			{
+				AppendLog(FString::Printf(TEXT("已覆盖存档「%s」，记录 %d 个物体，文件内共 %d 份 -> %s"),
+					*Name, Pose->Actors.Num(), SavedPoses.Num(), *GetFullConfigPath()));
+			}
+			else
+			{
+				AppendLog(TEXT("保存失败：无法写入 ") + GetFullConfigPath());
+			}
+			return;
+		}
+	}
+
+	SavedPoses.Add(Pose);
+	CurrentPose = Pose;
+	if (PoseComboBox.IsValid()) { PoseComboBox->RefreshOptions(); PoseComboBox->SetSelectedItem(Pose); }
+	if (WriteAllPosesToJson())
+	{
+		AppendLog(FString::Printf(TEXT("已保存存档「%s」，记录 %d 个物体，文件内共 %d 份 -> %s"),
+			*Name, Pose->Actors.Num(), SavedPoses.Num(), *GetFullConfigPath()));
+	}
+	else
+	{
+		AppendLog(TEXT("保存失败：无法写入 ") + GetFullConfigPath());
+	}
+}
+
+void SPhysicsPlacer::DeletePose(TSharedPtr<FSavedPose> Target)
+{
+	if (!Target.IsValid())
+	{
+		return;
+	}
+
+	const FString RemovedName = Target->Name;
+	SavedPoses.Remove(Target);
+	if (CurrentPose == Target)
+	{
+		CurrentPose = SavedPoses.Num() > 0 ? SavedPoses[0] : nullptr;
+	}
+
+	if (WriteAllPosesToJson())
+	{
+		AppendLog(FString::Printf(TEXT("已删除存档「%s」，剩余 %d 份"), *RemovedName, SavedPoses.Num()));
+	}
+	else
+	{
+		AppendLog(TEXT("删除后写回 JSON 失败"));
+	}
+
+	if (PoseComboBox.IsValid())
+	{
+		PoseComboBox->RefreshOptions();
+		if (CurrentPose.IsValid())
+		{
+			PoseComboBox->SetSelectedItem(CurrentPose);
+		}
+	}
+}
+
+void SPhysicsPlacer::RestorePose()
+{
+	if (!CurrentPose.IsValid())
+	{
+		AppendLog(TEXT("回溯失败：请先在上方下拉框选择一份存档"));
+		return;
+	}
+
+	UWorld* World = (GEditor ? GEditor->GetEditorWorldContext().World() : nullptr);
+	if (!World)
+	{
+		AppendLog(TEXT("回溯失败：找不到编辑器世界"));
+		return;
+	}
+
+	// 回溯就是把变换直接套回去，不需要物理；若正在模拟先停掉
+	if (bSimulating)
+	{
+		StopSimulation();
+	}
+
+	int32 Applied = 0;
+	for (const FSavedPose::FActorTransform& T : CurrentPose->Actors)
+	{
+		// 按标签在当前世界的所有关卡里找物体（标签通常唯一；若多个同名则都套上同一变换）
+		for (ULevel* Level : World->GetLevels())
+		{
+			if (!Level)
+			{
+				continue;
+			}
+			for (AActor* A : Level->Actors)
+			{
+				if (A && A->GetActorLabel() == T.Label)
+				{
+					if (USceneComponent* Root = A->GetRootComponent())
+					{
+						Root->SetMobility(EComponentMobility::Movable);
+					}
+					A->SetActorTransform(FTransform(T.Rotation, T.Location, T.Scale), false, nullptr, ETeleportType::TeleportPhysics);
+					++Applied;
+				}
+			}
+		}
+	}
+
+	AppendLog(FString::Printf(TEXT("已回溯到存档「%s」，匹配并应用 %d 处物体位置"), *CurrentPose->Name, Applied));
+}
+
+// ============================ 存档下拉框 ============================
+
+TSharedRef<SWidget> SPhysicsPlacer::OnGeneratePoseComboWidget(TSharedPtr<FSavedPose> InItem)
+{
+	const FString Label = InItem.IsValid() ? InItem->Name : TEXT("<空>");
+	return SNew(STextBlock).Text(FText::FromString(Label));
+}
+
+void SPhysicsPlacer::OnPoseSelectionChanged(TSharedPtr<FSavedPose> NewSelection, ESelectInfo::Type SelectInfo)
+{
+	if (SelectInfo == ESelectInfo::Direct || !NewSelection.IsValid())
+	{
+		return;
+	}
+	CurrentPose = NewSelection;
+	EditingPoseName = NewSelection->Name;
+	AppendLog(FString::Printf(TEXT("已选中存档「%s」（%d 个物体）"), *NewSelection->Name, NewSelection->Actors.Num()));
+}
+
+FText SPhysicsPlacer::GetCurrentPoseNameText() const
+{
+	return FText::FromString(CurrentPose.IsValid() ? CurrentPose->Name : TEXT("<无存档>"));
+}
+
+// ============================ 日志 ============================
+
+void SPhysicsPlacer::AppendLog(const FString& Message)
+{
+	const FString Line = FString::Printf(TEXT("[%s] %s"),
+		*FDateTime::Now().ToString(TEXT("%H:%M:%S")), *Message);
+
+	LogText = LogText.IsEmpty() ? Line : LogText + LINE_TERMINATOR + Line;
+
+	if (LogBox.IsValid())
+	{
+		LogBox->SetText(FText::FromString(LogText));
+	}
+}
+
+#undef LOCTEXT_NAMESPACE

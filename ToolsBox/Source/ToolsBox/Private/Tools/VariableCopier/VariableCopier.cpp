@@ -88,46 +88,14 @@ TSharedRef<FCopyItemDragDrop> FCopyItemDragDrop::New(const TArray<FCopyItem>& In
 	Op->Items = InItems;
 	Op->bIsCut = bInCut;
 	Op->SourcePanelIndex = InSourcePanel;
-	// 拖拽时跟随鼠标显示的小标签：让人一眼看清这次是复制还是剪切
-	Op->CurrentHoverText = FText::FromString(
-		FString::Printf(TEXT("%s %d 项"), bInCut ? TEXT("剪切") : TEXT("复制"), InItems.Num()));
-	Op->CurrentIconBrush = FAppStyle::GetBrush("Icons.DragDrop");
+	// 不显示跟随鼠标的小卡片（按需求移除），拖拽本身照常工作
 	return Op;
 }
 
-// 拖拽时鼠标旁边显示的小卡片：说明是复制还是剪切，并列出具体拖了哪些东西
+// 拖拽时不显示任何跟随鼠标的小卡片（按需求移除，只保留拖拽功能本身）
 TSharedPtr<SWidget> FCopyItemDragDrop::GetDefaultDecorator() const
 {
-	FString Names;
-	for (int32 i = 0; i < Items.Num(); ++i)
-	{
-		if (i > 0) Names += TEXT("、");
-		Names += Items[i].Display;
-	}
-	if (Names.Len() > 80)
-	{
-		Names = Names.Left(80) + TEXT("…");
-	}
-	const FString OpText = bIsCut ? TEXT("剪切") : TEXT("复制");
-
-	return SNew(SBorder)
-		.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
-		.Padding(8, 5)
-		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight()
-			[
-				SNew(STextBlock)
-				.Text(FText::FromString(FString::Printf(TEXT("%s  %d 项"), *OpText, Items.Num())))
-				.ColorAndOpacity(FSlateColor::UseForeground())
-			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0, 3, 0, 0)
-			[
-				SNew(STextBlock)
-				.Text(FText::FromString(Names))
-				.ColorAndOpacity(FSlateColor::UseSubduedForeground())
-			]
-		];
+	return nullptr;
 }
 
 // =====================================================================

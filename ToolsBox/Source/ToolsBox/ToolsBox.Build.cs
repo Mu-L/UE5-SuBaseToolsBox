@@ -45,6 +45,8 @@ public class ToolsBox : ModuleRules
 				"GeometryScriptingCore" ,
 				"Blutility", 
 				"PhysicsCore",
+				"Chaos",
+				"ChaosCore",
 				"BlueprintGraph",
 				"StaticMeshEditor",
 				"AnimationBlueprintLibrary",

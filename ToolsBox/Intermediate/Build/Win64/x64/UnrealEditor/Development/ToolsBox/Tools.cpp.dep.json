@@ -117,7 +117,8 @@
             "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\source\\toolsbox\\public\\tools\\right-clickoperationtool\\aau.h",
             "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\source\\toolsbox\\public\\tools\\spawnmaterial\\spawnmaterial.h",
             "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\source\\toolsbox\\public\\tools\\variablecopier\\variablecopier.h",
-            "f:\\ue_5.8\\engine\\source\\editor\\unrealed\\public\\draganddrop\\decorateddragdropop.h"
+            "f:\\ue_5.8\\engine\\source\\editor\\unrealed\\public\\draganddrop\\decorateddragdropop.h",
+            "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\source\\toolsbox\\public\\tools\\physicsplacer\\physicsplacer.h"
         ],
         "ImportedModules": [],
         "ImportedHeaderUnits": []

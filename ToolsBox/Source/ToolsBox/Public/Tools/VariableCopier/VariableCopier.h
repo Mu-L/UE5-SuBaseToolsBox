@@ -64,7 +64,7 @@ public:
 
 	static TSharedRef<FCopyItemDragDrop> New(const TArray<FCopyItem>& InItems, bool bInCut, int32 InSourcePanel);
 
-	// 拖拽时鼠标旁边显示的小标签：让人一眼看清这次是复制还是剪切、拖了哪些东西
+	// 拖拽时不显示跟随鼠标的小卡片（按需求移除），仅保留拖拽功能
 	virtual TSharedPtr<SWidget> GetDefaultDecorator() const override;
 };
 

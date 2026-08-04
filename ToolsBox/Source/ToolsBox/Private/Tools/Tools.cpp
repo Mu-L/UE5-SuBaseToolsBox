@@ -10,6 +10,7 @@
 
 #include "Tools/SpawnMaterial/SpawnMaterial.h"
 #include "Tools/VariableCopier/VariableCopier.h"
+#include "Tools/PhysicsPlacer/PhysicsPlacer.h"
 
 #define LOCTEXT_NAMESPACE "Tools"
 
@@ -83,6 +84,16 @@ const TSet<FTool> Tools::Get_ToolsData()
 			TEXT("ToolsBox.Icon_Anon2"),
 			TEXT("https://space.bilibili.com/391627131/"), 
 			[]() { return SNew(SAutoPrefix);}
+			),
+		
+		FTool(
+			TEXT("物理摆放"),
+			LOCTEXT("ToolDetail", "选中多个场景物体，启动物理自由掉落摆放，并支持保存/回溯摆位"),
+			TEXT("ToolsBox.Image_Anon2"),
+			TEXT("SPhysicsPlacerTab"),
+			TEXT("ToolsBox.Icon_Anon2"),
+			TEXT("https://space.bilibili.com/391627131/"),
+			[]() { return SNew(SPhysicsPlacer);}
 			),
 		
 
