@@ -83,8 +83,15 @@ void FPhysicsPlacerEdMode::SpawnAt(const FHitResult& Hit)
 		return;
 	}
 
-	// 没有指定网格时用引擎自带的立方体，保证一定能生成
-	UStaticMesh* Mesh = SpawnMesh;
+	// 通过面板提供的委托决定"这次生成哪个网格、落在哪个偏移"（支持多网格随机/顺序 + 随机偏移）
+	UStaticMesh* Mesh = SpawnMesh;     // 兜底：未绑委托时用固定网格
+	FVector Offset = SpawnOffset;
+	if (OnGetSpawnRequest.IsBound())
+	{
+		OnGetSpawnRequest.Execute(Mesh, Offset, /*bConsume=*/true);
+	}
+
+	// 委托没给出网格时用引擎自带的立方体，保证一定能生成
 	if (!Mesh)
 	{
 		Mesh = LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
@@ -94,7 +101,7 @@ void FPhysicsPlacerEdMode::SpawnAt(const FHitResult& Hit)
 		return;
 	}
 
-	const FVector SpawnLocation = Hit.ImpactPoint + SpawnOffset;
+	const FVector SpawnLocation = Hit.ImpactPoint + Offset;
 	const FRotator SpawnRotation = FRotator::ZeroRotator;
 
 	AStaticMeshActor* SMA = World->SpawnActor<AStaticMeshActor>(SpawnLocation, SpawnRotation);
@@ -124,10 +131,17 @@ void FPhysicsPlacerEdMode::Tick(FEditorViewportClient* ViewportClient, float Del
 	FHitResult Hit;
 	if (Trace(Hit, ViewportClient))
 	{
-		PreviewLocation = Hit.ImpactPoint + SpawnOffset;
-		if (SpawnMesh)
+		// 预览也走委托获取"下一个将生成的网格 + 偏移"（bConsume=false 不推进顺序/随机，避免预览时乱跳）
+		UStaticMesh* PreviewMesh = SpawnMesh;
+		FVector PreviewOff = SpawnOffset;
+		if (OnGetSpawnRequest.IsBound())
 		{
-			PreviewExtent = SpawnMesh->GetBounds().BoxExtent;
+			OnGetSpawnRequest.Execute(PreviewMesh, PreviewOff, /*bConsume=*/false);
+		}
+		PreviewLocation = Hit.ImpactPoint + PreviewOff;
+		if (PreviewMesh)
+		{
+			PreviewExtent = PreviewMesh->GetBounds().BoxExtent;
 		}
 		else
 		{

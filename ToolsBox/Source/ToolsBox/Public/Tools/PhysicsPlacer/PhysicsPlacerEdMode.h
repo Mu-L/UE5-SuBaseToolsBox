@@ -36,6 +36,15 @@ public:
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnActorSpawned, AActor*);
 	FOnActorSpawned OnActorSpawned;
 
+	/**
+	 * 生成前由面板提供"这次要生成哪个网格、落在哪个偏移"。
+	 *   - OutMesh：被选中的网格（nullptr 表示用默认立方体）；
+	 *   - OutOffset：相对命中点的偏移（已含基准偏移+随机抖动）；
+	 *   - bConsume：true=真正生成（推进顺序/随机），false=仅用于每帧预览（不推进状态）。
+	 */
+	DECLARE_DELEGATE_ThreeParams(FOnGetSpawnRequest, UStaticMesh*&, FVector&, bool /*bConsume*/);
+	FOnGetSpawnRequest OnGetSpawnRequest;
+
 	// ---- FEdMode 接口 ----
 	virtual bool IsCompatibleWith(FEditorModeID OtherModeID) const override { return true; }
 	virtual void Enter() override;

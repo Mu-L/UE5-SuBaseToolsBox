@@ -13,10 +13,16 @@
 #include "Components/PrimitiveComponent.h"                // SetSimulatePhysics / SetEnableGravity / WakeAllRigidBodies
 #include "Components/SceneComponent.h"                   // SetMobility
 #include "LevelEditorViewport.h"                          // FLevelEditorViewportClient
-#include "PropertyCustomizationHelpers.h"                 // SObjectPropertyEntryBox（生成网格选择器）
+#include "SAssetDropTarget.h"                             // SAssetDropTarget（从内容浏览器拖入网格，仿植被模式）
+#include "Widgets/Layout/SWrapBox.h"                      // SWrapBox（生成网格横向自动换行磁贴）
 #include "Tools/PhysicsPlacer/PhysicsPlacerEdMode.h"      // FPhysicsPlacerEdMode
 #include "UObject/SoftObjectPath.h"                       // FSoftObjectPath（网格选择器路径）
 #include "Widgets/Input/SSpinBox.h"                      // SSpinBox（生成偏移 X/Y/Z）
+#include "Widgets/Input/SSlider.h"                        // SSlider（模拟速度系数）
+#include "Widgets/Input/SCheckBox.h"                     // SCheckBox（启用 / 随机生成 勾选框）
+#include "Widgets/SOverlay.h"                            // SOverlay（缩略图 + 勾选框叠加，仿刷草）
+#include "Widgets/Layout/SBox.h"                         // SBox（正方形预览框）
+#include "AssetThumbnail.h"                              // FAssetThumbnail / FAssetThumbnailPool（网格缩略图）
 
 #include "Physics/Experimental/PhysScene_Chaos.h"        // FPhysScene_Chaos / FPhysicsSolverBase 等
 #include "Chaos/Framework/PhysicsSolverBase.h"           // Chaos::FPhysicsSolverBase::AdvanceAndDispatch_External
@@ -51,6 +57,15 @@ namespace
 	const FText SimRealtimeOverrideName = LOCTEXT("SimRealtimeOverride", "物理摆放模拟");
 }
 
+FString FSpawnMeshEntry::GetName() const
+{
+	if (Mesh)
+	{
+		return Mesh->GetName();
+	}
+	return TEXT("默认立方体");
+}
+
 void SPhysicsPlacer::Construct(const FArguments& InArgs)
 {
 	// 载入之前保存的摆位
@@ -66,9 +81,18 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 	}
 	EditingPoseName = CurrentPose.IsValid() ? CurrentPose->Name : TEXT("摆位1");
 
+	// 生成网格缩略图池（每个条目一个 64x64 的正方形预览）
+	ThumbnailPool = MakeShared<FAssetThumbnailPool>(64);
+	// 默认立方体：条目无具体网格时用于预览/生成（引擎自带基础形状）
+	DefaultCubeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
+
 	ChildSlot
 	[
-		SNew(SVerticalBox)
+		// 整体包一层滚动框，窗口拉小时仍可滚动查看下方所有内容
+		SNew(SScrollBox)
+		+ SScrollBox::Slot()
+		[
+			SNew(SVerticalBox)
 
 		// ---------- 1. 说明 ----------
 		+ SVerticalBox::Slot().AutoHeight().Padding(10, 5)
@@ -80,8 +104,9 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 				.Text(LOCTEXT("Help",
 					"物理摆放工具：\n"
 					"  1. 进入「生成模式」后，在视口里移动光标会从光标向前检测地面，点击即在该处生成物理物体（带偏移，默认上方 2 米掉落）。Alt+点击不生成。\n"
-					"  2. 或在视口里框选/点选若干已有物体，点「获取编辑器选中」加入下方列表，再「启动模拟」让它们自由掉落；「停止模拟」停下并保留当前位置。\n"
-					"  3. 模拟前/中/后都可「保存当前位置」记成一份带名字的摆位；不理想时用「位置回溯」套回。\n"
+					"  2. 生成模式支持多个网格：从内容浏览器把 StaticMesh 拖到「生成网格列表」即可加入（一次可拖多个，仿植被模式），或点「+ 添加网格」加默认立方体；每行只有正方形预览 + 左上角勾选框（控制该网格是否参与生成）+ 移除按钮；勾选「随机生成网格」则点生成时随机选一个，否则按列表顺序轮转；「随机偏移系数」给生成位置叠加随机抖动；「模拟速度系数」越小物体掉落越慢（如 0.5 倍≈4 秒落地）。\n"
+					"  3. 或在视口里框选/点选若干已有物体，点「获取编辑器选中」加入下方列表，再「启动模拟」让它们自由掉落；「停止模拟」停下并保留当前位置。\n"
+					"  4. 模拟前/中/后都可「保存当前位置」记成一份带名字的摆位；不理想时用「位置回溯」套回。\n"
 					"  （物体需带网格等 PrimitiveComponent；模拟时物体会被设为可移动并开启重力）"))
 			]
 		]
@@ -163,72 +188,166 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 					]
 				]
 
-				+ SVerticalBox::Slot().AutoHeight().Padding(5, 4, 5, 0)
+		// ---- 生成网格列表（可多选，像刷草模式的植被列表；支持从内容浏览器拖入）----
+		+ SVerticalBox::Slot().AutoHeight().Padding(5, 4, 5, 0)
+		[
+			SNew(STextBlock).Text(LOCTEXT("MeshListTitle", "生成网格列表（可多选，勾选框控制是否生成；可从内容浏览器拖入网格）"))
+		]
+
+		+ SVerticalBox::Slot().FillHeight(1.0f).Padding(5, 0)
+		[
+			// 落点区域：从内容浏览器拖入 StaticMesh 即加入生成列表（仿植被模式）
+			SNew(SAssetDropTarget)
+			.bSupportsMultiDrop(true)
+			.OnAreAssetsAcceptableForDrop(this, &SPhysicsPlacer::OnAreSpawnMeshesAcceptable)
+			.OnAssetsDropped(this, &SPhysicsPlacer::OnSpawnMeshesDropped)
+			[
+				SNew(SVerticalBox)
+
+				+ SVerticalBox::Slot().FillHeight(1.0f)
 				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					SNew(SBox).HeightOverride(190.f)
 					[
-						SNew(STextBlock).Text(LOCTEXT("MeshLabel", "生成网格: ")).MinDesiredWidth(70)
-					]
-					+ SHorizontalBox::Slot().FillWidth(1.0f)
-					[
-						SNew(SObjectPropertyEntryBox)
-						.AllowedClass(UStaticMesh::StaticClass())
-						.AllowClear(true)
-						.DisplayUseSelected(true)
-						.DisplayBrowse(true)
-						.ObjectPath(TAttribute<FString>::CreateLambda([this]()
-						{
-							return SpawnMeshAsset ? FSoftObjectPath(SpawnMeshAsset).ToString() : FString();
-						}))
-						.OnObjectChanged_Lambda([this](const FAssetData& A) { OnSpawnMeshPicked(A); })
+						SNew(SScrollBox)
+						+ SScrollBox::Slot()
+						[
+							// 生成网格横向排列、自动换行的磁贴容器（仿植被模式磁贴）
+							SAssignNew(SpawnMeshWrapBox, SWrapBox)
+							.UseAllottedSize(true)
+							.InnerSlotPadding(FVector2D(4.f, 4.f))
+						]
 					]
 				]
 
-				+ SVerticalBox::Slot().AutoHeight().Padding(5, 4, 5, 0)
+				+ SVerticalBox::Slot().AutoHeight().Padding(0, 4, 0, 0)
 				[
 					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-					[
-						SNew(STextBlock).Text(LOCTEXT("OffsetLabel", "生成偏移(米): ")).MinDesiredWidth(90)
-					]
-					+ SHorizontalBox::Slot().AutoWidth().Padding(0, 0, 4, 0)
-					[
-						SNew(STextBlock).Text(LOCTEXT("OffX", "X"))
-					]
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
-						SNew(SSpinBox<float>)
-						.MinValue(-10000.f).MaxValue(10000.f)
-						.Value_Lambda([this]() { return SpawnOffset.X; })
-						.OnValueChanged_Lambda([this](float V) { OnSpawnOffsetChanged(V, 0); })
-						.MinDesiredWidth(60)
+						SNew(SButton)
+						.Text(LOCTEXT("AddMeshBtn", "+ 添加网格"))
+						.ToolTipText(LOCTEXT("AddMeshBtnTip", "追加一个默认立方体条目（也可从内容浏览器拖入具体网格）"))
+						.OnClicked_Lambda([this]() { AddSpawnMeshEntry(); return FReply::Handled(); })
 					]
-					+ SHorizontalBox::Slot().AutoWidth().Padding(4, 0, 4, 0)
+					+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center).Padding(6, 0, 0, 0)
 					[
-						SNew(STextBlock).Text(LOCTEXT("OffY", "Y"))
-					]
-					+ SHorizontalBox::Slot().AutoWidth()
-					[
-						SNew(SSpinBox<float>)
-						.MinValue(-10000.f).MaxValue(10000.f)
-						.Value_Lambda([this]() { return SpawnOffset.Y; })
-						.OnValueChanged_Lambda([this](float V) { OnSpawnOffsetChanged(V, 1); })
-						.MinDesiredWidth(60)
-					]
-					+ SHorizontalBox::Slot().AutoWidth().Padding(4, 0, 4, 0)
-					[
-						SNew(STextBlock).Text(LOCTEXT("OffZ", "Z(上方)"))
-					]
-					+ SHorizontalBox::Slot().AutoWidth()
-					[
-						SNew(SSpinBox<float>)
-						.MinValue(-10000.f).MaxValue(10000.f)
-						.Value_Lambda([this]() { return SpawnOffset.Z; })
-						.OnValueChanged_Lambda([this](float V) { OnSpawnOffsetChanged(V, 2); })
-						.MinDesiredWidth(60)
+						SNew(STextBlock)
+						.Text(LOCTEXT("DropHint", "提示：从内容浏览器把 StaticMesh 拖到这里即可加入生成列表"))
+						.AutoWrapText(true)
+						.ColorAndOpacity(FSlateColor::UseSubduedForeground())
 					]
 				]
+			]
+		]
+
+			// ---- 生成选项 ----
+			+ SVerticalBox::Slot().AutoHeight().Padding(5, 8, 5, 0)
+			[
+				SNew(STextBlock).Text(LOCTEXT("SpawnOptTitle", "生成选项"))
+			]
+
+			+ SVerticalBox::Slot().AutoHeight().Padding(5, 2, 5, 0)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					SNew(SCheckBox)
+					.IsChecked_Lambda([this]() { return bRandomSpawn ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
+					.OnCheckStateChanged(this, &SPhysicsPlacer::OnRandomSpawnChanged)
+				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(4, 0, 0, 0)
+				[
+					SNew(STextBlock).Text(LOCTEXT("RandomSpawnTxt", "随机生成网格（不勾选则按列表顺序轮转）"))
+				]
+			]
+
+			+ SVerticalBox::Slot().AutoHeight().Padding(5, 2, 5, 0)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					SNew(STextBlock).Text(LOCTEXT("RandOffLabel", "随机偏移系数: ")).MinDesiredWidth(100)
+				]
+				+ SHorizontalBox::Slot().AutoWidth()
+				[
+					SNew(SSpinBox<float>)
+					.MinValue(0.f).MaxValue(1000.f).SliderExponent(2.f)
+					.Value_Lambda([this]() { return RandomOffsetScale; })
+					.OnValueChanged_Lambda([this](float V) { OnRandomOffsetChanged(V); })
+					.MinDesiredWidth(80)
+				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(4, 0, 0, 0)
+				[
+					SNew(STextBlock).Text(LOCTEXT("RandOffUnit", "（给生成位置叠加 ±该值的随机抖动，单位厘米）"))
+				]
+			]
+
+			+ SVerticalBox::Slot().AutoHeight().Padding(5, 2, 5, 0)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					SNew(STextBlock).Text(LOCTEXT("SimSpeedLabel", "模拟速度系数: ")).MinDesiredWidth(100)
+				]
+				+ SHorizontalBox::Slot().FillWidth(1.0f).Padding(4, 0, 4, 0)
+				[
+					SNew(SSlider)
+					.MinValue(0.1f).MaxValue(2.0f)
+					.Value_Lambda([this]() { return SimSpeedScale; })
+					.OnValueChanged_Lambda([this](float V) { OnSimSpeedChanged(V); })
+				]
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					SNew(STextBlock).Text_Lambda([this]() { return FText::FromString(FString::Printf(TEXT("%.2f 倍（越小掉得越慢）"), SimSpeedScale)); })
+				]
+			]
+
+			// ---- 基准偏移（相对命中点的固定偏移）----
+			+ SVerticalBox::Slot().AutoHeight().Padding(5, 8, 5, 0)
+			[
+				SNew(STextBlock).Text(LOCTEXT("BaseOffTitle", "基准偏移(米)（默认上方 2 米掉落）"))
+			]
+
+			+ SVerticalBox::Slot().AutoHeight().Padding(5, 2, 5, 0)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					SNew(STextBlock).Text(LOCTEXT("OffX", "X"))
+				]
+				+ SHorizontalBox::Slot().AutoWidth()
+				[
+					SNew(SSpinBox<float>)
+					.MinValue(-10000.f).MaxValue(10000.f)
+					.Value_Lambda([this]() { return SpawnOffset.X; })
+					.OnValueChanged_Lambda([this](float V) { OnSpawnOffsetChanged(V, 0); })
+					.MinDesiredWidth(60)
+				]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(8, 0, 4, 0)
+				[
+					SNew(STextBlock).Text(LOCTEXT("OffY", "Y"))
+				]
+				+ SHorizontalBox::Slot().AutoWidth()
+				[
+					SNew(SSpinBox<float>)
+					.MinValue(-10000.f).MaxValue(10000.f)
+					.Value_Lambda([this]() { return SpawnOffset.Y; })
+					.OnValueChanged_Lambda([this](float V) { OnSpawnOffsetChanged(V, 1); })
+					.MinDesiredWidth(60)
+				]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(8, 0, 4, 0)
+				[
+					SNew(STextBlock).Text(LOCTEXT("OffZ", "Z(上方)"))
+				]
+				+ SHorizontalBox::Slot().AutoWidth()
+				[
+					SNew(SSpinBox<float>)
+					.MinValue(-10000.f).MaxValue(10000.f)
+					.Value_Lambda([this]() { return SpawnOffset.Z; })
+					.OnValueChanged_Lambda([this](float V) { OnSpawnOffsetChanged(V, 2); })
+					.MinDesiredWidth(60)
+				]
+			]
 			]
 		]
 
@@ -386,6 +505,7 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 					]
 				]
 			]
+		]
 		]
 	];
 
@@ -668,8 +788,10 @@ bool SPhysicsPlacer::TickPhysics(float DeltaTime)
 			{
 				RigidsSolver->StartingSceneSimulation();
 			}
-			// 夹紧单帧步长，避免首帧/卡顿时一次跳太大导致穿模或数值爆炸
-			const Chaos::FReal StepDt = static_cast<Chaos::FReal>(FMath::Min(DeltaTime, 1.f / 30.f));
+			// 夹紧单帧步长，避免首帧/卡顿时一次跳太大导致穿模或数值爆炸。
+			// 再乘 SimSpeedScale：<1 让求解器推进更少的仿真时间 → 物体掉落更慢
+			// （例如 0.5 倍 ≈ 原来 2 秒落地变成 4 秒，方便观察空中掉落的时机）。
+			const Chaos::FReal StepDt = static_cast<Chaos::FReal>(FMath::Min(DeltaTime, 1.f / 30.f) * SimSpeedScale);
 			Solver->AdvanceAndDispatch_External(StepDt);
 		}
 	}
@@ -744,8 +866,25 @@ void SPhysicsPlacer::ToggleSpawnMode()
 
 		if (FPhysicsPlacerEdMode* Mode = GLevelEditorModeTools().GetActiveModeTyped<FPhysicsPlacerEdMode>(FPhysicsPlacerEdMode::EM_PhysicsPlacerEdModeId))
 		{
-			Mode->SpawnMesh   = SpawnMeshAsset;
+			// 兜底：先把基准偏移 + 第一个启用网格设进去（真正生成走下方委托）
 			Mode->SpawnOffset = SpawnOffset;
+			for (const TSharedPtr<FSpawnMeshEntry>& E : SpawnMeshes)
+			{
+				if (E->bEnabled && E->Mesh)
+				{
+					Mode->SpawnMesh = E->Mesh;
+					break;
+				}
+			}
+			// 生成前由面板决定"生成哪个网格 / 落在哪个偏移"（支持多网格随机/顺序 + 随机偏移）
+			Mode->OnGetSpawnRequest = FPhysicsPlacerEdMode::FOnGetSpawnRequest::CreateLambda(
+				[WeakThis = TWeakPtr<SPhysicsPlacer>(SharedThis(this))](UStaticMesh*& M, FVector& O, bool bConsume)
+				{
+					if (TSharedPtr<SPhysicsPlacer> S = WeakThis.Pin())
+					{
+						S->GetSpawnRequest(M, O, bConsume);
+					}
+				});
 			// 生成物体时回调到本工具：加入列表并自动开启物理步进，让物体立刻掉落
 			Mode->OnActorSpawned.AddLambda(
 				[WeakThis = TWeakPtr<SPhysicsPlacer>(SharedThis(this))](AActor* A)
@@ -771,6 +910,7 @@ void SPhysicsPlacer::ToggleSpawnMode()
 		if (FPhysicsPlacerEdMode* Mode = GLevelEditorModeTools().GetActiveModeTyped<FPhysicsPlacerEdMode>(FPhysicsPlacerEdMode::EM_PhysicsPlacerEdModeId))
 		{
 			Mode->OnActorSpawned.Clear();
+			Mode->OnGetSpawnRequest.Unbind();
 		}
 		GLevelEditorModeTools().DeactivateMode(FPhysicsPlacerEdMode::EM_PhysicsPlacerEdModeId);
 		bSpawnMode = false;
@@ -813,17 +953,220 @@ void SPhysicsPlacer::HandleSpawnedActor(AActor* Spawned)
 	AppendLog(FString::Printf(TEXT("已生成物体「%s」，列表共 %d 个"), *Spawned->GetActorLabel(), SelectedActors.Num()));
 }
 
-void SPhysicsPlacer::OnSpawnMeshPicked(const FAssetData& Data)
+void SPhysicsPlacer::GetSpawnRequest(UStaticMesh*& OutMesh, FVector& OutOffset, bool bConsume)
 {
-	SpawnMeshAsset = Cast<UStaticMesh>(Data.GetAsset());
-	// 若正处于生成模式，把新网格实时推给激活中的模式
-	if (bSpawnMode)
+	// 收集"启用中且有网格"的条目
+	TArray<UStaticMesh*> Enabled;
+	for (const TSharedPtr<FSpawnMeshEntry>& E : SpawnMeshes)
 	{
-		if (FPhysicsPlacerEdMode* Mode = GLevelEditorModeTools().GetActiveModeTyped<FPhysicsPlacerEdMode>(FPhysicsPlacerEdMode::EM_PhysicsPlacerEdModeId))
+		if (E->bEnabled && E->Mesh)
 		{
-			Mode->SpawnMesh = SpawnMeshAsset;
+			Enabled.Add(E->Mesh);
 		}
 	}
+
+	if (Enabled.Num() == 0)
+	{
+		// 没有任何启用网格：用默认立方体，仅套基准偏移
+		OutMesh = nullptr;
+		OutOffset = SpawnOffset;
+		return;
+	}
+
+	if (bConsume)
+	{
+		if (bRandomSpawn)
+		{
+			OutMesh = Enabled[FMath::RandRange(0, Enabled.Num() - 1)];
+		}
+		else
+		{
+			OutMesh = Enabled[SpawnSequenceIndex % Enabled.Num()];
+			++SpawnSequenceIndex;
+		}
+		// 随机偏移：在每个轴叠加 ±RandomOffsetScale 的随机抖动（单位厘米）
+		const FVector Jitter(
+			FMath::FRandRange(-1.f, 1.f) * RandomOffsetScale,
+			FMath::FRandRange(-1.f, 1.f) * RandomOffsetScale,
+			FMath::FRandRange(-1.f, 1.f) * RandomOffsetScale);
+		OutOffset = SpawnOffset + Jitter;
+	}
+	else
+	{
+		// 预览：显示"下一个将生成的网格"与基准偏移（不推进顺序、不加随机抖动，避免预览乱跳）
+		const int32 Idx = bRandomSpawn ? 0 : (SpawnSequenceIndex % Enabled.Num());
+		OutMesh = Enabled[Idx];
+		OutOffset = SpawnOffset;
+	}
+}
+
+void SPhysicsPlacer::AddSpawnMeshEntry()
+{
+	TSharedPtr<FSpawnMeshEntry> NewEntry = MakeShared<FSpawnMeshEntry>();
+	NewEntry->Mesh = DefaultCubeMesh;   // 默认立方体（有真实网格，可直接参与生成与预览）
+	NewEntry->bEnabled = true;
+	SpawnMeshes.Add(NewEntry);
+	RefreshSpawnList();
+}
+
+void SPhysicsPlacer::RemoveSpawnMeshEntry(TSharedPtr<FSpawnMeshEntry> Entry)
+{
+	if (!Entry.IsValid())
+	{
+		return;
+	}
+	SpawnMeshes.Remove(Entry);
+	RefreshSpawnList();
+}
+
+bool SPhysicsPlacer::OnAreSpawnMeshesAcceptable(TArrayView<FAssetData> Assets) const
+{
+	// 仅接受全部都是 StaticMesh 的拖拽（支持一次拖多个）
+	for (const FAssetData& A : Assets)
+	{
+		if (!A.IsInstanceOf<UStaticMesh>())
+		{
+			return false;
+		}
+	}
+	return Assets.Num() > 0;
+}
+
+void SPhysicsPlacer::OnSpawnMeshesDropped(const FDragDropEvent& DragDropEvent, TArrayView<FAssetData> Assets)
+{
+	int32 Added = 0;
+	for (const FAssetData& A : Assets)
+	{
+		if (UStaticMesh* Mesh = Cast<UStaticMesh>(A.GetAsset()))
+		{
+			TSharedPtr<FSpawnMeshEntry> NewEntry = MakeShared<FSpawnMeshEntry>();
+			NewEntry->Mesh = Mesh;
+			NewEntry->bEnabled = true;
+			SpawnMeshes.Add(NewEntry);
+			++Added;
+		}
+	}
+	if (Added > 0)
+	{
+		RefreshSpawnList();
+		AppendLog(FString::Printf(TEXT("已从内容浏览器拖入 %d 个网格到生成列表"), Added));
+	}
+}
+
+void SPhysicsPlacer::OnSpawnEntryEnabledChanged(TSharedPtr<FSpawnMeshEntry> Entry, bool bNew)
+{
+	if (Entry.IsValid())
+	{
+		Entry->bEnabled = bNew;
+	}
+}
+
+void SPhysicsPlacer::RefreshSpawnList()
+{
+	if (!SpawnMeshWrapBox.IsValid())
+	{
+		return;
+	}
+	SpawnMeshWrapBox->ClearChildren();
+	for (const TSharedPtr<FSpawnMeshEntry>& Entry : SpawnMeshes)
+	{
+		if (Entry.IsValid())
+		{
+			SpawnMeshWrapBox->AddSlot().Padding(0)
+			[
+				BuildSpawnTile(Entry)
+			];
+		}
+	}
+}
+
+TSharedRef<SWidget> SPhysicsPlacer::BuildSpawnTile(TSharedPtr<FSpawnMeshEntry> Entry)
+{
+	// 用于缩略图与生成兜底的网格：优先用选定网格，否则用默认立方体
+	UStaticMesh* PreviewMesh = Entry->Mesh;
+	if (!PreviewMesh)
+	{
+		PreviewMesh = LoadObject<UStaticMesh>(nullptr, TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
+	}
+
+	TSharedRef<SWidget> ThumbWidget = SNullWidget::NullWidget;
+	if (PreviewMesh)
+	{
+		TSharedPtr<FAssetThumbnail> Thumb = MakeShared<FAssetThumbnail>(PreviewMesh, 64, 64, ThumbnailPool);
+		ThumbWidget = Thumb->MakeThumbnailWidget();
+	}
+
+	// 一个磁贴：上方正方形预览（左上角勾选框控制是否生成），下方小号"移除"按钮
+	return SNew(SBox).WidthOverride(72.f)
+	[
+		SNew(SVerticalBox)
+
+		// 预览图（64x64）+ 左上角勾选框
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+		[
+			SNew(SBox).WidthOverride(64.f).HeightOverride(64.f)
+			[
+				SNew(SOverlay)
+
+				+ SOverlay::Slot()
+				[
+					SNew(SBorder).BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+					[
+						ThumbWidget
+					]
+				]
+
+				// 左上角勾选框：控制该网格是否参与生成
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Left).VAlign(VAlign_Top)
+				.Padding(2)
+				[
+					SNew(SCheckBox)
+					.IsChecked_Lambda([Entry]()
+					{
+						return Entry->bEnabled ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
+					})
+					.OnCheckStateChanged_Lambda([this, Entry](ECheckBoxState State)
+					{
+						OnSpawnEntryEnabledChanged(Entry, State == ECheckBoxState::Checked);
+					})
+				]
+			]
+		]
+
+		// 下方小号"移除"按钮（紧凑显示）
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0, 3, 0, 0)
+		[
+			SNew(SButton)
+			.ContentPadding(FMargin(4, 1))
+			.ToolTipText(LOCTEXT("RemoveSpawnTip", "从生成列表移除该网格"))
+			.OnClicked_Lambda([this, Entry]()
+			{
+				RemoveSpawnMeshEntry(Entry);
+				return FReply::Handled();
+			})
+			[
+				SNew(STextBlock)
+				.Text(LOCTEXT("RemoveSpawnBtn", "移除"))
+				.Font(FCoreStyle::GetDefaultFontStyle("Normal", 8))
+			]
+		]
+	];
+}
+
+void SPhysicsPlacer::OnRandomSpawnChanged(ECheckBoxState State)
+{
+	bRandomSpawn = (State == ECheckBoxState::Checked);
+}
+
+void SPhysicsPlacer::OnRandomOffsetChanged(float NewValue)
+{
+	RandomOffsetScale = NewValue;
+}
+
+void SPhysicsPlacer::OnSimSpeedChanged(float NewValue)
+{
+	SimSpeedScale = FMath::Clamp(NewValue, 0.1f, 2.0f);
 }
 
 void SPhysicsPlacer::OnSpawnOffsetChanged(float NewValue, int32 Axis)
