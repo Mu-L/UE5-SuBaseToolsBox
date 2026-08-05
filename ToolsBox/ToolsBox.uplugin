@@ -14,7 +14,7 @@
 	"IsBetaVersion": true,
 	"IsExperimentalVersion": false,
 	"Installed": false,
-	"Language":"ja",
+	"Language": "zh-Hans",
 	"Modules": [
 		{
 			"Name": "ToolsBox",
@@ -35,8 +35,5 @@
 			"Name": "EditorScriptingUtilities",
 			"Enabled": true
 		}
-		
-
-
 	]
 }

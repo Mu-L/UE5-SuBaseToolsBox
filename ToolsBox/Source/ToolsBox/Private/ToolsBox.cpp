@@ -64,6 +64,13 @@ void FToolsBoxModule::StartupModule()
 		FPhysicsPlacerEdMode::EM_PhysicsPlacerEdModeId,
 		LOCTEXT("PhysicsPlacerSpawnMode", "物理摆放生成"));
 
+	// 启动即按 uplugin 的 Language 字段加载插件翻译，确保任何工具窗口打开前翻译就已就位
+	{
+		FString StoredLang = LanguagesStitch::GetLanguageFromUnplugin();
+		if (StoredLang.IsEmpty()) StoredLang = TEXT("zh-Hans");
+		LanguagesStitch::LoadPluginLocRes(StoredLang);
+	}
+
 }
 
 
@@ -179,13 +186,17 @@ TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& Sp
 	        [
 		       SAssignNew(LanguageStitchInstance->LanguageComboBox, SComboBox<TSharedPtr<FString>>)
 		        .OptionsSource(&LanguageStitchInstance->LanguageOptions)
+		        .InitiallySelectedItem(LanguageStitchInstance->SelectedLanguage)
 	        	.OnGenerateWidget_Lambda([](TSharedPtr<FString> InItem) {
-					return SNew(STextBlock).Text(FText::FromString(*InItem));
+					return SNew(STextBlock).Text(FText::FromString(InItem.IsValid() ? *InItem : TEXT("")));
 				})
 	        	.OnSelectionChanged_Lambda([this, LanguageStitchInstance](TSharedPtr<FString> NewSelected, ESelectInfo::Type SelectInfo) {
-	        		  LanguageStitchInstance->SwitchLanguage(*NewSelected);
-					  LanguageStitchInstance->SelectedLanguage = NewSelected;
-	        		
+	        		  // 打开下拉框时 SComboBox 可能回调一个无效的 NewSelected，必须先判空再解引用
+	        		  if (NewSelected.IsValid())
+	        		  {
+	        			  LanguageStitchInstance->SwitchLanguage(*NewSelected);
+						  LanguageStitchInstance->SelectedLanguage = NewSelected;
+	        		  }
 				  })
 				  [
 					  // ComboBox 闭合时显示的文本

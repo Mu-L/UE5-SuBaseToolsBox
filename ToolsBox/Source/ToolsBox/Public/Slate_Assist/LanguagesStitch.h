@@ -37,4 +37,5 @@ public:
 	static void LoadPluginLocRes(const FString& LanguageCode);
 
 	static FString GetNameFromDisplay(const FString& InDisplay);
+	static FString GetDisplayFromName(const FString& InName);
 };

@@ -10,14 +10,38 @@
 
 LanguagesStitch::LanguagesStitch()
 {
-	
-	SelectedLanguage = MakeShared<FString>(GetLanguageFromUnplugin());
-	SwitchLanguage(GetLanguageFromUnplugin());
-	// 自动生成填充逻辑
+	// 1. 先填充下拉选项（显示名），这里存的是一组独立的 TSharedPtr 对象
 #define ARRAY_GEN(name, display) LanguageOptions.Add(MakeShared<FString>(display));
 	LANGUAGE_LIST(ARRAY_GEN)
 #undef ARRAY_GEN
 
+	// 2. 读出 uplugin 里保存的语言「代码」（如 "ja"），转成「显示名」（如 "日本語"）
+	FString StoredCode = GetLanguageFromUnplugin();
+	if (StoredCode.IsEmpty())
+	{
+		StoredCode = TEXT("zh-Hans");
+	}
+	FString DisplayName = GetDisplayFromName(StoredCode);
+
+	// 关键：必须让 SelectedLanguage 直接指向 LanguageOptions 里「同名」的那个指针对象，
+	// 否则 SComboBox 用指针比较匹配 InitialSelectedItem 时会失败，选中集合为空、
+	// 打开下拉框时回调收到无效的 NewSelected 而崩溃。
+	for (const TSharedPtr<FString>& Opt : LanguageOptions)
+	{
+		if (Opt.IsValid() && *Opt == DisplayName)
+		{
+			SelectedLanguage = Opt;
+			break;
+		}
+	}
+	// 兜底：万一没匹配上（比如字段被改坏），默认选中第一项
+	if (!SelectedLanguage.IsValid() && LanguageOptions.Num() > 0)
+	{
+		SelectedLanguage = LanguageOptions[0];
+	}
+
+	// 3. 按保存的语言加载对应翻译（locres），保证窗口一打开就是正确语言
+	LoadPluginLocRes(StoredCode);
 }
 
 void LanguagesStitch::SwitchLanguage(const FString& Language)
@@ -49,8 +73,8 @@ bool LanguagesStitch::SetLanguageInUnplugin(const FString& NewLanguage)
 		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
 		if (FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer))
 		{
-			// 4. 写回文件
-			return FFileHelper::SaveStringToFile(OutputString,*FPaths::ProjectPluginsDir());
+		// 4. 写回文件（注意：必须是完整的 .uplugin 路径，不能只写到插件目录）
+		return FFileHelper::SaveStringToFile(OutputString, *(FPaths::ProjectPluginsDir() + TEXT("ToolsBox/ToolsBox.uplugin")));
 		}
 	}
  
@@ -129,6 +153,26 @@ FString LanguagesStitch::GetNameFromDisplay(const FString& InDisplay)
  
 	// 根据 Display 查找 Name，如果没找到返回空字符串
 	return DisplayToNameMap.FindRef(InDisplay);
+}
+
+FString LanguagesStitch::GetDisplayFromName(const FString& InName)
+{
+	// 反向映射：代码 -> 显示名（"ja" -> "日本語"），用于把 uplugin 里存的代码转成下拉框显示名
+	static TMap<FString, FString> NameToDisplayMap;
+
+	if (NameToDisplayMap.Num() == 0)
+	{
+		#define MAP_GEN2(name, display) \
+		{ \
+		FString InternalName = TEXT(#name); \
+		NameToDisplayMap.Add(InternalName.Replace(TEXT("_"), TEXT("-")), display); \
+		}
+
+		LANGUAGE_LIST(MAP_GEN2)
+		#undef MAP_GEN2
+	}
+
+	return NameToDisplayMap.FindRef(InName);
 }
 
 
