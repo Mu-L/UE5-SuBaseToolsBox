@@ -46,7 +46,7 @@ void SAAU::Construct(const FArguments& InArgs)
 				+ SVerticalBox::Slot().AutoHeight()
 				[
 					SNew(STextBlock)
-					.Text(LOCTEXT("AddAnimationModify", "憋笑，做完才知道这个功能已经有了"))
+					.Text(LOCTEXT("AddAnimationModifyDesc", "为选中的骨骼网格体批量应用动画修饰符"))
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 6))
 				]
 				+ SVerticalBox::Slot().AutoHeight()

@@ -51,6 +51,7 @@ TSharedRef<SWidget> SlateAssistBuildFunctionLibrary::MakeToolBlock(const FText& 
                     [
                         SNew(STextBlock)
                         .Text(ToolName)
+                        .ToolTipText(ToolName)
                         .Font(FCoreStyle::GetDefaultFontStyle("Bold", 12.0f))
                         .ColorAndOpacity(FLinearColor::White)
                     ]
@@ -61,6 +62,7 @@ TSharedRef<SWidget> SlateAssistBuildFunctionLibrary::MakeToolBlock(const FText& 
                     [
                         SNew(STextBlock)
                         .Text(Description)
+                        .ToolTipText(Description)
                         .AutoWrapText(true)
                         .Font(FCoreStyle::GetDefaultFontStyle("Bold",8.5f))
                         .ColorAndOpacity(FLinearColor::White)
@@ -143,20 +145,20 @@ TSharedRef<SWindow> SlateAssistBuildFunctionLibrary::MakeInfoWindow()
                 + SVerticalBox::Slot()
                 .AutoHeight()
                 [
-                    MakeClickableImageLink(FIconStyle::Get_Images().GetBrush("Info.Info_Bilibili"), FText::FromString(TEXT("前往bilibili")), "https://space.bilibili.com/391627131/",FVector2D(947.0f,116.0f))
+                    MakeClickableImageLink(FIconStyle::Get_Images().GetBrush("Info.Info_Bilibili"), NSLOCTEXT("Info", "GoBilibili", "前往bilibili"), "https://space.bilibili.com/391627131/",FVector2D(947.0f,116.0f))
                 ]
                 + SVerticalBox::Slot()
                 .AutoHeight()
                 [
 
-                    MakeClickableImageLink(FIconStyle::Get_Images().GetBrush("Info.Info_github"), FText::FromString(TEXT("前往github")), "https://github.com/SuBase/UE5-SuBaseToolsBox",FVector2D(1143.0f,295.0f))
+                    MakeClickableImageLink(FIconStyle::Get_Images().GetBrush("Info.Info_github"), NSLOCTEXT("Info", "GoGithub", "前往github"), "https://github.com/SuBase/UE5-SuBaseToolsBox",FVector2D(1143.0f,295.0f))
 
                 ]
                 + SVerticalBox::Slot()
                 .AutoHeight()
                 [
 
-                    MakeClickableImageLink(FIconStyle::Get_Images().GetBrush("Info.Info_zf"), FText::FromString(TEXT("制作不易，恳求打赏，谢谢喵ฅ^•ﻌ•^ฅ")), "",FVector2D(400, 300))
+                    MakeClickableImageLink(FIconStyle::Get_Images().GetBrush("Info.Info_zf"), NSLOCTEXT("Info", "Donate", "制作不易，恳求打赏，谢谢喵ฅ^•ﻌ•^ฅ"), "",FVector2D(400, 300))
 
                 ]
             ]

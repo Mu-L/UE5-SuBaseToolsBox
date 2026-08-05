@@ -51,7 +51,7 @@ void FToolsBoxModule::StartupModule()
 			Tool.ToolTabID, 
 			FOnSpawnTab::CreateRaw(this, &FToolsBoxModule::OnSpawnToolTab, Tool.WidgetFactory) 
 		)
-		.SetDisplayName(FText::FromName(Tool.ToolName))
+		.SetDisplayName(Tool.ToolTitle)
 		.SetMenuType(ETabSpawnerMenuType::Hidden)
 		.SetIcon(FSlateIcon(FIconStyle::Get_Icons().GetStyleSetName(), Tool.ToolDockTabIcon));
 		
@@ -110,7 +110,7 @@ TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& Sp
  
         for (const auto& Tool : Tools::Get_ToolsData())
         {
-            FString NameStr = Tool.ToolName.ToString();
+            FString NameStr = Tool.ToolTitle.ToString();
             FString DescStr = Tool.ToolDescription.ToString();
  
             if (SearchText.IsEmpty() || NameStr.Contains(SearchText) || DescStr.Contains(SearchText))
@@ -119,7 +119,7 @@ TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& Sp
                 .AutoHeight()
                 [
                     SlateAssistBuildFunctionLibrary::MakeToolBlock(
-                        FText::FromName(Tool.ToolName),
+                        Tool.ToolTitle,
                         Tool.ToolDescription,
                         Tool.ToolImage,
                         Tool.ToolTabID,
@@ -153,9 +153,8 @@ TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& Sp
 
 	        + SHorizontalBox::Slot()
         	.AutoWidth()
-			.Padding(2.0f, 0, 2.0f, 0)
-	        [
-		        SNew(STextBlock)
+			.Padding(2.0f,4.0f, 0, 0)
+	        [		        SNew(STextBlock)
 		        .Text(LOCTEXT("ToolBoxAuthor", "详情"))
 	        ]
  
