@@ -5,9 +5,9 @@
 
 // 定义语言宏列表：枚举名, 显示名
 #define LANGUAGE_LIST(f) \
-f(Chinese, TEXT("中文")) \
-f(English, TEXT("English")) \
-f(Japanese, TEXT("日本語"))
+f(zh_Hans, TEXT("中文")) \
+f(en, TEXT("English")) \
+f(ja, TEXT("日本語"))
  
 
 enum class ELanguages : uint8
@@ -33,5 +33,8 @@ public:
 
 	static bool SetLanguageInUnplugin(const FString& NewLanguage);
 	static FString GetLanguageFromUnplugin();
-	
+
+	static void LoadPluginLocRes(const FString& LanguageCode);
+
+	static FString GetNameFromDisplay(const FString& InDisplay);
 };
