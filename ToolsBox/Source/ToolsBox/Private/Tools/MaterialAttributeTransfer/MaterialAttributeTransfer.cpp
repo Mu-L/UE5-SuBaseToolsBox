@@ -25,57 +25,137 @@
 #include "Serialization/JsonWriter.h"
 #include "Widgets/Text/SMultiLineEditableText.h"
 #include "Widgets/Input/SCheckBox.h"
+#include "Widgets/Input/SComboBox.h"
 
+namespace
+{
+	/** JSON 文件名：所有配置都追加在同一个文件里（仿自动前缀） */
+	const TCHAR* ConfigJsonFileName = TEXT("Configurations.json");
+}
 
 #define LOCTEXT_NAMESPACE "MaterialTransferTool"
  
 void SMaterialTttributeTransfer::Construct(const FArguments& InArgs)
 {
-    SaveConfigFileName = TEXT("DefaultSettings");
-    TargetSavePath = TEXT("/Game/"); 
+    TargetSavePath = TEXT("/Game/");
+
+    // 读取全部配置（多套）；一个配置都没有就先给一套默认
+    LoadAllConfigsFromJson();
+    if (Configs.Num() == 0)
+    {
+        SeedDefaultConfig();
+    }
+    CurrentConfig = Configs.Num() > 0 ? Configs[0] : nullptr;
+    EditingConfigName = CurrentConfig.IsValid() ? CurrentConfig->ConfigName : TEXT("默认");
  
     ChildSlot
     [
         SNew(SVerticalBox)
  
-        // 1. 配置管理
+        // 1. 配置管理（仿自动前缀：多套配置下拉 + 追加保存到同一个 JSON）
         + SVerticalBox::Slot().AutoHeight().Padding(10, 5)
         [
             SNew(SBorder).BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
             [
                 SNew(SVerticalBox)
+                // 1.0 使用说明
+                + SVerticalBox::Slot().AutoHeight().Padding(5)
+                [
+                    SNew(STextBlock)
+                    .AutoWrapText(true)
+                    .Text(LOCTEXT("MaterialAttributeTransferHelper",
+                        "使用方法：\n"
+                        "  1. 选择需要继承自的母材质或材质实例类\n"
+                        "  2. 内容浏览器中选择一个或多个需要被转移参数值的材质实例或材质类\n"
+                        "  3. 配置可在下拉框保存多套、随时切换；点 开始转移参数 后生成新材质并赋值参数\n"
+                        ))
+                ]
+                // 1.1 配置下拉 + 新建空配置
                 + SVerticalBox::Slot().AutoHeight().Padding(5)
                 [
                     SNew(SHorizontalBox)
                     + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-                    [ SNew(STextBlock).Text(LOCTEXT("ConfigLabel", "配置文件名: ")) ]
-                    + SHorizontalBox::Slot().FillWidth(1.0f).Padding(5, 0)
+                    [ SNew(STextBlock).Text(LOCTEXT("ConfigLabel", "配置: ")).MinDesiredWidth(100) ]
+                    + SHorizontalBox::Slot().FillWidth(1.0f)
                     [
-                        SNew(SEditableTextBox)
-                        .Text(FText::FromString(SaveConfigFileName))
-                        .OnTextChanged_Lambda([this](const FText& InText) { SaveConfigFileName = InText.ToString(); })
-                    ]
-                    + SHorizontalBox::Slot().AutoWidth()
-                    [
-                        SNew(SButton).Text(LOCTEXT("SaveBtn", "保存"))
-                        .OnClicked_Lambda([this]() { SaveSettings(); return FReply::Handled(); })
-                        .ToolTipText(LOCTEXT("SaveBtnTip", "保存配置"))
+                        SAssignNew(ConfigComboBox, SComboBox<TSharedPtr<FMaterialTransferConfigItem>>)
+                        .OptionsSource(&Configs)
+                        .OnGenerateWidget(this, &SMaterialTttributeTransfer::OnGenerateConfigComboWidget)
+                        .OnSelectionChanged(this, &SMaterialTttributeTransfer::OnConfigSelectionChanged)
+                        [
+                            SNew(STextBlock).Text(this, &SMaterialTttributeTransfer::GetCurrentConfigNameText)
+                        ]
                     ]
                     + SHorizontalBox::Slot().AutoWidth().Padding(5, 0, 0, 0)
                     [
-                        SNew(SButton).Text(LOCTEXT("LoadBtn", "加载"))
-                        .OnClicked_Lambda([this]() { LoadSettings(); return FReply::Handled(); })
-                        .ToolTipText(LOCTEXT("LoadBtnTip", "加载配置"))
+                        SNew(SButton).Text(LOCTEXT("NewConfigBtn", "新建空配置"))
+                        .ToolTipText(LOCTEXT("NewConfigBtnTip", "清空当前配置，从零开始配置一套新的转移方案"))
+                        .OnClicked_Lambda([this]()
+                        {
+                            TSharedPtr<FMaterialTransferConfigItem> NewCfg = MakeShared<FMaterialTransferConfigItem>();
+                            NewCfg->ConfigName = TEXT("新配置");
+                            NewCfg->TargetSavePath = TEXT("/Game/");
+                            NewCfg->bSaveToRespectiveFolders = true;
+                            NewCfg->bIsSaved = false;
+                            Configs.Add(NewCfg);
+                            if (ConfigComboBox.IsValid()) { ConfigComboBox->RefreshOptions(); }
+                            SwitchToConfig(NewCfg);
+                            AppendLog(TEXT("已新建空配置，配置完成后记得点 保存配置"));
+                            return FReply::Handled();
+                        })
+                    ]
+                ]
+                // 1.2 配置名称输入
+                + SVerticalBox::Slot().AutoHeight().Padding(5)
+                [
+                    SNew(SHorizontalBox)
+                    + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+                    [ SNew(STextBlock).Text(LOCTEXT("ConfigNameLabel", "配置名称: ")).MinDesiredWidth(100) ]
+                    + SHorizontalBox::Slot().FillWidth(1.0f)
+                    [
+                        SNew(SEditableTextBox)
+                        .HintText(LOCTEXT("ConfigNameHint", "这套配置保存时使用的名字"))
+                        .Text_Lambda([this]() { return FText::FromString(EditingConfigName); })
+                        .OnTextChanged_Lambda([this](const FText& InText) { EditingConfigName = InText.ToString(); })
+                    ]
+                ]
+                // 1.3 操作按钮：保存 / 重新加载 / 打开配置
+                + SVerticalBox::Slot().AutoHeight().Padding(5)
+                [
+                    SNew(SHorizontalBox)
+                    + SHorizontalBox::Slot().AutoWidth()
+                    [
+                        SNew(SButton).Text(LOCTEXT("SaveConfigBtn", "保存配置"))
+                        .ToolTipText(LOCTEXT("SaveConfigBtnTip", "把当前配置追加保存到 JSON，同名则覆盖该配置"))
+                        .OnClicked_Lambda([this]() { SaveCurrentConfigToJson(); return FReply::Handled(); })
+                    ]
+                    + SHorizontalBox::Slot().AutoWidth().Padding(5, 0, 0, 0)
+                    [
+                        SNew(SButton).Text(LOCTEXT("ReloadBtn", "重新加载"))
+                        .ToolTipText(LOCTEXT("ReloadBtnTip", "丢弃当前修改，从 JSON 重新读取全部配置"))
+                        .OnClicked_Lambda([this]()
+                        {
+                            LoadAllConfigsFromJson();
+                            if (Configs.Num() == 0) SeedDefaultConfig();
+                            CurrentConfig = Configs.Num() > 0 ? Configs[0] : nullptr;
+                            EditingConfigName = CurrentConfig.IsValid() ? CurrentConfig->ConfigName : TEXT("默认");
+                            if (ConfigComboBox.IsValid())
+                            {
+                                ConfigComboBox->RefreshOptions();
+                                if (CurrentConfig.IsValid()) ConfigComboBox->SetSelectedItem(CurrentConfig);
+                            }
+                            SwitchToConfig(CurrentConfig);
+                            AppendLog(FString::Printf(TEXT("已从 JSON 重新加载，共 %d 套配置"), Configs.Num()));
+                            return FReply::Handled();
+                        })
                     ]
                     + SHorizontalBox::Slot().AutoWidth().Padding(5, 0, 0, 0)
                     [
                         SNew(SButton).Text(LOCTEXT("OpenFolderBtn", "打开配置"))
                         .OnClicked_Lambda([this]() {
                             FString Dir = GetSaveDirectory();
-                            // 确保目录已存在（首次点击可能尚未创建）
                             IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
                             if (!PF.DirectoryExists(*Dir)) PF.CreateDirectoryTree(*Dir);
-                            // 转成 Windows 原生反斜杠路径，否则 ShellExecute 的 explore 动词对正斜杠路径会静默失败
                             FString NativeDir = FPaths::ConvertRelativePathToFull(Dir).Replace(TEXT("/"), TEXT("\\"));
                             FPlatformProcess::ExploreFolder(*NativeDir);
                             AppendLog(TEXT("已打开配置文件夹: ") + NativeDir);
@@ -83,18 +163,6 @@ void SMaterialTttributeTransfer::Construct(const FArguments& InArgs)
                         })
                         .ToolTipText(LOCTEXT("OpenFolderBtnTip", "打开配置文件夹"))
                     ]
-                ]
-                + SVerticalBox::Slot().AutoHeight().Padding(5)
-                [
-                    SNew(STextBlock)
-                    .AutoWrapText(true)
-                    .Text(LOCTEXT("MaterialAttributeTransferHelper",
-                        "使用方法：\n"
-                        "  1. 选择需要继承自的哪个材质或材质实例类\n"
-                        "  2. 内容浏览器中选择一个或多个需要被转移参数值的材质实例或材质类\n"
-                        "  3. 点击 开始转移参数 后会生成材质并将被转换的材质参数赋值给以母材质为父类新生成的材质\n"
-                        ))
-                   
                 ]
             ]
         ]
@@ -243,6 +311,12 @@ void SMaterialTttributeTransfer::Construct(const FArguments& InArgs)
                 SNew(SButton).Text(LOCTEXT("AddBtn", "添加参数行"))
                 .OnClicked_Lambda([this]() { AddMappingRow(); return FReply::Handled(); })
             ]
+            + SHorizontalBox::Slot().AutoWidth().Padding(5, 0, 0, 0)
+            [
+                SNew(SButton).Text(LOCTEXT("ClearBtn", "清空参数行"))
+                .OnClicked_Lambda([this]() { ClearAllMappings(); return FReply::Handled(); })
+                .ToolTipText(LOCTEXT("ClearBtnTip", "移除所有映射行"))
+            ]
             + SHorizontalBox::Slot().FillWidth(1.0f).HAlign(HAlign_Right)
             [
                 SNew(SButton).Text(LOCTEXT("RunBtn", "开始转移参数"))
@@ -252,8 +326,14 @@ void SMaterialTttributeTransfer::Construct(const FArguments& InArgs)
             ]
         ]
     ];
- 
-    AddMappingRow();
+
+    if (ConfigComboBox.IsValid() && CurrentConfig.IsValid())
+    {
+        ConfigComboBox->SetSelectedItem(CurrentConfig);
+    }
+    SwitchToConfig(CurrentConfig);
+    AppendLog(FString::Printf(TEXT("已载入 %d 套配置，当前: %s"), Configs.Num(),
+        CurrentConfig.IsValid() ? *CurrentConfig->ConfigName : TEXT("无")));
 }
  
 void SMaterialTttributeTransfer::AppendLog(const FString& InLog)
@@ -309,76 +389,395 @@ TSharedRef<SWidget> SMaterialTttributeTransfer::CreateMappingRowWidget(TSharedPt
             SNew(SEditableTextBox)
             .Text_Lambda([InPair]() { return FText::FromString(InPair->SourceParamName); })
             .OnTextCommitted_Lambda([InPair](const FText& T, ETextCommit::Type) { InPair->SourceParamName = T.ToString(); })
+        ]
+        + SHorizontalBox::Slot().AutoWidth().Padding(2, 2, 0, 2)
+        [
+            SNew(SButton)
+            .Text(LOCTEXT("RowDelBtn", "删除"))
+            .ButtonStyle(FAppStyle::Get(), "Button")
+            .ContentPadding(FMargin(4, 2))
+            .OnClicked_Lambda([this, InPair]() { RemoveMappingRow(InPair); return FReply::Handled(); })
+            .ToolTipText(LOCTEXT("RowDelTip", "删除这一行映射"))
         ];
 }
  
-void SMaterialTttributeTransfer::SaveSettings()
+void SMaterialTttributeTransfer::LoadConfigDataFromCurrent()
 {
-    TSharedPtr<FJsonObject> RootObject = MakeShareable(new FJsonObject());
-    RootObject->SetStringField(TEXT("MasterMaterial"), TargetMasterMaterial.IsValid() ? TargetMasterMaterial->GetPathName() : TEXT(""));
-    RootObject->SetStringField(TEXT("TargetSavePath"), TargetSavePath);
-    RootObject->SetBoolField(TEXT("SaveToRespectiveFolders"), bSaveToRespectiveFolders);
-    RootObject->SetBoolField(TEXT("ForceGenerateMaterial"), bForceGenerateMaterial);
-    RootObject->SetBoolField(TEXT("ForceGenerateInstance"), bForceGenerateInstance);
- 
-    TArray<TSharedPtr<FJsonValue>> JsonArray;
-    for (const auto& Pair : MappingList)
+    if (!CurrentConfig.IsValid())
     {
-        TSharedPtr<FJsonObject> Obj = MakeShareable(new FJsonObject());
-        Obj->SetStringField(TEXT("T"), Pair->TargetParamName);
-        Obj->SetStringField(TEXT("S"), Pair->SourceParamName);
-        JsonArray.Add(MakeShareable(new FJsonValueObject(Obj)));
-    }
-    RootObject->SetArrayField(TEXT("Mappings"), JsonArray);
- 
-    FString OutputString;
-    TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
-    if (FJsonSerializer::Serialize(RootObject.ToSharedRef(), Writer))
-    {
-        FString FullPath = GetFullConfigPath();
-        if (FFileHelper::SaveStringToFile(OutputString, *FullPath))
-            AppendLog(TEXT("配置已保存: ") + FullPath);
-    }
-}
- 
-void SMaterialTttributeTransfer::LoadSettings()
-{
-    FString FullPath = GetFullConfigPath();
-    FString JsonString;
-    if (!FFileHelper::LoadFileToString(JsonString, *FullPath)) { AppendLog(TEXT("找不到配置文件: ") + FullPath); return; }
- 
-    TSharedPtr<FJsonObject> RootObject;
-    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
-    if (FJsonSerializer::Deserialize(Reader, RootObject) && RootObject.IsValid())
-    {
-        FString MatPath = RootObject->GetStringField(TEXT("MasterMaterial"));
-        TargetMasterMaterial = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, *MatPath));
-        TargetSavePath = RootObject->GetStringField(TEXT("TargetSavePath"));
-        if (TargetSavePath.IsEmpty()) TargetSavePath = TEXT("/Game/");
-
-        if (RootObject->HasField(TEXT("SaveToRespectiveFolders")))
-            bSaveToRespectiveFolders = RootObject->GetBoolField(TEXT("SaveToRespectiveFolders"));
-
-        if (RootObject->HasField(TEXT("ForceGenerateMaterial")))
-            bForceGenerateMaterial = RootObject->GetBoolField(TEXT("ForceGenerateMaterial"));
-        if (RootObject->HasField(TEXT("ForceGenerateInstance")))
-            bForceGenerateInstance = RootObject->GetBoolField(TEXT("ForceGenerateInstance"));
- 
         MappingList.Empty();
-        const TArray<TSharedPtr<FJsonValue>>* JsonArray;
-        if (RootObject->TryGetArrayField(TEXT("Mappings"), JsonArray))
+        TargetMasterMaterial = nullptr;
+        TargetSavePath = TEXT("/Game/");
+        bSaveToRespectiveFolders = true;
+        bForceGenerateMaterial = false;
+        bForceGenerateInstance = false;
+        RefreshMappingUI();
+        return;
+    }
+
+    TargetMasterMaterial = CurrentConfig->MasterMaterialPath.IsEmpty()
+        ? nullptr
+        : Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, *CurrentConfig->MasterMaterialPath));
+    TargetSavePath = CurrentConfig->TargetSavePath.IsEmpty() ? TEXT("/Game/") : CurrentConfig->TargetSavePath;
+    bSaveToRespectiveFolders = CurrentConfig->bSaveToRespectiveFolders;
+    bForceGenerateMaterial = CurrentConfig->bForceGenerateMaterial;
+    bForceGenerateInstance = CurrentConfig->bForceGenerateInstance;
+
+    MappingList = DeepCopyMappings(CurrentConfig->Mappings);
+    if (MappingList.Num() == 0) AddMappingRow();
+    else RefreshMappingUI();
+}
+
+void SMaterialTttributeTransfer::WriteConfigDataToCurrent()
+{
+    if (!CurrentConfig.IsValid()) return;
+    CurrentConfig->MasterMaterialPath = TargetMasterMaterial.IsValid() ? TargetMasterMaterial->GetPathName() : TEXT("");
+    CurrentConfig->TargetSavePath = TargetSavePath;
+    CurrentConfig->bSaveToRespectiveFolders = bSaveToRespectiveFolders;
+    CurrentConfig->bForceGenerateMaterial = bForceGenerateMaterial;
+    CurrentConfig->bForceGenerateInstance = bForceGenerateInstance;
+    CurrentConfig->Mappings = DeepCopyMappings(MappingList);
+}
+
+TArray<TSharedPtr<FParamMappingPair>> SMaterialTttributeTransfer::DeepCopyMappings(const TArray<TSharedPtr<FParamMappingPair>>& InMappings) const
+{
+    TArray<TSharedPtr<FParamMappingPair>> Out;
+    for (const TSharedPtr<FParamMappingPair>& Pair : InMappings)
+    {
+        if (!Pair.IsValid()) continue;
+        TSharedPtr<FParamMappingPair> Cloned = MakeShared<FParamMappingPair>();
+        Cloned->TargetParamName = Pair->TargetParamName;
+        Cloned->SourceParamName = Pair->SourceParamName;
+        Out.Add(Cloned);
+    }
+    return Out;
+}
+
+void SMaterialTttributeTransfer::LoadAllConfigsFromJson()
+{
+    // 升级兼容：把老版本直接放在根目录的 Configurations.json 搬到新的工具子目录
+    FToolUserSave::MigrateLegacyFile(TEXT("MaterialAttributeTransfer"), ConfigJsonFileName);
+    Configs.Empty();
+
+    FString JsonString;
+    bool bLoaded = FFileHelper::LoadFileToString(JsonString, *GetConfigJsonPath());
+    if (bLoaded)
+    {
+        TSharedPtr<FJsonObject> RootObject;
+        const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+        if (FJsonSerializer::Deserialize(Reader, RootObject) && RootObject.IsValid())
         {
-            for (const auto& Val : *JsonArray)
+            const TArray<TSharedPtr<FJsonValue>>* ConfigsArray = nullptr;
+            if (RootObject->TryGetArrayField(TEXT("Configs"), ConfigsArray) && ConfigsArray)
             {
-                TSharedPtr<FJsonObject> Obj = Val->AsObject();
-                TSharedPtr<FParamMappingPair> NewPair = MakeShared<FParamMappingPair>();
-                NewPair->TargetParamName = Obj->GetStringField(TEXT("T"));
-                NewPair->SourceParamName = Obj->GetStringField(TEXT("S"));
-                MappingList.Add(NewPair);
+                for (const TSharedPtr<FJsonValue>& Val : *ConfigsArray)
+                {
+                    const TSharedPtr<FJsonObject>* Obj = nullptr;
+                    if (!Val.IsValid() || !Val->TryGetObject(Obj) || !Obj) continue;
+
+                    TSharedPtr<FMaterialTransferConfigItem> NewCfg = MakeShared<FMaterialTransferConfigItem>();
+                    NewCfg->ConfigName = (*Obj)->GetStringField(TEXT("Name"));
+                    NewCfg->MasterMaterialPath = (*Obj)->GetStringField(TEXT("MasterMaterial"));
+                    NewCfg->TargetSavePath = (*Obj)->GetStringField(TEXT("TargetSavePath"));
+                    if (NewCfg->TargetSavePath.IsEmpty()) NewCfg->TargetSavePath = TEXT("/Game/");
+                    if ((*Obj)->HasField(TEXT("SaveToRespectiveFolders")))
+                        NewCfg->bSaveToRespectiveFolders = (*Obj)->GetBoolField(TEXT("SaveToRespectiveFolders"));
+                    if ((*Obj)->HasField(TEXT("ForceGenerateMaterial")))
+                        NewCfg->bForceGenerateMaterial = (*Obj)->GetBoolField(TEXT("ForceGenerateMaterial"));
+                    if ((*Obj)->HasField(TEXT("ForceGenerateInstance")))
+                        NewCfg->bForceGenerateInstance = (*Obj)->GetBoolField(TEXT("ForceGenerateInstance"));
+
+                    const TArray<TSharedPtr<FJsonValue>>* MappingsArray = nullptr;
+                    if ((*Obj)->TryGetArrayField(TEXT("Mappings"), MappingsArray) && MappingsArray)
+                    {
+                        for (const TSharedPtr<FJsonValue>& M : *MappingsArray)
+                        {
+                            const TSharedPtr<FJsonObject>* MObj = nullptr;
+                            if (!M.IsValid() || !M->TryGetObject(MObj) || !MObj) continue;
+                            TSharedPtr<FParamMappingPair> Pair = MakeShared<FParamMappingPair>();
+                            Pair->TargetParamName = (*MObj)->GetStringField(TEXT("T"));
+                            Pair->SourceParamName = (*MObj)->GetStringField(TEXT("S"));
+                            NewCfg->Mappings.Add(Pair);
+                        }
+                    }
+                    NewCfg->bIsSaved = true;   // 能从 JSON 读出来的，说明之前已经存过了
+                    Configs.Add(NewCfg);
+                }
             }
         }
-        RefreshMappingUI();
-        AppendLog(TEXT("配置加载成功."));
+    }
+
+    // 新文件为空/不存在：尝试把老版本"每个配置一个独立文件"的 DefaultSettings.json 导入为新格式第一套
+    if (Configs.Num() == 0)
+    {
+        const FString LegacyPath = GetSaveDirectory() + TEXT("DefaultSettings.json");
+        FString LegacyJson;
+        if (FFileHelper::LoadFileToString(LegacyJson, *LegacyPath))
+        {
+            TSharedPtr<FJsonObject> RootObject;
+            const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(LegacyJson);
+            if (FJsonSerializer::Deserialize(Reader, RootObject) && RootObject.IsValid())
+            {
+                TSharedPtr<FMaterialTransferConfigItem> NewCfg = MakeShared<FMaterialTransferConfigItem>();
+                NewCfg->ConfigName = TEXT("默认");
+                NewCfg->MasterMaterialPath = RootObject->GetStringField(TEXT("MasterMaterial"));
+                NewCfg->TargetSavePath = RootObject->GetStringField(TEXT("TargetSavePath"));
+                if (NewCfg->TargetSavePath.IsEmpty()) NewCfg->TargetSavePath = TEXT("/Game/");
+                if (RootObject->HasField(TEXT("SaveToRespectiveFolders")))
+                    NewCfg->bSaveToRespectiveFolders = RootObject->GetBoolField(TEXT("SaveToRespectiveFolders"));
+                if (RootObject->HasField(TEXT("ForceGenerateMaterial")))
+                    NewCfg->bForceGenerateMaterial = RootObject->GetBoolField(TEXT("ForceGenerateMaterial"));
+                if (RootObject->HasField(TEXT("ForceGenerateInstance")))
+                    NewCfg->bForceGenerateInstance = RootObject->GetBoolField(TEXT("ForceGenerateInstance"));
+
+                const TArray<TSharedPtr<FJsonValue>>* MappingsArray = nullptr;
+                if (RootObject->TryGetArrayField(TEXT("Mappings"), MappingsArray) && MappingsArray)
+                {
+                    for (const auto& M : *MappingsArray)
+                    {
+                        const TSharedPtr<FJsonObject>* MObj = nullptr;
+                        if (M.IsValid() && M->TryGetObject(MObj) && MObj)
+                        {
+                            TSharedPtr<FParamMappingPair> Pair = MakeShared<FParamMappingPair>();
+                            Pair->TargetParamName = (*MObj)->GetStringField(TEXT("T"));
+                            Pair->SourceParamName = (*MObj)->GetStringField(TEXT("S"));
+                            NewCfg->Mappings.Add(Pair);
+                        }
+                    }
+                }
+                NewCfg->bIsSaved = true;
+                Configs.Add(NewCfg);
+
+                // 写回新格式后删除旧文件，避免遗留
+                if (WriteAllConfigsToJson())
+                {
+                    IPlatformFile& PF = FPlatformFileManager::Get().GetPlatformFile();
+                    PF.DeleteFile(*LegacyPath);
+                }
+            }
+        }
+    }
+}
+
+bool SMaterialTttributeTransfer::WriteAllConfigsToJson()
+{
+    const TSharedRef<FJsonObject> RootObject = MakeShared<FJsonObject>();
+    TArray<TSharedPtr<FJsonValue>> ConfigsArray;
+
+    for (const TSharedPtr<FMaterialTransferConfigItem>& Cfg : Configs)
+    {
+        if (!Cfg.IsValid()) continue;
+
+        const TSharedRef<FJsonObject> CfgObj = MakeShared<FJsonObject>();
+        CfgObj->SetStringField(TEXT("Name"), Cfg->ConfigName);
+        CfgObj->SetStringField(TEXT("MasterMaterial"), Cfg->MasterMaterialPath);
+        CfgObj->SetStringField(TEXT("TargetSavePath"), Cfg->TargetSavePath);
+        CfgObj->SetBoolField(TEXT("SaveToRespectiveFolders"), Cfg->bSaveToRespectiveFolders);
+        CfgObj->SetBoolField(TEXT("ForceGenerateMaterial"), Cfg->bForceGenerateMaterial);
+        CfgObj->SetBoolField(TEXT("ForceGenerateInstance"), Cfg->bForceGenerateInstance);
+
+        TArray<TSharedPtr<FJsonValue>> MappingsArray;
+        for (const TSharedPtr<FParamMappingPair>& Pair : Cfg->Mappings)
+        {
+            if (!Pair.IsValid()) continue;
+            const TSharedRef<FJsonObject> PairObj = MakeShared<FJsonObject>();
+            PairObj->SetStringField(TEXT("T"), Pair->TargetParamName);
+            PairObj->SetStringField(TEXT("S"), Pair->SourceParamName);
+            MappingsArray.Add(MakeShared<FJsonValueObject>(PairObj));
+        }
+        CfgObj->SetArrayField(TEXT("Mappings"), MappingsArray);
+
+        ConfigsArray.Add(MakeShared<FJsonValueObject>(CfgObj));
+    }
+
+    RootObject->SetArrayField(TEXT("Configs"), ConfigsArray);
+
+    FString OutputString;
+    const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+    if (!FJsonSerializer::Serialize(RootObject, Writer)) return false;
+
+    return FFileHelper::SaveStringToFile(OutputString, *GetConfigJsonPath());
+}
+
+void SMaterialTttributeTransfer::SaveCurrentConfigToJson()
+{
+    if (!CurrentConfig.IsValid())
+    {
+        AppendLog(TEXT("保存失败: 当前没有可保存的配置"));
+        return;
+    }
+
+    const FString TrimmedName = EditingConfigName.TrimStartAndEnd();
+    if (TrimmedName.IsEmpty())
+    {
+        AppendLog(TEXT("保存失败: 配置名称不能为空"));
+        return;
+    }
+
+    // 先看是不是已经有一套同名（不区分大小写）
+    TSharedPtr<FMaterialTransferConfigItem> Existing;
+    for (const TSharedPtr<FMaterialTransferConfigItem>& Cfg : Configs)
+    {
+        if (Cfg.IsValid() && Cfg->ConfigName.Equals(TrimmedName, ESearchCase::IgnoreCase))
+        {
+            Existing = Cfg;
+            break;
+        }
+    }
+
+    // 先把当前面板数据写回当前配置对象
+    WriteConfigDataToCurrent();
+
+    if (Existing.IsValid())
+    {
+        // 同名：直接覆盖这套的内容（保留它这个对象，不产生重复项）
+        Existing->MasterMaterialPath = CurrentConfig->MasterMaterialPath;
+        Existing->TargetSavePath = CurrentConfig->TargetSavePath;
+        Existing->bSaveToRespectiveFolders = CurrentConfig->bSaveToRespectiveFolders;
+        Existing->bForceGenerateMaterial = CurrentConfig->bForceGenerateMaterial;
+        Existing->bForceGenerateInstance = CurrentConfig->bForceGenerateInstance;
+        Existing->Mappings = DeepCopyMappings(CurrentConfig->Mappings);
+        Existing->bIsSaved = true;
+
+        // 当前正在编的是另一套"还没存过"的（比如默认/新建空配置），已经被合并，从列表移除免得留空壳
+        if (CurrentConfig != Existing && !CurrentConfig->bIsSaved)
+        {
+            Configs.Remove(CurrentConfig);
+        }
+        CurrentConfig = Existing;
+    }
+    else if (!CurrentConfig->bIsSaved)
+    {
+        // 当前是"还没存过"的新建/默认配置：直接给它起这个名字存，不重复追加
+        CurrentConfig->ConfigName = TrimmedName;
+        CurrentConfig->bIsSaved = true;
+        if (!Configs.Contains(CurrentConfig)) Configs.Add(CurrentConfig);
+    }
+    else
+    {
+        // 当前这套已经存过、但这次换了个新名字：就在文件里另存一套
+        TSharedPtr<FMaterialTransferConfigItem> NewCfg = MakeShared<FMaterialTransferConfigItem>();
+        NewCfg->ConfigName = TrimmedName;
+        NewCfg->MasterMaterialPath = CurrentConfig->MasterMaterialPath;
+        NewCfg->TargetSavePath = CurrentConfig->TargetSavePath;
+        NewCfg->bSaveToRespectiveFolders = CurrentConfig->bSaveToRespectiveFolders;
+        NewCfg->bForceGenerateMaterial = CurrentConfig->bForceGenerateMaterial;
+        NewCfg->bForceGenerateInstance = CurrentConfig->bForceGenerateInstance;
+        NewCfg->Mappings = DeepCopyMappings(CurrentConfig->Mappings);
+        NewCfg->bIsSaved = true;
+        Configs.Add(NewCfg);
+        CurrentConfig = NewCfg;
+    }
+
+    if (ConfigComboBox.IsValid()) { ConfigComboBox->RefreshOptions(); }
+    SwitchToConfig(CurrentConfig);
+
+    if (WriteAllConfigsToJson())
+    {
+        AppendLog(FString::Printf(TEXT("已保存配置 %s ，文件内共 %d 套 -> %s"),
+            *CurrentConfig->ConfigName, Configs.Num(), *GetConfigJsonPath()));
+    }
+    else
+    {
+        AppendLog(TEXT("保存失败: 无法写入 ") + GetConfigJsonPath());
+    }
+}
+
+void SMaterialTttributeTransfer::DeleteConfig(TSharedPtr<FMaterialTransferConfigItem> Target)
+{
+    if (!Target.IsValid()) return;
+
+    const FString RemovedName = Target->ConfigName;
+    Configs.Remove(Target);
+
+    // 删的要是正在编的这套，就自动切到第一套（空了则给一套默认）
+    if (CurrentConfig == Target)
+    {
+        if (Configs.Num() > 0)
+        {
+            SwitchToConfig(Configs[0]);
+        }
+        else
+        {
+            CurrentConfig = nullptr;
+            SeedDefaultConfig();
+        }
+    }
+
+    if (WriteAllConfigsToJson())
+    {
+        AppendLog(FString::Printf(TEXT("已删除配置 %s ，剩余 %d 套"), *RemovedName, Configs.Num()));
+    }
+    else
+    {
+        AppendLog(TEXT("删除后写回 JSON 失败"));
+    }
+
+    if (ConfigComboBox.IsValid())
+    {
+        ConfigComboBox->RefreshOptions();
+        if (CurrentConfig.IsValid()) ConfigComboBox->SetSelectedItem(CurrentConfig);
+    }
+}
+
+void SMaterialTttributeTransfer::SeedDefaultConfig()
+{
+    TSharedPtr<FMaterialTransferConfigItem> Def = MakeShared<FMaterialTransferConfigItem>();
+    Def->ConfigName = TEXT("默认");
+    Def->TargetSavePath = TEXT("/Game/");
+    Def->bSaveToRespectiveFolders = true;
+    Def->bIsSaved = false;
+    Configs.Add(Def);
+    SwitchToConfig(Def);
+}
+
+// ============================ 配置下拉框 ============================
+
+TSharedRef<SWidget> SMaterialTttributeTransfer::OnGenerateConfigComboWidget(TSharedPtr<FMaterialTransferConfigItem> InItem)
+{
+    const FString Label = InItem.IsValid() ? InItem->ConfigName : TEXT("<空>");
+
+    return SNew(SHorizontalBox)
+        + SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center)
+        [ SNew(STextBlock).Text(FText::FromString(Label)) ]
+        // 下拉项右边带个删除按钮
+        + SHorizontalBox::Slot().AutoWidth().Padding(8, 0, 0, 0)
+        [
+            SNew(SButton)
+            .Text(LOCTEXT("DeleteConfigBtn", "删除"))
+            .ToolTipText(LOCTEXT("DeleteConfigBtnTip", "从 JSON 中删除这套配置"))
+            .OnClicked_Lambda([this, InItem]()
+            {
+                if (ConfigComboBox.IsValid()) { ConfigComboBox->SetIsOpen(false); }
+                DeleteConfig(InItem);
+                return FReply::Handled();
+            })
+        ];
+}
+
+void SMaterialTttributeTransfer::OnConfigSelectionChanged(TSharedPtr<FMaterialTransferConfigItem> NewSelection, ESelectInfo::Type SelectInfo)
+{
+    // 代码里直接切（比如删完自动跳到第一套）会走到这里，这种就不算"用户手选"，跳过日志
+    if (SelectInfo == ESelectInfo::Direct || !NewSelection.IsValid() || NewSelection == CurrentConfig) return;
+
+    SwitchToConfig(NewSelection);
+    AppendLog(FString::Printf(TEXT("已切换到配置 %s"), *NewSelection->ConfigName));
+}
+
+FText SMaterialTttributeTransfer::GetCurrentConfigNameText() const
+{
+    return FText::FromString(CurrentConfig.IsValid() ? CurrentConfig->ConfigName : TEXT("<无>"));
+}
+
+void SMaterialTttributeTransfer::SwitchToConfig(TSharedPtr<FMaterialTransferConfigItem> Target)
+{
+    CurrentConfig = Target;
+    EditingConfigName = Target.IsValid() ? Target->ConfigName : FString();
+    LoadConfigDataFromCurrent();
+
+    if (ConfigComboBox.IsValid() && Target.IsValid())
+    {
+        ConfigComboBox->SetSelectedItem(Target);
     }
 }
  
@@ -621,12 +1020,9 @@ FString SMaterialTttributeTransfer::GetSaveDirectory() const {
     return FToolUserSave::GetToolSaveDir(TEXT("MaterialAttributeTransfer"));
 }
  
-FString SMaterialTttributeTransfer::GetFullConfigPath() const {
-    FString FileName = SaveConfigFileName;
-    if (!FileName.EndsWith(TEXT(".json"))) FileName += TEXT(".json");
-    // 升级兼容：把老版本直接放在根目录的配置文件搬到新的工具子目录
-    FToolUserSave::MigrateLegacyFile(TEXT("MaterialAttributeTransfer"), FileName);
-    return GetSaveDirectory() + FileName;
+FString SMaterialTttributeTransfer::GetConfigJsonPath() const {
+    // 所有配置都追加在同一个 JSON 文件里（仿自动前缀）
+    return GetSaveDirectory() + ConfigJsonFileName;
 }
  
 void SMaterialTttributeTransfer::RefreshMappingUI() {
@@ -640,6 +1036,26 @@ void SMaterialTttributeTransfer::AddMappingRow() {
     TSharedPtr<FParamMappingPair> NP = MakeShared<FParamMappingPair>();
     MappingList.Add(NP);
     if (MappingContainer.IsValid()) MappingContainer->AddSlot().AutoHeight()[CreateMappingRowWidget(NP)];
+}
+
+void SMaterialTttributeTransfer::RemoveMappingRow(TSharedPtr<FParamMappingPair> InPair) {
+    if (!InPair.IsValid()) return;
+    int32 Idx = MappingList.IndexOfByKey(InPair);
+    if (Idx != INDEX_NONE) {
+        MappingList.RemoveAt(Idx);
+        AppendLog(FString::Printf(TEXT("已删除一条映射行，剩余 %d 行。"), MappingList.Num()));
+    }
+    RefreshMappingUI();
+}
+
+void SMaterialTttributeTransfer::ClearAllMappings() {
+    if (MappingList.Num() == 0) {
+        AppendLog(TEXT("映射行已为空，无需清空。"));
+        return;
+    }
+    MappingList.Empty();
+    AppendLog(TEXT("已清空所有映射行。"));
+    RefreshMappingUI();
 }
  
 void SMaterialTttributeTransfer::OnMasterMaterialChanged(const FAssetData& AssetData) { TargetMasterMaterial = Cast<UMaterialInterface>(AssetData.GetAsset()); }

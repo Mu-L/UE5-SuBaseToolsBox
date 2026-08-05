@@ -7,6 +7,7 @@
         "Includes": [
             "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\toolsbox\\definitions.toolsbox.h",
             "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\source\\toolsbox\\public\\tools\\tools.h",
+            "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\source\\toolsbox\\public\\slate_assist\\languagesstitch.h",
             "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\source\\toolsbox\\public\\tools\\autoprefix\\autoprefix.h",
             "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\source\\toolsbox\\public\\tools\\blanktemplatetool\\blanktemplatetool.h",
             "f:\\ueworkspace\\ue5.8project\\subasetoolsbox\\plugins\\toolsbox\\source\\toolsbox\\public\\tools\\intelligentimportofmodelsandmaterials\\import_mm.h",

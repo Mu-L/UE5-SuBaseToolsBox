@@ -49,7 +49,7 @@ const TSet<FTool> Tools::Get_ToolsData()
 
 		FTool(
 			TEXT("蓝图变量批量复制"),
-			LOCTEXT("ToolDetail", "多选源蓝图的变量（函数，宏等），复制/剪切后一次性粘贴到另一个蓝图"),
+			LOCTEXT("ToolDetail", "多选两个蓝图的变量（函数，宏等），复制/剪切后一次性粘贴到另一个蓝图"),
 			TEXT("ToolsBox.Image_Tomori"),
 			TEXT("SVariableCopierTab"),
 			TEXT("ToolsBox.Icon_Anon2"),
@@ -89,7 +89,7 @@ const TSet<FTool> Tools::Get_ToolsData()
 		FTool(
 			TEXT("物理摆放"),
 			LOCTEXT("ToolDetail", "选中多个场景物体，启动物理自由掉落摆放，并支持保存/回溯摆位"),
-			TEXT("ToolsBox.Image_Anon2"),
+			TEXT("ToolsBox.Image_AnonBigHead"),
 			TEXT("SPhysicsPlacerTab"),
 			TEXT("ToolsBox.Icon_Anon2"),
 			TEXT("https://space.bilibili.com/391627131/"),

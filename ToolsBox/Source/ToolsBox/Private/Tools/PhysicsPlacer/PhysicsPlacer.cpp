@@ -103,10 +103,10 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 				.AutoWrapText(true)
 				.Text(LOCTEXT("Help",
 					"物理摆放工具：\n"
-					"  1. 进入「生成模式」后，在视口里移动光标会从光标向前检测地面，点击即在该处生成物理物体（带偏移，默认上方 2 米掉落）。Alt+点击不生成。\n"
-					"  2. 生成模式支持多个网格：从内容浏览器把 StaticMesh 拖到「生成网格列表」即可加入（一次可拖多个，仿植被模式），或点「+ 添加网格」加默认立方体；每行只有正方形预览 + 左上角勾选框（控制该网格是否参与生成）+ 移除按钮；勾选「随机生成网格」则点生成时随机选一个，否则按列表顺序轮转；「随机偏移系数」给生成位置叠加随机抖动；「模拟速度系数」越小物体掉落越慢（如 0.5 倍≈4 秒落地）。\n"
-					"  3. 或在视口里框选/点选若干已有物体，点「获取编辑器选中」加入下方列表，再「启动模拟」让它们自由掉落；「停止模拟」停下并保留当前位置。\n"
-					"  4. 模拟前/中/后都可「保存当前位置」记成一份带名字的摆位；不理想时用「位置回溯」套回。\n"
+					"  1. 进入  生成模式  后，在视口里移动光标会从光标向前检测地面，点击即在该处生成物理物体（带偏移，默认上方 2 米掉落）。Alt+点击不生成。\n"
+					"  2. 生成模式支持多个网格：从内容浏览器把 StaticMesh 拖到  生成网格列表  即可加入\n"
+					"  3. 或在视口里框选/点选若干物体对象，点 获取编辑器选中 加入下方列表，再 启动模拟 让它们自由掉落；停止模拟 停下并保留当前位置。\n"
+					"  4. 模拟前/中/后都可  保存当前位置  记成一份带名字的摆位；不理想时用 位置回溯 返回保存时位置。\n"
 					"  （物体需带网格等 PrimitiveComponent；模拟时物体会被设为可移动并开启重力）"))
 			]
 		]
@@ -120,7 +120,7 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 
 				+ SVerticalBox::Slot().AutoHeight().Padding(5)
 				[
-					SNew(STextBlock).Text(LOCTEXT("SelTitle", "选择场景物体（可多选）"))
+					SNew(STextBlock).Text(LOCTEXT("SelTitle", "选择场景物体"))
 				]
 
 				+ SVerticalBox::Slot().AutoHeight().Padding(5, 0)
@@ -167,7 +167,8 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 
 				+ SVerticalBox::Slot().AutoHeight().Padding(5)
 				[
-					SNew(STextBlock).Text(LOCTEXT("SpawnTitle", "生成模式（光标检测地面，点击生成物理物体）"))
+					SNew(STextBlock).Text(LOCTEXT("SpawnTitle", "生成模式"))
+					.ToolTipText(LOCTEXT("SpawnTip","光标检测地面，点击生成物理物体"))
 				]
 
 				+ SVerticalBox::Slot().AutoHeight().Padding(5, 0)
@@ -179,7 +180,7 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 						.Text_Lambda([this]()
 						{
 							return bSpawnMode
-								? LOCTEXT("ExitSpawnBtn", "退出生成模式（点击地面生成）")
+								? LOCTEXT("ExitSpawnBtn", "退出生成模式")
 								: LOCTEXT("EnterSpawnBtn", "进入生成模式");
 						})
 						.ButtonStyle(FAppStyle::Get(), "PrimaryButton")
@@ -191,7 +192,8 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 		// ---- 生成网格列表（可多选，像刷草模式的植被列表；支持从内容浏览器拖入）----
 		+ SVerticalBox::Slot().AutoHeight().Padding(5, 4, 5, 0)
 		[
-			SNew(STextBlock).Text(LOCTEXT("MeshListTitle", "生成网格列表（可多选，勾选框控制是否生成；可从内容浏览器拖入网格）"))
+			SNew(STextBlock).Text(LOCTEXT("MeshListTitle", "生成网格列表"))
+			.ToolTipText(LOCTEXT("MeshListTip", "可多选，勾选框控制是否生成；可从内容浏览器拖入网格"))
 		]
 
 		+ SVerticalBox::Slot().FillHeight(1.0f).Padding(5, 0)
@@ -227,12 +229,13 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 						SNew(SButton)
 						.Text(LOCTEXT("AddMeshBtn", "+ 添加网格"))
 						.ToolTipText(LOCTEXT("AddMeshBtnTip", "追加一个默认立方体条目（也可从内容浏览器拖入具体网格）"))
+
 						.OnClicked_Lambda([this]() { AddSpawnMeshEntry(); return FReply::Handled(); })
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.0f).VAlign(VAlign_Center).Padding(6, 0, 0, 0)
 					[
 						SNew(STextBlock)
-						.Text(LOCTEXT("DropHint", "提示：从内容浏览器把 StaticMesh 拖到这里即可加入生成列表"))
+						.Text(LOCTEXT("DropHint", "可从内容浏览器中拖入添加"))
 						.AutoWrapText(true)
 						.ColorAndOpacity(FSlateColor::UseSubduedForeground())
 					]
@@ -257,7 +260,8 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 				]
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(4, 0, 0, 0)
 				[
-					SNew(STextBlock).Text(LOCTEXT("RandomSpawnTxt", "随机生成网格（不勾选则按列表顺序轮转）"))
+					SNew(STextBlock).Text(LOCTEXT("RandomSpawnTxt", "随机生成网格"))
+					.ToolTipText(LOCTEXT("RandomSpawnTip", "不勾选则按列表顺序生成"))
 				]
 			]
 
@@ -267,6 +271,7 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
 					SNew(STextBlock).Text(LOCTEXT("RandOffLabel", "随机偏移系数: ")).MinDesiredWidth(100)
+					.ToolTipText(LOCTEXT("RandOffUnit", "（给生成位置叠加 ±该值的随机抖动，单位厘米）"))
 				]
 				+ SHorizontalBox::Slot().AutoWidth()
 				[
@@ -276,10 +281,7 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 					.OnValueChanged_Lambda([this](float V) { OnRandomOffsetChanged(V); })
 					.MinDesiredWidth(80)
 				]
-				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(4, 0, 0, 0)
-				[
-					SNew(STextBlock).Text(LOCTEXT("RandOffUnit", "（给生成位置叠加 ±该值的随机抖动，单位厘米）"))
-				]
+				
 			]
 
 			+ SVerticalBox::Slot().AutoHeight().Padding(5, 2, 5, 0)
@@ -305,7 +307,7 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 			// ---- 基准偏移（相对命中点的固定偏移）----
 			+ SVerticalBox::Slot().AutoHeight().Padding(5, 8, 5, 0)
 			[
-				SNew(STextBlock).Text(LOCTEXT("BaseOffTitle", "基准偏移(米)（默认上方 2 米掉落）"))
+				SNew(STextBlock).Text(LOCTEXT("BaseOffTitle", "基准偏移(米)"))
 			]
 
 			+ SVerticalBox::Slot().AutoHeight().Padding(5, 2, 5, 0)
@@ -337,7 +339,7 @@ void SPhysicsPlacer::Construct(const FArguments& InArgs)
 				]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(8, 0, 4, 0)
 				[
-					SNew(STextBlock).Text(LOCTEXT("OffZ", "Z(上方)"))
+					SNew(STextBlock).Text(LOCTEXT("OffZ", "Z"))
 				]
 				+ SHorizontalBox::Slot().AutoWidth()
 				[
@@ -689,7 +691,7 @@ void SPhysicsPlacer::StartSimulation()
 {
 	if (bSimulating)
 	{
-		AppendLog(TEXT("已经在模拟中，先点「停止模拟」再重启"));
+		AppendLog(TEXT("已经在模拟中，先点  停止模拟  再重启"));
 		return;
 	}
 	if (SelectedActors.Num() == 0)
@@ -851,7 +853,7 @@ void SPhysicsPlacer::StopSimulation()
 
 	if (bWasSimulating)
 	{
-		AppendLog(TEXT("已停止模拟，物体保持在停止时的位置（不满意可「位置回溯」套回之前保存的摆位）"));
+		AppendLog(TEXT("已停止模拟，物体保持在停止时的位置（不满意可  位置回溯  套回之前保存的摆位）"));
 	}
 }
 
@@ -950,7 +952,7 @@ void SPhysicsPlacer::HandleSpawnedActor(AActor* Spawned)
 	SelectedActors.Add(NewItem);
 	RefreshActorList();
 
-	AppendLog(FString::Printf(TEXT("已生成物体「%s」，列表共 %d 个"), *Spawned->GetActorLabel(), SelectedActors.Num()));
+	AppendLog(FString::Printf(TEXT("已生成物体  %s  ，列表共 %d 个"), *Spawned->GetActorLabel(), SelectedActors.Num()));
 }
 
 void SPhysicsPlacer::GetSpawnRequest(UStaticMesh*& OutMesh, FVector& OutOffset, bool bConsume)
@@ -1363,7 +1365,7 @@ void SPhysicsPlacer::SaveCurrentPose()
 			if (PoseComboBox.IsValid()) { PoseComboBox->RefreshOptions(); PoseComboBox->SetSelectedItem(Pose); }
 			if (WriteAllPosesToJson())
 			{
-				AppendLog(FString::Printf(TEXT("已覆盖存档「%s」，记录 %d 个物体，文件内共 %d 份 -> %s"),
+				AppendLog(FString::Printf(TEXT("已覆盖存档  %s  ，记录 %d 个物体，文件内共 %d 份 -> %s"),
 					*Name, Pose->Actors.Num(), SavedPoses.Num(), *GetFullConfigPath()));
 			}
 			else
@@ -1379,7 +1381,7 @@ void SPhysicsPlacer::SaveCurrentPose()
 	if (PoseComboBox.IsValid()) { PoseComboBox->RefreshOptions(); PoseComboBox->SetSelectedItem(Pose); }
 	if (WriteAllPosesToJson())
 	{
-		AppendLog(FString::Printf(TEXT("已保存存档「%s」，记录 %d 个物体，文件内共 %d 份 -> %s"),
+		AppendLog(FString::Printf(TEXT("已保存存档  %s  ，记录 %d 个物体，文件内共 %d 份 -> %s"),
 			*Name, Pose->Actors.Num(), SavedPoses.Num(), *GetFullConfigPath()));
 	}
 	else
@@ -1404,7 +1406,7 @@ void SPhysicsPlacer::DeletePose(TSharedPtr<FSavedPose> Target)
 
 	if (WriteAllPosesToJson())
 	{
-		AppendLog(FString::Printf(TEXT("已删除存档「%s」，剩余 %d 份"), *RemovedName, SavedPoses.Num()));
+		AppendLog(FString::Printf(TEXT("已删除存档  %s  ，剩余 %d 份"), *RemovedName, SavedPoses.Num()));
 	}
 	else
 	{
@@ -1467,7 +1469,7 @@ void SPhysicsPlacer::RestorePose()
 		}
 	}
 
-	AppendLog(FString::Printf(TEXT("已回溯到存档「%s」，匹配并应用 %d 处物体位置"), *CurrentPose->Name, Applied));
+	AppendLog(FString::Printf(TEXT("已回溯到存档  %s  ，匹配并应用 %d 处物体位置"), *CurrentPose->Name, Applied));
 }
 
 // ============================ 存档下拉框 ============================
@@ -1486,7 +1488,7 @@ void SPhysicsPlacer::OnPoseSelectionChanged(TSharedPtr<FSavedPose> NewSelection,
 	}
 	CurrentPose = NewSelection;
 	EditingPoseName = NewSelection->Name;
-	AppendLog(FString::Printf(TEXT("已选中存档「%s」（%d 个物体）"), *NewSelection->Name, NewSelection->Actors.Num()));
+	AppendLog(FString::Printf(TEXT("已选中存档  %s  （%d 个物体）"), *NewSelection->Name, NewSelection->Actors.Num()));
 }
 
 FText SPhysicsPlacer::GetCurrentPoseNameText() const

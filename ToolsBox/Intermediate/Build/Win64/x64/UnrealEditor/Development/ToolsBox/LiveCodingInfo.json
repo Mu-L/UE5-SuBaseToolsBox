@@ -9,6 +9,7 @@
 			"PerModuleInline.gen.cpp.obj",
 			"OpenToolsBox_Command.cpp.obj",
 			"FIconStyle.cpp.obj",
+			"LanguagesStitch.cpp.obj",
 			"SlateAssistBuildFunctionLibrary.cpp.obj",
 			"ToolsBox.cpp.obj",
 			"AutoPrefix.cpp.obj",

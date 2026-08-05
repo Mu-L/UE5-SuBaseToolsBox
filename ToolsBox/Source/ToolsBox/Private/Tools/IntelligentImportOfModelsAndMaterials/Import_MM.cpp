@@ -58,6 +58,21 @@ void SImport_MM::Construct(const FArguments& InArgs)
                         SNew(STextBlock).Text(LOCTEXT("Title", "批量导入工具")).Font(FCoreStyle::GetDefaultFontStyle("Bold", 16))
                     ]
                     + SVerticalBox::Slot().AutoHeight().Padding(10, 5)
+                   [
+                       SNew(SBorder).BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+                        [
+                            SNew(STextBlock)
+                            .AutoWrapText(true)
+                            .Text(LOCTEXT("AutoPrefixHelp",
+                                "使用方法：\n"
+                                "  1. 选择要导入模型和贴图的文件夹\n"
+                                "  2. 点导入即可\n"
+                                "  还不清楚怎么用可前往作者B站查看使用教程\n"
+                                ))
+			            
+                        ]
+                   ]
+                    + SVerticalBox::Slot().AutoHeight().Padding(10, 5)
                     [
                         SNew(SVerticalBox)
                         + SVerticalBox::Slot().AutoHeight().Padding(0, 2) [

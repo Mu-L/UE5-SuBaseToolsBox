@@ -25,7 +25,7 @@
 
 namespace
 {
-	/** JSON 文件名：所有套装都追加在同一个文件里 */
+	/** JSON 文件名：所有配置都追加在同一个文件里 */
 	const TCHAR* AutoPrefixJsonFileName = TEXT("AutoPrefixSettings.json");
 
 	/**
@@ -45,7 +45,7 @@ namespace
 
 void SAutoPrefix::Construct(const FArguments& InArgs)
 {
-	// 先试着读 JSON；一个套装都没有就先给一套常用默认
+	// 先试着读 JSON；一个配置都没有就先给一套常用默认
 	LoadAllSetsFromJson();
 	if (PrefixSets.Num() == 0)
 	{
@@ -58,7 +58,7 @@ void SAutoPrefix::Construct(const FArguments& InArgs)
 	[
 		SNew(SVerticalBox)
 
-		// ---------- 1. 说明 + 套装管理 ----------
+		// ---------- 1. 说明 + 配置管理 ----------
 		+ SVerticalBox::Slot().AutoHeight().Padding(10, 5)
 		[
 			SNew(SBorder).BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
@@ -71,22 +71,22 @@ void SAutoPrefix::Construct(const FArguments& InArgs)
 					.AutoWrapText(true)
 					.Text(LOCTEXT("AutoPrefixHelp",
 						"使用方法：\n"
-						"  1. 在下方规则表里配置「目标类 -> 前缀」，蓝图按父类匹配，其它资产按资产类型匹配\n"
-						"  2. 填好套装名称后点「保存本套」，会追加写入同一个 JSON（同名则覆盖那一套）\n"
-						"  3. 点「应用到项目设置」把当前这套写进 DefaultGame.ini，即刻生效\n"
+						"  1. 在下方规则表里选择 目标类 及其 前缀\n"
+						"  2. 填好表后可点击 保存配置 保存当前配置\n"
+						"  3. 点 应用到项目设置 把当前这套写进 DefaultGame.ini 并生效\n"
 						"  4. 之后新建蓝图/资产时，重命名输入框的默认值就会变成对应前缀\n"
-						"  5. 改乱了可点「重置默认值」，把当前套装恢复为内置常见前缀（需再点「保存本套」才落盘）\n"
-						"  6. 本插件只接管蓝图/资产的前缀；C++ 类保持引擎原生「New C++ Class」行为，不自动加前缀"))
+						"  5. 改乱了可点 重置默认值 ，把当前配置恢复为默认前缀（需再点 应用到项目设置 才生效）\n"
+						"  6. 本插件只接管蓝图/资产的前缀；C++ 类保持引擎原生"))
 				]
 
-				// 套装下拉框
+				// 配置下拉框
 				+ SVerticalBox::Slot().AutoHeight().Padding(5)
 				[
 					SNew(SHorizontalBox)
 
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 					[
-						SNew(STextBlock).Text(LOCTEXT("SetLabel", "前缀套装: ")).MinDesiredWidth(100)
+						SNew(STextBlock).Text(LOCTEXT("SetLabel", "前缀配置: ")).MinDesiredWidth(100)
 					]
 
 					+ SHorizontalBox::Slot().FillWidth(1.0f)
@@ -103,30 +103,30 @@ void SAutoPrefix::Construct(const FArguments& InArgs)
 					+ SHorizontalBox::Slot().AutoWidth().Padding(5, 0, 0, 0)
 					[
 						SNew(SButton)
-						.Text(LOCTEXT("NewSetBtn", "新建空套装"))
+						.Text(LOCTEXT("NewSetBtn", "新建空配置"))
 						.ToolTipText(LOCTEXT("NewSetBtnTip", "清空当前规则表，从零开始配置一套新的前缀"))
 						.OnClicked_Lambda([this]()
 						{
 							TSharedPtr<FAutoPrefixSetItem> NewSet = MakeShared<FAutoPrefixSetItem>();
-							NewSet->SetName = TEXT("新套装");
+							NewSet->SetName = TEXT("新配置");
 							NewSet->bIsSaved = false;
 							PrefixSets.Add(NewSet);
 							if (SetComboBox.IsValid()) { SetComboBox->RefreshOptions(); }
 							SwitchToSet(NewSet);
-							AppendLog(TEXT("已新建空套装，配置完成后记得点「保存本套」"));
+							AppendLog(TEXT("已新建空配置，配置完成后记得点 保存配置"));
 							return FReply::Handled();
 						})
 					]
 				]
 
-				// 套装名称
+				// 配置名称
 				+ SVerticalBox::Slot().AutoHeight().Padding(5)
 				[
 					SNew(SHorizontalBox)
 
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 					[
-						SNew(STextBlock).Text(LOCTEXT("SetNameLabel", "套装名称: ")).MinDesiredWidth(100)
+						SNew(STextBlock).Text(LOCTEXT("SetNameLabel", "配置名称: ")).MinDesiredWidth(100)
 					]
 
 					+ SHorizontalBox::Slot().FillWidth(1.0f)
@@ -185,8 +185,8 @@ void SAutoPrefix::Construct(const FArguments& InArgs)
 			+ SHorizontalBox::Slot().AutoWidth()
 			[
 				SNew(SButton)
-				.Text(LOCTEXT("SaveSetBtn", "保存本套"))
-				.ToolTipText(LOCTEXT("SaveSetBtnTip", "把当前套装追加保存到 JSON，同名则覆盖该套"))
+				.Text(LOCTEXT("SaveSetBtn", "保存配置"))
+				.ToolTipText(LOCTEXT("SaveSetBtnTip", "把当前配置追加保存到 JSON，同名则覆盖该配置"))
 				.OnClicked_Lambda([this]() { SaveCurrentSetToJson(); return FReply::Handled(); })
 			]
 
@@ -194,7 +194,7 @@ void SAutoPrefix::Construct(const FArguments& InArgs)
 			[
 				SNew(SButton)
 				.Text(LOCTEXT("ReloadBtn", "重新加载"))
-				.ToolTipText(LOCTEXT("ReloadBtnTip", "丢弃当前修改，从 JSON 重新读取全部套装"))
+				.ToolTipText(LOCTEXT("ReloadBtnTip", "丢弃当前修改，从 JSON 重新读取全部配置"))
 				.OnClicked_Lambda([this]()
 				{
 					LoadAllSetsFromJson();
@@ -209,7 +209,7 @@ void SAutoPrefix::Construct(const FArguments& InArgs)
 			[
 				SNew(SButton)
 				.Text(LOCTEXT("ResetBtn", "重置默认值"))
-				.ToolTipText(LOCTEXT("ResetBtnTip", "把当前套装的规则恢复为内置默认（常见 UE 命名约定），仅在内存中生效，点「保存本套」可持久化"))
+				.ToolTipText(LOCTEXT("ResetBtnTip", "把当前配置的规则恢复为内置默认（常见 UE 命名约定），仅在内存中生效，点 保存配置 可持久化"))
 				.OnClicked_Lambda([this]() { ResetCurrentSetToDefaults(); return FReply::Handled(); })
 			]
 
@@ -218,7 +218,7 @@ void SAutoPrefix::Construct(const FArguments& InArgs)
 				SNew(SButton)
 				.Text(LOCTEXT("ApplyBtn", "应用到项目设置"))
 				.ButtonStyle(FAppStyle::Get(), "PrimaryButton") 
-				.ToolTipText(LOCTEXT("ApplyBtnTip", "把当前套装写入 DefaultGame.ini，更新「项目设置 -> 插件 -> AutoPrefix」"))
+				.ToolTipText(LOCTEXT("ApplyBtnTip", "把当前配置写入 DefaultGame.ini，更新 项目设置 -> 插件 -> AutoPrefix "))
 				.OnClicked_Lambda([this]() { ApplyCurrentSetToProjectSettings(); return FReply::Handled(); })
 			]
 
@@ -426,14 +426,14 @@ void SAutoPrefix::SaveCurrentSetToJson()
 {
 	if (!CurrentSet.IsValid())
 	{
-		AppendLog(TEXT("保存失败: 当前没有可保存的套装"));
+		AppendLog(TEXT("保存失败: 当前没有可保存的配置"));
 		return;
 	}
 
 	const FString TrimmedName = EditingSetName.TrimStartAndEnd();
 	if (TrimmedName.IsEmpty())
 	{
-		AppendLog(TEXT("保存失败: 套装名称不能为空"));
+		AppendLog(TEXT("保存失败: 配置名称不能为空"));
 		return;
 	}
 
@@ -454,7 +454,7 @@ void SAutoPrefix::SaveCurrentSetToJson()
 		Existing->Rules = DeepCopyRules(CurrentSet->Rules);
 		Existing->bIsSaved = true;
 
-		// 如果当前正在编的是另一套"还没存过"的（比如默认/新建空套装），
+		// 如果当前正在编的是另一套"还没存过"的（比如默认/新建空配置），
 		// 那它已经被合并进 Existing 了，把它从列表里拿掉，免得留个空壳
 		if (CurrentSet != Existing && !CurrentSet->bIsSaved)
 		{
@@ -464,7 +464,7 @@ void SAutoPrefix::SaveCurrentSetToJson()
 	}
 	else if (!CurrentSet->bIsSaved)
 	{
-		// 当前是"还没存过"的新建/默认套装：直接给它起这个名字存，不重复追加
+		// 当前是"还没存过"的新建/默认配置：直接给它起这个名字存，不重复追加
 		CurrentSet->SetName = TrimmedName;
 		CurrentSet->bIsSaved = true;
 		if (!PrefixSets.Contains(CurrentSet))
@@ -492,7 +492,7 @@ void SAutoPrefix::SaveCurrentSetToJson()
 
 	if (WriteAllSetsToJson())
 	{
-		AppendLog(FString::Printf(TEXT("已保存套装「%s」，文件内共 %d 套 -> %s"),
+		AppendLog(FString::Printf(TEXT("已保存配置 %s ，文件内共 %d 套 -> %s"),
 			*CurrentSet->SetName, PrefixSets.Num(), *GetFullConfigPath()));
 	}
 	else
@@ -537,7 +537,7 @@ void SAutoPrefix::DeleteSet(TSharedPtr<FAutoPrefixSetItem> Target)
 
 	if (WriteAllSetsToJson())
 	{
-		AppendLog(FString::Printf(TEXT("已删除套装「%s」，剩余 %d 套"), *RemovedName, PrefixSets.Num()));
+		AppendLog(FString::Printf(TEXT("已删除配置 %s ，剩余 %d 套"), *RemovedName, PrefixSets.Num()));
 	}
 	else
 	{
@@ -560,7 +560,7 @@ void SAutoPrefix::ApplyCurrentSetToProjectSettings()
 {
 	if (!CurrentSet.IsValid())
 	{
-		AppendLog(TEXT("应用失败: 当前没有选中的套装"));
+		AppendLog(TEXT("应用失败: 当前没有选中的配置"));
 		return;
 	}
 
@@ -591,7 +591,7 @@ void SAutoPrefix::ApplyCurrentSetToProjectSettings()
 	// config = Game + defaultconfig，这一句就会把改动写进 <项目>/Config/DefaultGame.ini
 	Settings->TryUpdateDefaultConfigFile();
 
-	AppendLog(FString::Printf(TEXT("已把套装「%s」(%d 条规则) 写入 DefaultGame.ini"),
+	AppendLog(FString::Printf(TEXT("已把配置 %s (%d 条规则) 写入 DefaultGame.ini"),
 		*CurrentSet->SetName, Settings->PrefixRules.Num()));
 }
 
@@ -725,7 +725,7 @@ TSharedRef<SWidget> SAutoPrefix::CreateRuleRow(TSharedPtr<FAutoPrefixRuleItem> I
 		];
 }
 
-// ============================ 套装下拉框 ============================
+// ============================ 配置下拉框 ============================
 
 TSharedRef<SWidget> SAutoPrefix::OnGenerateSetComboWidget(TSharedPtr<FAutoPrefixSetItem> InItem)
 {
@@ -765,7 +765,7 @@ void SAutoPrefix::OnSetSelectionChanged(TSharedPtr<FAutoPrefixSetItem> NewSelect
 	}
 
 	SwitchToSet(NewSelection);
-	AppendLog(FString::Printf(TEXT("已切换到套装「%s」"), *NewSelection->SetName));
+	AppendLog(FString::Printf(TEXT("已切换到配置 %s "), *NewSelection->SetName));
 }
 
 FText SAutoPrefix::GetCurrentSetNameText() const
@@ -859,7 +859,7 @@ void SAutoPrefix::ResetCurrentSetToDefaults()
 {
 	if (!CurrentSet.IsValid())
 	{
-		AppendLog(TEXT("重置失败: 当前没有选中的套装"));
+		AppendLog(TEXT("重置失败: 当前没有选中的配置"));
 		return;
 	}
 
@@ -868,8 +868,8 @@ void SAutoPrefix::ResetCurrentSetToDefaults()
 	// 名字保留，只在内存里把规则换回内置默认；刷新界面但不自动存盘
 	SwitchToSet(CurrentSet);
 
-	AppendLog(TEXT("已将当前套装「") + CurrentSet->SetName
-		+ TEXT("」的规则重置为内置默认值（尚未保存，点「保存本套」可持久化）"));
+	AppendLog(TEXT("已将当前配置 ") + CurrentSet->SetName
+		+ TEXT(" 的规则重置为内置默认值（尚未保存，点 保存配置 可持久化）"));
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -4,6 +4,7 @@
 #include "Internationalization/Text.h"
 #include "UObject/NameTypes.h"
 #include "Widgets/SWidget.h"
+#include "./Slate_Assist/LanguagesStitch.h"
 
 
 

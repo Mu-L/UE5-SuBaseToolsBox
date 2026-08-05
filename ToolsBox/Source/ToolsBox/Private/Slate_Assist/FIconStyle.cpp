@@ -53,6 +53,10 @@ void FIconStyle::Initialize()
 
 		Images->Set("ToolsBox.Image_Tomori",
 			new FSlateImageBrush(Images->RootToContentDir(TEXT("Image_Tomori"), TEXT(".jpg")), FVector2D(980, 908)));
+
+
+		Images->Set("ToolsBox.Image_AnonBigHead",
+			new FSlateImageBrush(Images->RootToContentDir(TEXT("Image_AnonBigHead"), TEXT(".jpg")), FVector2D(1106, 1219)));
 		
 		FSlateStyleRegistry::RegisterSlateStyle(*Images);
 	}

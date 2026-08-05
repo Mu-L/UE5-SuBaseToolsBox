@@ -18,8 +18,9 @@
 #include "Widgets/Layout/SWrapBox.h"
 
 #define LOCTEXT_NAMESPACE "FToolsBoxModule"
-
 #include "EditorAssetLibrary.h"
+#include "Slate_Assist/LanguagesStitch.h"
+#include "Widgets/Input/SComboBox.h"
 
 void FToolsBoxModule::StartupModule()
 {
@@ -89,7 +90,7 @@ TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& Sp
 {
   
     TSharedPtr<SVerticalBox> ListContainer;
- 
+	TSharedPtr<LanguagesStitch> LanguageStitchInstance=MakeShared<LanguagesStitch>();
 
     SAssignNew(ListContainer, SVerticalBox);
  
@@ -172,8 +173,29 @@ TSharedRef<SDockTab> FToolsBoxModule::OnSpawnToolsBoxTab(const FSpawnTabArgs& Sp
                     .DesiredSizeOverride(FVector2D(18, 18))
                 ]
             ]
+	        + SHorizontalBox::Slot()
+        	.AutoWidth()
+			.Padding(2.0f, 0, 2.0f, 0)
+	        [
+		       SAssignNew(LanguageStitchInstance->LanguageComboBox, SComboBox<TSharedPtr<FString>>)
+		        .OptionsSource(&LanguageStitchInstance->LanguageOptions)
+	        	.OnGenerateWidget_Lambda([](TSharedPtr<FString> InItem) {
+					return SNew(STextBlock).Text(FText::FromString(*InItem));
+				})
+	        	.OnSelectionChanged_Lambda([this, LanguageStitchInstance](TSharedPtr<FString> NewSelected, ESelectInfo::Type SelectInfo) {
+	        		  LanguageStitchInstance->SwitchLanguage(*NewSelected);
+					  LanguageStitchInstance->SelectedLanguage = NewSelected;
+	        		
+				  })
+				  [
+					  // ComboBox 闭合时显示的文本
+					  SNew(STextBlock)
+					  .Text_Lambda([LanguageStitchInstance]() {
+						  return FText::FromString(LanguageStitchInstance->SelectedLanguage.IsValid() ? *LanguageStitchInstance->SelectedLanguage : TEXT("Select..."));
+					  })
+				  ]
+			]
         ]
- 
         // 2. 下方滚动列表
         + SVerticalBox::Slot()
         .FillHeight(1.0f)
