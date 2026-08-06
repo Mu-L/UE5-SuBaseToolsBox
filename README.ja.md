@@ -85,6 +85,8 @@ UE_5.8/Engine/Plugins/Marketplace/ToolsBox/
 
 このツールで時間を節約できたら、作者にコーヒーをおごってみてください。
 
+[![PayPal で寄付](https://img.shields.io/badge/Donate-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=99AXLB4W99D5A)
+
 <div align="center">
   <img src="./ReadmeImage/WX.png" width="220" alt="WeChat 投げ銭コード">
   &nbsp;&nbsp;&nbsp;&nbsp;

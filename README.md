@@ -90,6 +90,8 @@ UE_5.8/Engine/Plugins/Marketplace/ToolsBox/
 
 如果这个工具帮你省下了时间，欢迎请作者喝杯咖啡。
 
+[![PayPal 捐赠](https://img.shields.io/badge/Donate-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=99AXLB4W99D5A)
+
 <div align="center">
   <img src="./ReadmeImage/WX.png" width="220" alt="微信赞赏码">
   &nbsp;&nbsp;&nbsp;&nbsp;
