@@ -15,6 +15,8 @@
 
 [界面预览](#界面预览) · [功能一览](#功能一览) · [安装方式](#安装方式) · [多语言与本地化](#多语言与本地化) · [问题反馈](#问题反馈)
 
+</div>
+
 ---
 
 ## 界面预览
@@ -178,5 +180,7 @@ GitHub 仓库主页：<https://github.com/SuBase/UE5-SuBaseToolsBox>
 
 ---
 
-
-
+<div align="center">
+  <strong>ToolsBox · 苏白工具箱</strong><br>
+  <sub>批量处理，少点重复。</sub>
+</div>

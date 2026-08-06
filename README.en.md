@@ -15,6 +15,8 @@
 
 [Interface Preview](#interface-preview) · [Features](#features) · [Installation](#installation) · [Localization](#localization) · [Feedback](#feedback)
 
+</div>
+
 ---
 
 ## Interface Preview
