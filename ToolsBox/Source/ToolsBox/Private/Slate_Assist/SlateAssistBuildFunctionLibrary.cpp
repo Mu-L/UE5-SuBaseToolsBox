@@ -161,6 +161,13 @@ TSharedRef<SWindow> SlateAssistBuildFunctionLibrary::MakeInfoWindow()
                     MakeClickableImageLink(FIconStyle::Get_Images().GetBrush("Info.Info_zf"), NSLOCTEXT("Info", "Donate", "制作不易，恳求打赏，谢谢喵ฅ^•ﻌ•^ฅ"), "",FVector2D(400, 300))
 
                 ]
+                + SVerticalBox::Slot()
+                .AutoHeight()
+                [
+
+                    MakeClickableImageLink(FIconStyle::Get_Images().GetBrush("Info.Info_Paypal"), NSLOCTEXT("Info", "PaypalDonate", "PayPal 收款，点击或扫码均可"), "https://www.paypal.com/ncp/payment/99AXLB4W99D5A", FVector2D(240, 290))
+
+                ]
             ]
             
         ];
