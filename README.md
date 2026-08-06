@@ -6,7 +6,7 @@
 
 > 一个面向 **Unreal Engine 5.8** 的编辑器工具箱插件，为美术与资产工作流提供一组实用工具：批量导入与材质连接、批量生成材质、材质属性迁移、蓝图变量复印、自动前缀、物理摆放，以及右键菜单操作脚本等。
 
-- **引擎版本**：Unreal Engine 5.8
+- **引擎版本**：Unreal Engine 5.6-8
 - **作者**：SuBase
 - **B 站**：https://space.bilibili.com/391627131/
 
@@ -27,6 +27,8 @@
 | **物理摆放** | 选中多个场景物体，启动物理自由掉落摆放，并支持保存 / 回溯摆位。 |
 
 > 提示：以上工具标题与描述均支持本地化（中文 / English / 日本語），可在插件设置中切换。
+
+![BQACAgUAAyEGAASHRsPbAAEYpF9qdBNuCrMJ9ijGsz_HT-cCvJO5LAACeCkAAtsboFdpCJOugR3j4z0E.png](https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEYpF9qdBNuCrMJ9ijGsz_HT-cCvJO5LAACeCkAAtsboFdpCJOugR3j4z0E.png)
 
 ---
 

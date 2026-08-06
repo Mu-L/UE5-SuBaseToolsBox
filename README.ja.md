@@ -28,6 +28,8 @@
 
 > 補足：ツールのタイトルと説明はローカライズ（中国語／英語／日本語）に対応しており、プラグイン設定で切り替えられます。
 
+![BQACAgUAAyEGAASHRsPbAAEYpGdqdBSK0bmMYweXZSWJnIBzuWYdQQACiykAAtsboFfNWQvUAntfIT0E.png](https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEYpGdqdBSK0bmMYweXZSWJnIBzuWYdQQACiykAAtsboFfNWQvUAntfIT0E.png)
+
 ---
 
 ## 📦 インストール
