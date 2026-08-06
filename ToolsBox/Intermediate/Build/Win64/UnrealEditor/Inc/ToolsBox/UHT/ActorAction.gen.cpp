@@ -8,33 +8,25 @@
 #include "Tools/Right-ClickOperationTool/ActorAction.h"
 
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
-static_assert(!UE_WITH_CONSTINIT_UOBJECT, "This generated code can only be compiled with !UE_WITH_CONSTINIT_UOBJECT");
+
 void EmptyLinkFunctionForGeneratedCodeActorAction() {}
 
 // ********** Begin Cross Module References ********************************************************
-BLUTILITY_API UClass* Z_Construct_UClass_UActorActionUtility(ETypeConstructPhase);
+BLUTILITY_API UClass* Z_Construct_UClass_UActorActionUtility();
+TOOLSBOX_API UClass* Z_Construct_UClass_UActorAction();
+TOOLSBOX_API UClass* Z_Construct_UClass_UActorAction_NoRegister();
+UPackage* Z_Construct_UPackage__Script_ToolsBox();
 // ********** End Cross Module References **********************************************************
 
-// ********** Begin Same Module References *********************************************************
-UPackage* Z_Construct_UPackage__Script_ToolsBox(ETypeConstructPhase);
-TOOLSBOX_API UClass* Z_Construct_UClass_UActorAction(ETypeConstructPhase);
-TOOLSBOX_API UClass* Z_Construct_UClass_UActorAction(ETypeConstructPhase);
-// ********** End Same Module References ***********************************************************
-#define UHT_STRUCT_BASE(INIT) UE::CodeGen::ConstInit::TCompiledInObjectPtr<const FStructBaseChain>(UE::Private::AsStructBaseChain(INIT))
-
 // ********** Begin Class UActorAction Function AlignSelectedActorsToGround ************************
-#ifdef UHT_STATICS
-#error UHT_STATICS already defined
-#endif
-#define UHT_STATICS Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround_Statics
-struct UHT_STATICS
+struct Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround_Statics
 {
 	struct ActorAction_eventAlignSelectedActorsToGround_Parms
 	{
 		float GroundOffset;
 	};
 #if WITH_METADATA
-	static constexpr UECodeGen_Private::FMetaDataPairParam Type_MetaData[] = {
+	static constexpr UECodeGen_Private::FMetaDataPairParam Function_MetaDataParams[] = {
 		{ "CallInEditor", "true" },
 #if !UE_BUILD_SHIPPING
 		{ "Comment", "/** \n\x09 * \xe5\xb0\x86\xe9\x80\x89\xe4\xb8\xad\xe7\x9a\x84 Actors \xe5\xaf\xb9\xe9\xbd\x90\xe5\x88\xb0\xe5\x9c\xb0\xe9\x9d\xa2\xe5\xb9\xb6\xe6\xa0\xb9\xe6\x8d\xae\xe6\xb3\x95\xe7\xba\xbf\xe8\xb0\x83\xe6\x95\xb4\xe6\x97\x8b\xe8\xbd\xac\n\x09 */" },
@@ -46,33 +38,26 @@ struct UHT_STATICS
 #endif
 	};
 #endif // WITH_METADATA
-
-// ********** Begin Function AlignSelectedActorsToGround constinit property declarations ***********
 	static const UECodeGen_Private::FFloatPropertyParams NewProp_GroundOffset;
 	static const UECodeGen_Private::FPropertyParamsBase* const PropPointers[];
-// ********** End Function AlignSelectedActorsToGround constinit property declarations *************
 	static const UECodeGen_Private::FFunctionParams FuncParams;
 };
-
-// ********** Begin Function AlignSelectedActorsToGround Property Definitions **********************
-const UECodeGen_Private::FFloatPropertyParams UHT_STATICS::NewProp_GroundOffset = { "GroundOffset", nullptr, (EPropertyFlags)0x0010000000000080, UECodeGen_Private::EPropertyGenFlags::Float, nullptr, nullptr, 1, STRUCT_OFFSET(ActorAction_eventAlignSelectedActorsToGround_Parms, GroundOffset), METADATA_PARAMS(0, nullptr) };
-const UECodeGen_Private::FPropertyParamsBase* const UHT_STATICS::PropPointers[] = {
-	(const UECodeGen_Private::FPropertyParamsBase*)&UHT_STATICS::NewProp_GroundOffset,
+const UECodeGen_Private::FFloatPropertyParams Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround_Statics::NewProp_GroundOffset = { "GroundOffset", nullptr, (EPropertyFlags)0x0010000000000080, UECodeGen_Private::EPropertyGenFlags::Float, RF_Public|RF_Transient|RF_MarkAsNative, nullptr, nullptr, 1, STRUCT_OFFSET(ActorAction_eventAlignSelectedActorsToGround_Parms, GroundOffset), METADATA_PARAMS(0, nullptr) };
+const UECodeGen_Private::FPropertyParamsBase* const Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround_Statics::PropPointers[] = {
+	(const UECodeGen_Private::FPropertyParamsBase*)&Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround_Statics::NewProp_GroundOffset,
 };
-static_assert(UE_ARRAY_COUNT(UHT_STATICS::PropPointers) < 2048);
-// ********** End Function AlignSelectedActorsToGround Property Definitions ************************
-const UECodeGen_Private::FFunctionParams UHT_STATICS::FuncParams = { { (FTypeConstructFunc*)Z_Construct_UClass_UActorAction, nullptr, "AlignSelectedActorsToGround", UHT_STATICS::PropPointers, UE_ARRAY_COUNT(UHT_STATICS::PropPointers), DataSizeOf<UHT_STATICS::ActorAction_eventAlignSelectedActorsToGround_Parms>(), RF_Public|RF_Transient|RF_MarkAsNative, (EFunctionFlags)0x00020401, 0, 0, METADATA_PARAMS(UE_ARRAY_COUNT(UHT_STATICS::Type_MetaData), UHT_STATICS::Type_MetaData)},  };
-static_assert(sizeof(UHT_STATICS::ActorAction_eventAlignSelectedActorsToGround_Parms) < MAX_uint16);
-UFunction* Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround(ETypeConstructPhase Phase)
+static_assert(UE_ARRAY_COUNT(Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround_Statics::PropPointers) < 2048);
+const UECodeGen_Private::FFunctionParams Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround_Statics::FuncParams = { { (UObject*(*)())Z_Construct_UClass_UActorAction, nullptr, "AlignSelectedActorsToGround", Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround_Statics::PropPointers, UE_ARRAY_COUNT(Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround_Statics::PropPointers), sizeof(Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround_Statics::ActorAction_eventAlignSelectedActorsToGround_Parms), RF_Public|RF_Transient|RF_MarkAsNative, (EFunctionFlags)0x00020401, 0, 0, METADATA_PARAMS(UE_ARRAY_COUNT(Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround_Statics::Function_MetaDataParams), Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround_Statics::Function_MetaDataParams)},  };
+static_assert(sizeof(Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround_Statics::ActorAction_eventAlignSelectedActorsToGround_Parms) < MAX_uint16);
+UFunction* Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround()
 {
 	static UFunction* ReturnFunction = nullptr;
 	if (!ReturnFunction)
 	{
-		UECodeGen_Private::ConstructUFunction(&ReturnFunction, UHT_STATICS::FuncParams);
+		UECodeGen_Private::ConstructUFunction(&ReturnFunction, Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround_Statics::FuncParams);
 	}
 	return ReturnFunction;
 }
-#undef UHT_STATICS
 DEFINE_FUNCTION(UActorAction::execAlignSelectedActorsToGround)
 {
 	P_GET_PROPERTY(FFloatProperty,Z_Param_GroundOffset);
@@ -84,14 +69,47 @@ DEFINE_FUNCTION(UActorAction::execAlignSelectedActorsToGround)
 // ********** End Class UActorAction Function AlignSelectedActorsToGround **************************
 
 // ********** Begin Class UActorAction *************************************************************
-#ifdef UHT_STATICS
-#error UHT_STATICS already defined
-#endif
-#define UHT_STATICS Z_Construct_UClass_UActorAction_Statics
-struct UHT_STATICS
+void UActorAction::StaticRegisterNativesUActorAction()
+{
+	UClass* Class = UActorAction::StaticClass();
+	static const FNameNativePtrPair Funcs[] = {
+		{ "AlignSelectedActorsToGround", &UActorAction::execAlignSelectedActorsToGround },
+	};
+	FNativeFunctionRegistrar::RegisterFunctions(Class, Funcs, UE_ARRAY_COUNT(Funcs));
+}
+FClassRegistrationInfo Z_Registration_Info_UClass_UActorAction;
+UClass* UActorAction::GetPrivateStaticClass()
+{
+	using TClass = UActorAction;
+	if (!Z_Registration_Info_UClass_UActorAction.InnerSingleton)
+	{
+		GetPrivateStaticClassBody(
+			StaticPackage(),
+			TEXT("ActorAction"),
+			Z_Registration_Info_UClass_UActorAction.InnerSingleton,
+			StaticRegisterNativesUActorAction,
+			sizeof(TClass),
+			alignof(TClass),
+			TClass::StaticClassFlags,
+			TClass::StaticClassCastFlags(),
+			TClass::StaticConfigName(),
+			(UClass::ClassConstructorType)InternalConstructor<TClass>,
+			(UClass::ClassVTableHelperCtorCallerType)InternalVTableHelperCtorCaller<TClass>,
+			UOBJECT_CPPCLASS_STATICFUNCTIONS_FORCLASS(TClass),
+			&TClass::Super::StaticClass,
+			&TClass::WithinClass::StaticClass
+		);
+	}
+	return Z_Registration_Info_UClass_UActorAction.InnerSingleton;
+}
+UClass* Z_Construct_UClass_UActorAction_NoRegister()
+{
+	return UActorAction::GetPrivateStaticClass();
+}
+struct Z_Construct_UClass_UActorAction_Statics
 {
 #if WITH_METADATA
-	static constexpr UECodeGen_Private::FMetaDataPairParam Type_MetaData[] = {
+	static constexpr UECodeGen_Private::FMetaDataPairParam Class_MetaDataParams[] = {
 #if !UE_BUILD_SHIPPING
 		{ "Comment", "/**\n * \n */" },
 #endif
@@ -100,29 +118,23 @@ struct UHT_STATICS
 		{ "ModuleRelativePath", "Public/Tools/Right-ClickOperationTool/ActorAction.h" },
 	};
 #endif // WITH_METADATA
-
-// ********** Begin Class UActorAction constinit property declarations *****************************
-// ********** End Class UActorAction constinit property declarations *******************************
-	static constexpr UE::CodeGen::FClassNativeFunction Funcs[] = {
-		{ .NameUTF8 = UTF8TEXT("AlignSelectedActorsToGround"), .Pointer = &UActorAction::execAlignSelectedActorsToGround },
-	};
-	static FTypeConstructFunc* DependentSingletons[];
+	static UObject* (*const DependentSingletons[])();
 	static constexpr FClassFunctionLinkInfo FuncInfo[] = {
-		{ &Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround, "AlignSelectedActorsToGround" }, // 6e714b338061cfb67bfafad699c70d364f856df1
+		{ &Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround, "AlignSelectedActorsToGround" }, // 952708982
 	};
 	static_assert(UE_ARRAY_COUNT(FuncInfo) < 2048);
 	static constexpr FCppClassTypeInfoStatic StaticCppClassTypeInfo = {
 		TCppClassTypeTraits<UActorAction>::IsAbstract,
 	};
 	static const UECodeGen_Private::FClassParams ClassParams;
-}; // struct UHT_STATICS
-FTypeConstructFunc* UHT_STATICS::DependentSingletons[] = {
-	(FTypeConstructFunc*)Z_Construct_UClass_UActorActionUtility,
-	(FTypeConstructFunc*)Z_Construct_UPackage__Script_ToolsBox,
 };
-static_assert(UE_ARRAY_COUNT(UHT_STATICS::DependentSingletons) < 16);
-const UECodeGen_Private::FClassParams UHT_STATICS::ClassParams = {
-	&Z_Construct_UClass_UActorAction,
+UObject* (*const Z_Construct_UClass_UActorAction_Statics::DependentSingletons[])() = {
+	(UObject* (*)())Z_Construct_UClass_UActorActionUtility,
+	(UObject* (*)())Z_Construct_UPackage__Script_ToolsBox,
+};
+static_assert(UE_ARRAY_COUNT(Z_Construct_UClass_UActorAction_Statics::DependentSingletons) < 16);
+const UECodeGen_Private::FClassParams Z_Construct_UClass_UActorAction_Statics::ClassParams = {
+	&UActorAction::StaticClass,
 	nullptr,
 	&StaticCppClassTypeInfo,
 	DependentSingletons,
@@ -134,72 +146,32 @@ const UECodeGen_Private::FClassParams UHT_STATICS::ClassParams = {
 	0,
 	0,
 	0x001000A0u,
-	METADATA_PARAMS(UE_ARRAY_COUNT(UHT_STATICS::Type_MetaData), UHT_STATICS::Type_MetaData)
+	METADATA_PARAMS(UE_ARRAY_COUNT(Z_Construct_UClass_UActorAction_Statics::Class_MetaDataParams), Z_Construct_UClass_UActorAction_Statics::Class_MetaDataParams)
 };
-static void UActorAction_StaticRegisterNativesUActorAction()
+UClass* Z_Construct_UClass_UActorAction()
 {
-	UClass* Class = UActorAction::StaticClass();
-	FNativeFunctionRegistrar::RegisterFunctions(Class, 		MakeConstArrayView(UHT_STATICS::Funcs));
-}
-FClassRegistrationInfo Z_Registration_Info_UClass_UActorAction;
-UClass* Z_Construct_UClass_UActorAction(ETypeConstructPhase Phase)
-{
-	if (Phase == ETypeConstructPhase::Inner)
-	{
-		using TClass = UActorAction;
-		if (!Z_Registration_Info_UClass_UActorAction.InnerSingleton)
-		{
-			GetPrivateStaticClassBody(
-				TClass::StaticPackage(),
-				TEXT("ActorAction"),
-				Z_Registration_Info_UClass_UActorAction.InnerSingleton,
-				UActorAction_StaticRegisterNativesUActorAction,
-				DataSizeOf<TClass>(),
-				alignof(TClass),
-				TClass::StaticClassFlags,
-				TClass::StaticClassCastFlags(),
-				TClass::StaticConfigName(),
-				(UClass::ClassConstructorType)InternalConstructor<TClass>,
-				(UClass::ClassVTableHelperCtorCallerType)InternalVTableHelperCtorCaller<TClass>,
-				UOBJECT_CPPCLASS_STATICFUNCTIONS_FORCLASS(TClass),
-				&TClass::Super::StaticClass,
-				&TClass::WithinClass::StaticClass
-			);
-		}
-		return Z_Registration_Info_UClass_UActorAction.InnerSingleton;
-	}
 	if (!Z_Registration_Info_UClass_UActorAction.OuterSingleton)
 	{
-		UECodeGen_Private::ConstructUClass(Z_Registration_Info_UClass_UActorAction.OuterSingleton, UHT_STATICS::ClassParams);
+		UECodeGen_Private::ConstructUClass(Z_Registration_Info_UClass_UActorAction.OuterSingleton, Z_Construct_UClass_UActorAction_Statics::ClassParams);
 	}
 	return Z_Registration_Info_UClass_UActorAction.OuterSingleton;
 }
-#undef UHT_STATICS
 UActorAction::UActorAction(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) {}
-DEFINE_VTABLE_PTR_HELPER_CTOR_NS(, UActorAction);
+DEFINE_VTABLE_PTR_HELPER_CTOR(UActorAction);
 UActorAction::~UActorAction() {}
 // ********** End Class UActorAction ***************************************************************
 
 // ********** Begin Registration *******************************************************************
-#ifdef UHT_STATICS
-#error UHT_STATICS already defined
-#endif
-#define UHT_STATICS Z_CompiledInDeferFile_FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h__Script_ToolsBox_Statics
-struct UHT_STATICS
+struct Z_CompiledInDeferFile_FID_UEWorkspace_UE5_6Project_toolsbox56_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h__Script_ToolsBox_Statics
 {
 	static constexpr FClassRegisterCompiledInInfo ClassInfo[] = {
-		{ Z_Construct_UClass_UActorAction, TEXT("UActorAction"), &Z_Registration_Info_UClass_UActorAction, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UActorAction), 3270295382U) },
+		{ Z_Construct_UClass_UActorAction, UActorAction::StaticClass, TEXT("UActorAction"), &Z_Registration_Info_UClass_UActorAction, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UActorAction), 1892138414U) },
 	};
-}; // UHT_STATICS 
-static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h__Script_ToolsBox_6b27cbad37919543016226ce8d291be6f129a93b{
-	TEXT("/Script/ToolsBox"),
-	UHT_STATICS::ClassInfo, UE_ARRAY_COUNT(UHT_STATICS::ClassInfo),
-	nullptr, 0,
-	nullptr, 0,
-	nullptr, 0,
 };
-#undef UHT_STATICS
+static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_UEWorkspace_UE5_6Project_toolsbox56_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h__Script_ToolsBox_3362715267(TEXT("/Script/ToolsBox"),
+	Z_CompiledInDeferFile_FID_UEWorkspace_UE5_6Project_toolsbox56_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h__Script_ToolsBox_Statics::ClassInfo, UE_ARRAY_COUNT(Z_CompiledInDeferFile_FID_UEWorkspace_UE5_6Project_toolsbox56_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h__Script_ToolsBox_Statics::ClassInfo),
+	nullptr, 0,
+	nullptr, 0);
 // ********** End Registration *********************************************************************
-#undef UHT_STRUCT_BASE
 
 PRAGMA_ENABLE_DEPRECATION_WARNINGS

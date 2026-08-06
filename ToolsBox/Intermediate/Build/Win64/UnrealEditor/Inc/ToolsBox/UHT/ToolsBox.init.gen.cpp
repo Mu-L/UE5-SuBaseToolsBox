@@ -7,24 +7,23 @@
 #include "UObject/GeneratedCppIncludes.h"
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
 void EmptyLinkFunctionForGeneratedCodeToolsBox_init() {}
-static_assert(!UE_WITH_CONSTINIT_UOBJECT, "This generated code can only be compiled with !UE_WITH_CONSTINIT_OBJECT");
 	static FPackageRegistrationInfo Z_Registration_Info_UPackage__Script_ToolsBox;
-	FORCENOINLINE UPackage* Z_Construct_UPackage__Script_ToolsBox(ETypeConstructPhase)
+	FORCENOINLINE UPackage* Z_Construct_UPackage__Script_ToolsBox()
 	{
 		if (!Z_Registration_Info_UPackage__Script_ToolsBox.OuterSingleton)
 		{
-		static const UECodeGen_Private::FPackageParams PackageParams = {
-			"/Script/ToolsBox",
-			nullptr,
-			0,
-			PKG_CompiledIn | 0x00000040,
-			0xCE68E456,
-			0x6160FDF2,
-			METADATA_PARAMS(0, nullptr)
-		};
-		UECodeGen_Private::ConstructUPackage(Z_Registration_Info_UPackage__Script_ToolsBox.OuterSingleton, PackageParams);
+			static const UECodeGen_Private::FPackageParams PackageParams = {
+				"/Script/ToolsBox",
+				nullptr,
+				0,
+				PKG_CompiledIn | 0x00000040,
+				0x053F183D,
+				0x2E085AAF,
+				METADATA_PARAMS(0, nullptr)
+			};
+			UECodeGen_Private::ConstructUPackage(Z_Registration_Info_UPackage__Script_ToolsBox.OuterSingleton, PackageParams);
+		}
+		return Z_Registration_Info_UPackage__Script_ToolsBox.OuterSingleton;
 	}
-	return Z_Registration_Info_UPackage__Script_ToolsBox.OuterSingleton;
-}
-static FRegisterCompiledInInfo Z_CompiledInDeferPackage_UPackage__Script_ToolsBox(Z_Construct_UPackage__Script_ToolsBox, TEXT("/Script/ToolsBox"), Z_Registration_Info_UPackage__Script_ToolsBox, CONSTRUCT_RELOAD_VERSION_INFO(FPackageReloadVersionInfo, 0xCE68E456, 0x6160FDF2));
+	static FRegisterCompiledInInfo Z_CompiledInDeferPackage_UPackage__Script_ToolsBox(Z_Construct_UPackage__Script_ToolsBox, TEXT("/Script/ToolsBox"), Z_Registration_Info_UPackage__Script_ToolsBox, CONSTRUCT_RELOAD_VERSION_INFO(FPackageReloadVersionInfo, 0x053F183D, 0x2E085AAF));
 PRAGMA_ENABLE_DEPRECATION_WARNINGS

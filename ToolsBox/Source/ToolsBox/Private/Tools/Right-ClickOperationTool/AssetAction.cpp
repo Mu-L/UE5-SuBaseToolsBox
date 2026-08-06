@@ -369,9 +369,10 @@ void UAssetAction::SimplifyMesh(float Percent)
 
 						if(Mesh->IsNaniteEnabled())
 						{
-							FMeshNaniteSettings CurrentSettings = Mesh->GetNaniteSettings();
-                            						
-							Mesh->SetNaniteSettings(CurrentSettings);
+							FMeshNaniteSettings CurrentSettings = Mesh->NaniteSettings;
+
+							GEditor->GetEditorSubsystem<UStaticMeshEditorSubsystem>()->SetNaniteSettings(Mesh,CurrentSettings, true);
+							
 							Mesh->PostEditChange();
 						}
 						

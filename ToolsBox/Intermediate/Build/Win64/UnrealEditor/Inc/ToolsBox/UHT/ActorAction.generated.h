@@ -12,29 +12,29 @@
 #define TOOLSBOX_ActorAction_generated_h
 
 #include "UObject/ObjectMacros.h"
-#include "UObject/ReflectedTypeAccessors.h"
 #include "UObject/ScriptMacros.h"
 
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 // ********** Begin Class UActorAction *************************************************************
-#define FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h_15_RPC_WRAPPERS_NO_PURE_DECLS \
+#define FID_UEWorkspace_UE5_6Project_toolsbox56_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h_15_RPC_WRAPPERS_NO_PURE_DECLS \
 	DECLARE_FUNCTION(execAlignSelectedActorsToGround);
 
 
-struct Z_Construct_UClass_UActorAction_Statics;
-TOOLSBOX_API UClass* Z_Construct_UClass_UActorAction(ETypeConstructPhase);
+TOOLSBOX_API UClass* Z_Construct_UClass_UActorAction_NoRegister();
 
-#define FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h_15_INCLASS_NO_PURE_DECLS \
+#define FID_UEWorkspace_UE5_6Project_toolsbox56_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h_15_INCLASS_NO_PURE_DECLS \
 private: \
-	friend struct ::Z_Construct_UClass_UActorAction_Statics; \
-	friend TOOLSBOX_API UClass* ::Z_Construct_UClass_UActorAction(ETypeConstructPhase); \
+	static void StaticRegisterNativesUActorAction(); \
+	friend struct Z_Construct_UClass_UActorAction_Statics; \
+	static UClass* GetPrivateStaticClass(); \
+	friend TOOLSBOX_API UClass* Z_Construct_UClass_UActorAction_NoRegister(); \
 public: \
-	DECLARE_CLASS2(UActorAction, UActorActionUtility, COMPILED_IN_FLAGS(0), CASTCLASS_None, TEXT("/Script/ToolsBox"), Z_Construct_UClass_UActorAction) \
+	DECLARE_CLASS2(UActorAction, UActorActionUtility, COMPILED_IN_FLAGS(0), CASTCLASS_None, TEXT("/Script/ToolsBox"), Z_Construct_UClass_UActorAction_NoRegister) \
 	DECLARE_SERIALIZER(UActorAction)
 
 
-#define FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h_15_ENHANCED_CONSTRUCTORS \
+#define FID_UEWorkspace_UE5_6Project_toolsbox56_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h_15_ENHANCED_CONSTRUCTORS \
 	/** Standard constructor, called after all reflected properties have been initialized */ \
 	NO_API UActorAction(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get()); \
 	/** Deleted move- and copy-constructors, should never be used */ \
@@ -46,13 +46,13 @@ public: \
 	NO_API virtual ~UActorAction();
 
 
-#define FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h_12_PROLOG
-#define FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h_15_GENERATED_BODY \
+#define FID_UEWorkspace_UE5_6Project_toolsbox56_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h_12_PROLOG
+#define FID_UEWorkspace_UE5_6Project_toolsbox56_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h_15_GENERATED_BODY \
 PRAGMA_DISABLE_DEPRECATION_WARNINGS \
 public: \
-	FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h_15_RPC_WRAPPERS_NO_PURE_DECLS \
-	FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h_15_INCLASS_NO_PURE_DECLS \
-	FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h_15_ENHANCED_CONSTRUCTORS \
+	FID_UEWorkspace_UE5_6Project_toolsbox56_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h_15_RPC_WRAPPERS_NO_PURE_DECLS \
+	FID_UEWorkspace_UE5_6Project_toolsbox56_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h_15_INCLASS_NO_PURE_DECLS \
+	FID_UEWorkspace_UE5_6Project_toolsbox56_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h_15_ENHANCED_CONSTRUCTORS \
 private: \
 PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
@@ -62,6 +62,6 @@ class UActorAction;
 // ********** End Class UActorAction ***************************************************************
 
 #undef CURRENT_FILE_ID
-#define CURRENT_FILE_ID FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h
+#define CURRENT_FILE_ID FID_UEWorkspace_UE5_6Project_toolsbox56_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h
 
 PRAGMA_ENABLE_DEPRECATION_WARNINGS

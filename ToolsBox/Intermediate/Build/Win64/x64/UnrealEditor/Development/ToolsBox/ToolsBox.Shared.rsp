@@ -1,56 +1,14 @@
-/X
-/nologo
-/Oi
-/FC
-/diagnostics:caret
-/c
-/Gw
-/Gy
-/utf-8
-/wd4819
-/DSAL_NO_ATTRIBUTE_DECLARATIONS=1
-/permissive-
-/Zc:strictStrings-
-/Zc:__cplusplus
-/Zc:inline
-/Zc:preprocessor
-/D_WINDLL
-/D_DISABLE_EXTENDED_ALIGNED_STORAGE
-/Ob2
-/d2ExtendedWarningInfo
-/Ox
-/Ot
-/GF
-/errorReport:prompt
-/EHsc
-/DPLATFORM_EXCEPTIONS_DISABLED=0
-/Z7
-/MD
-/bigobj
-/dximplicitlyinstantiatevirtualfunction-
-/fp:precise
-/Zo
-/Zp8
-/W4
-/we4456
-/we4458
-/we4459
-/wd4244
-/wd4838
-/we4668
-/we4702
-/wd4267
-/wd4100
 /I "."
-/I "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private"
+/I "F:/UEWorkspace/UE5.6Project/toolsbox56/Plugins/ToolsBox/Source/ToolsBox/Private"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/CoreUObject/UHT"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/CoreUObject/VerseVMBytecode"
 /I "Runtime/CoreUObject/Public"
 /I "Runtime/Core/Public"
 /I "Runtime/TraceLog/Public"
 /I "Runtime/AutoRTFM/Public"
+/I "../Intermediate/Build/Win64/UnrealEditor/Inc/ImageCore/UHT"
+/I "Runtime/ImageCore/Public"
 /I "Runtime/CorePreciseFP/Public"
-/I "Runtime/Json/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/Engine/UHT"
 /I "Runtime/Engine/Classes"
 /I "Runtime/Engine/Public"
@@ -62,8 +20,7 @@
 /I "Runtime/Net/Core/Classes"
 /I "Runtime/Net/Core/Public"
 /I "Runtime/Net/Common/Public"
-/I "../Intermediate/Build/Win64/UnrealEditor/Inc/ImageCore/UHT"
-/I "Runtime/ImageCore/Public"
+/I "Runtime/Json/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/JsonUtilities/UHT"
 /I "Runtime/JsonUtilities/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/SlateCore/UHT"
@@ -123,8 +80,6 @@
 /I "Runtime/GeometryCore/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/ChaosVDRuntime/UHT"
 /I "Runtime/Experimental/ChaosVisualDebugger/Public"
-/I "../Intermediate/Build/Win64/UnrealEditor/Inc/TraceBasedDebuggers/UHT"
-/I "Runtime/Experimental/TraceBasedDebuggers/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/NNE/UHT"
 /I "Runtime/NNE/Public"
 /I "Runtime/SignalProcessing/Public"
@@ -150,7 +105,7 @@
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/ClothSysRuntimeIntrfc/UHT"
 /I "Runtime/ClothingSystemRuntimeInterface/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/IrisCore/UHT"
-/I "Runtime/Net/Iris/Public"
+/I "Runtime/Experimental/Iris/Core/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/MovieSceneCapture/UHT"
 /I "Runtime/MovieSceneCapture/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/Renderer/UHT"
@@ -224,7 +179,6 @@
 /I "Developer/DirectoryWatcher/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/Documentation/UHT"
 /I "Editor/Documentation/Public"
-/I "../Intermediate/Build/Win64/UnrealEditor/Inc/MainFrame/UHT"
 /I "Editor/MainFrame/Public"
 /I "Runtime/SandboxFile/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/SourceControl/UHT"
@@ -250,17 +204,6 @@
 /I "Editor/AudioEditor/Classes"
 /I "Editor/AudioEditor/Public"
 /I "ThirdParty/libSampleRate/Public"
-/I "../Intermediate/Build/Win64/UnrealEditor/Inc/DetailCustomizations/UHT"
-/I "Editor/DetailCustomizations/Public"
-/I "../Intermediate/Build/Win64/UnrealEditor/Inc/GraphEditor/UHT"
-/I "Editor/GraphEditor/Public"
-/I "../Intermediate/Build/Win64/UnrealEditor/Inc/StructViewer/UHT"
-/I "Editor/StructViewer/Public"
-/I "../Intermediate/Build/Win64/UnrealEditor/Inc/MaterialEditor/UHT"
-/I "Editor/MaterialEditor/Public"
-/I "../Intermediate/Build/Win64/UnrealEditor/Inc/Landscape/UHT"
-/I "Runtime/Landscape/Classes"
-/I "Runtime/Landscape/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/LevelEditor/UHT"
 /I "Editor/LevelEditor/Public"
 /I "Editor/CommonMenuExtensions/Public"
@@ -271,6 +214,17 @@
 /I "Editor/ViewportInteraction/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/HeadMountedDisplay/UHT"
 /I "Runtime/HeadMountedDisplay/Public"
+/I "../Intermediate/Build/Win64/UnrealEditor/Inc/Landscape/UHT"
+/I "Runtime/Landscape/Classes"
+/I "Runtime/Landscape/Public"
+/I "../Intermediate/Build/Win64/UnrealEditor/Inc/DetailCustomizations/UHT"
+/I "Editor/DetailCustomizations/Public"
+/I "../Intermediate/Build/Win64/UnrealEditor/Inc/GraphEditor/UHT"
+/I "Editor/GraphEditor/Public"
+/I "../Intermediate/Build/Win64/UnrealEditor/Inc/StructViewer/UHT"
+/I "Editor/StructViewer/Public"
+/I "../Intermediate/Build/Win64/UnrealEditor/Inc/MaterialEditor/UHT"
+/I "Editor/MaterialEditor/Public"
 /I "Runtime/NetworkFileSystem/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/UMG/UHT"
 /I "Runtime/UMG/Public"
@@ -293,12 +247,11 @@
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/ChaosSolverEngine/UHT"
 /I "Runtime/Experimental/ChaosSolverEngine/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/DataflowCore/UHT"
-/I "Runtime/Dataflow/Core/Public"
+/I "Runtime/Experimental/Dataflow/Core/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/DataflowEngine/UHT"
-/I "Runtime/Dataflow/Engine/Public"
+/I "Runtime/Experimental/Dataflow/Engine/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/DataflowSimulation/UHT"
-/I "Runtime/Dataflow/Simulation/Public"
-/I "Runtime/Experimental/RigidPhysics/Public"
+/I "Runtime/Experimental/Dataflow/Simulation/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/FieldSystemEngine/UHT"
 /I "Runtime/Experimental/FieldSystem/Source/FieldSystemEngine/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/ISMPool/UHT"
@@ -326,16 +279,13 @@
 /I "Developer/PhysicsUtilities/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/WidgetRegistration/UHT"
 /I "Developer/WidgetRegistration/Public"
-/I "../Intermediate/Build/Win64/UnrealEditor/Inc/ActorPickerMode/UHT"
 /I "Editor/ActorPickerMode/Public"
 /I "Editor/SceneDepthPickerMode/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/AnimationEditMode/UHT"
 /I "Editor/AnimationEditMode/Public"
-/I "../Intermediate/Build/Win64/UnrealEditor/Inc/EditorInteractiveToolsFramework/UHT"
-/I "Editor/Experimental/EditorInteractiveToolsFramework/Public"
-/I "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Intermediate/Build/Win64/UnrealEditor/Inc/ToolsBox/UHT"
-/I "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source"
-/I "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Public"
+/I "F:/UEWorkspace/UE5.6Project/toolsbox56/Plugins/ToolsBox/Intermediate/Build/Win64/UnrealEditor/Inc/ToolsBox/UHT"
+/I "F:/UEWorkspace/UE5.6Project/toolsbox56/Plugins/ToolsBox/Source"
+/I "F:/UEWorkspace/UE5.6Project/toolsbox56/Plugins/ToolsBox/Source/ToolsBox/Public"
 /I "Editor/EditorStyle/Public"
 /I "../Plugins/Editor/EditorScriptingUtilities/Intermediate/Build/Win64/UnrealEditor/Inc/EditorScriptingUtilities/UHT"
 /I "../Plugins/Editor/EditorScriptingUtilities/Source"
@@ -366,7 +316,7 @@
 /I "Editor/AnimationModifiers/Public"
 /I "../Intermediate/Build/Win64/UnrealEditor/Inc/EditorWidgets/UHT"
 /I "Editor/EditorWidgets/Public"
-/I "F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Intermediate/Build/Win64/x64/SuBaseToolsBoxEditor/Development/UnrealEd"
+/I "F:/UEWorkspace/UE5.6Project/toolsbox56/Intermediate/Build/Win64/x64/toolsbox56Editor/Development/UnrealEd"
 /external:W0
 /external:I "ThirdParty/GuidelinesSupportLibrary/GSL-1144/include"
 /external:I "ThirdParty/AtomicQueue"
@@ -374,7 +324,7 @@
 /external:I "ThirdParty/LibTiff/Source/Win64"
 /external:I "ThirdParty/LibTiff/Source"
 /external:I "ThirdParty/OpenGL"
-/external:I "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.50.35717/INCLUDE"
+/external:I "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.38.33130/INCLUDE"
 /external:I "C:/Program Files (x86)/Windows Kits/10/include/10.0.22621.0/ucrt"
 /external:I "C:/Program Files (x86)/Windows Kits/10/include/10.0.22621.0/shared"
 /external:I "C:/Program Files (x86)/Windows Kits/10/include/10.0.22621.0/um"
