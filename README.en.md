@@ -175,7 +175,5 @@ GitHub repository homepage: <https://github.com/SuBase/UE5-SuBaseToolsBox>
 
 ---
 
-<div align="center">
-  <strong>ToolsBox · SuBase Tools</strong><br>
-  <sub>Batch processing, less repetition.</sub>
-</div>
+
+

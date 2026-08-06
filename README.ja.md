@@ -175,7 +175,5 @@ GitHub リポジトリホーム：<https://github.com/SuBase/UE5-SuBaseToolsBox>
 
 ---
 
-<div align="center">
-  <strong>ToolsBox · 苏白工具箱</strong><br>
-  <sub>一括処理、繰り返しを減らそう。</sub>
-</div>
+
+
