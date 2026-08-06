@@ -32,6 +32,9 @@ void FIconStyle::Initialize()
 		Images->Set("Info.Info_zf",
 			new FSlateImageBrush(Images->RootToContentDir(TEXT("Image_zf"), TEXT(".png")), FVector2D(821, 605)));
 
+		Images->Set("Info.Info_Paypal",
+			new FSlateImageBrush(Images->RootToContentDir(TEXT("Paypal_QR"), TEXT(".png")), FVector2D(240, 290)));
+
 
 		//孤独摇滚
 		Images->Set("ToolsBox.Image_GotohHitori",

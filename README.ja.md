@@ -85,12 +85,16 @@ UE_5.8/Engine/Plugins/Marketplace/ToolsBox/
 
 このツールで時間を節約できたら、作者にコーヒーをおごってみてください。
 
+[![PayPal で寄付](https://img.shields.io/badge/Donate-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/ncp/payment/99AXLB4W99D5A)
+
 <div align="center">
-  <img src="./ReadmeImage/WX.png" width="220" alt="WeChat 投げ銭コード">
+  <img src="./ReadmeImage/WX.png" width="200" alt="WeChat 投げ銭コード">
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="./ReadmeImage/ZFB.jpg" width="220" alt="Alipay 投げ銭コード">
+  <img src="./ReadmeImage/ZFB.jpg" width="200" alt="Alipay 投げ銭コード">
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./ReadmeImage/Paypal_QR.png" width="200" alt="PayPal 投げ銭コード">
   <br>
-  <sub>WeChat / Alipay</sub>
+  <sub>WeChat / Alipay / PayPal</sub>
 </div>
 
 ## ディレクトリ構成
