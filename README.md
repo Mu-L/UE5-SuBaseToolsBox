@@ -75,7 +75,7 @@ UE_5.8/Engine/Plugins/Marketplace/ToolsBox/
 
 2. 关卡编辑器顶部工具栏（Play 按钮附近）会出现 **「ToolsBox」** 按钮；
 
-   ![OpenToolsBox](F:\UEWorkspace\UE5.8Project\SuBaseToolsBox\Plugins\ReadmeImage\OpenToolsBox.png)
+   ![OpenToolsBox](ReadmeImage\OpenToolsBox.png)
 
 3. 点击打开工具箱面板，上面列出各工具，点击对应工具块即可展开使用。
 
