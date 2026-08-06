@@ -180,7 +180,5 @@ GitHub 仓库主页：<https://github.com/SuBase/UE5-SuBaseToolsBox>
 
 ---
 
-<div align="center">
-  <strong>ToolsBox · 苏白工具箱</strong><br>
-  <sub>批量处理，少点重复。</sub>
-</div>
+
+
