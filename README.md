@@ -75,7 +75,7 @@ UE_5.8/Engine/Plugins/Marketplace/ToolsBox/
 
 2. 关卡编辑器顶部工具栏（Play 按钮附近）会出现 **「ToolsBox」** 按钮；
 
-   ![OpenToolsBox](ReadmeImage\OpenToolsBox.png)
+   ![OpenToolsBox](./ReadmeImage/OpenToolsBox.png)
 
 3. 点击打开工具箱面板，上面列出各工具，点击对应工具块即可展开使用。
 
@@ -127,14 +127,6 @@ ToolsBox/
 ├─ Resources/                                         # 图标 / 图片资源
 └─ (运行时生成) ToolUserDataSave/                      # 用户保存的 JSON 配置
 ```
-
-## 注意事项
-
-- 用户保存的 JSON 配置会在运行时生成于插件的 `ToolUserDataSave/` 目录（已被 `.gitignore` 忽略）；
-- 插件仍处于 Beta 阶段（`uplugin` 中 `IsBetaVersion = true`），API 与功能可能在版本间变动；
-- 工具只在你明确点击「确定 / 应用」时才写入蓝图或资产；物理摆放、材质属性转移等会改动场景 / 资产，操作前建议先备份项目；
-- 右键脚本化操作会按你的选择批量处理资产，建议先在小范围内验证再大面积使用；
-- 插件仅作用于编辑器，不影响已打包的项目。
 
 ## 问题反馈
 

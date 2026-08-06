@@ -123,13 +123,7 @@ ToolsBox/
 └─ (generated at runtime) ToolUserDataSave/            # user-saved JSON configs
 ```
 
-## Notes
 
-- User-saved JSON configs are generated at runtime under the plugin's `ToolUserDataSave/` directory (ignored by `.gitignore`);
-- The plugin is still in Beta (`IsBetaVersion = true` in the uplugin); APIs and features may change between versions;
-- Tools only write to blueprints or assets when you explicitly click "OK / Apply"; physics placement, material attribute transfer, etc. modify scenes / assets, so back up your project beforehand;
-- Right-click scripted operations batch-process assets by your selection; verify on a small scale before large-scale use;
-- The plugin only works in the editor and does not affect packaged projects.
 
 ## Feedback
 

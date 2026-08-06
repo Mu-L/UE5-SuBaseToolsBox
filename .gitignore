@@ -16,7 +16,7 @@ DerivedDataCache/
 *.VC.db
 *.opendb
 ToolsBox/Source/ToolsBox/Public/Tools/ToolUserDataSave
-
+ToolsBox/Source/ToolsBox/nul
 # ===== 合并 / 临时代码碎片 =====
 merged_code.txt
 Source/merged_code.txt
