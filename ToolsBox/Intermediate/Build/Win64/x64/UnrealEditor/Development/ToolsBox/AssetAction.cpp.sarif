@@ -19,7 +19,7 @@
                                     "uri": "file:///F:/UEWorkspace/UE5.8Project/SuBaseToolsBox/Plugins/ToolsBox/Source/ToolsBox/Private/Tools/Right-ClickOperationTool/AssetAction.cpp"
                                 },
                                 "region": {
-                                    "startLine": 272,
+                                    "startLine": 273,
                                     "startColumn": 40,
                                     "snippet": {
                                         "text": "\t\t\tFMeshNaniteSettings& Settings = Mesh->NaniteSettings;"

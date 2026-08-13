@@ -1,14 +1,15 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "1.0",
+	"VersionName": "0.6",
 	"FriendlyName": "ToolsBox",
 	"Description": "",
 	"Category": "Other",
 	"CreatedBy": "SuBase",
-	"CreatedByURL": "",
-	"DocsURL": "",
+	"CreatedByURL": "https://space.bilibili.com/391627131",
+	"DocsURL": "https://github.com/SuBase/UE5-SuBaseToolsBox",
 	"MarketplaceURL": "",
+	"EngineVersion":"5.8",
 	"SupportURL": "",
 	"CanContainContent": true,
 	"IsBetaVersion": true,
@@ -19,7 +20,8 @@
 		{
 			"Name": "ToolsBox",
 			"Type": "Editor",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [ "Win64" ]
 		}
 	],
 	"Plugins": [
@@ -29,10 +31,6 @@
 		},
 		{
 			"Name": "GeometryScripting",
-			"Enabled": true
-		},
-		{
-			"Name": "EditorScriptingUtilities",
 			"Enabled": true
 		}
 	]
