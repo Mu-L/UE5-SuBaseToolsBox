@@ -9,7 +9,7 @@
 	"CreatedByURL": "https://space.bilibili.com/391627131",
 	"DocsURL": "https://github.com/SuBase/UE5-SuBaseToolsBox",
 	"MarketplaceURL": "",
-	"EngineVersion":"5.8",
+	"EngineVersion": "5.8",
 	"SupportURL": "",
 	"CanContainContent": true,
 	"IsBetaVersion": true,
@@ -21,7 +21,9 @@
 			"Name": "ToolsBox",
 			"Type": "Editor",
 			"LoadingPhase": "Default",
-			"PlatformAllowList": [ "Win64" ]
+			"PlatformAllowList": [
+				"Win64"
+			]
 		}
 	],
 	"Plugins": [

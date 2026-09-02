@@ -8,7 +8,8 @@
 #define LANGUAGE_LIST(f) \
 f(zh_Hans, TEXT("中文")) \
 f(en, TEXT("English")) \
-f(ja, TEXT("日本語"))
+f(ja, TEXT("日本語"))\
+f(ko, TEXT("한국어"))\
  
 
 enum class ELanguages : uint8

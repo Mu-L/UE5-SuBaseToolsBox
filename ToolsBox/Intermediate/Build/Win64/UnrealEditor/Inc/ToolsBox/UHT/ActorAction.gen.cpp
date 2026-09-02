@@ -36,10 +36,11 @@ struct UHT_STATICS
 #if WITH_METADATA
 	static constexpr UECodeGen_Private::FMetaDataPairParam Type_MetaData[] = {
 		{ "CallInEditor", "true" },
+		{ "Category", "StaticMesh" },
 #if !UE_BUILD_SHIPPING
 		{ "Comment", "/** \n\x09 * \xe5\xb0\x86\xe9\x80\x89\xe4\xb8\xad\xe7\x9a\x84 Actors \xe5\xaf\xb9\xe9\xbd\x90\xe5\x88\xb0\xe5\x9c\xb0\xe9\x9d\xa2\xe5\xb9\xb6\xe6\xa0\xb9\xe6\x8d\xae\xe6\xb3\x95\xe7\xba\xbf\xe8\xb0\x83\xe6\x95\xb4\xe6\x97\x8b\xe8\xbd\xac\n\x09 */" },
 #endif
-		{ "DisplayName", "\xe5\x90\xb8\xe9\x99\x84\xe9\x80\x82\xe5\xba\x94\xe5\x9c\xb0\xe9\x9d\xa2" },
+		{ "DisplayName", "AlignSelectedActorsToGround" },
 		{ "ModuleRelativePath", "Public/Tools/Right-ClickOperationTool/ActorAction.h" },
 #if !UE_BUILD_SHIPPING
 		{ "ToolTip", "\xe5\xb0\x86\xe9\x80\x89\xe4\xb8\xad\xe7\x9a\x84 Actors \xe5\xaf\xb9\xe9\xbd\x90\xe5\x88\xb0\xe5\x9c\xb0\xe9\x9d\xa2\xe5\xb9\xb6\xe6\xa0\xb9\xe6\x8d\xae\xe6\xb3\x95\xe7\xba\xbf\xe8\xb0\x83\xe6\x95\xb4\xe6\x97\x8b\xe8\xbd\xac" },
@@ -83,6 +84,52 @@ DEFINE_FUNCTION(UActorAction::execAlignSelectedActorsToGround)
 }
 // ********** End Class UActorAction Function AlignSelectedActorsToGround **************************
 
+// ********** Begin Class UActorAction Function SetStaticMeshPivot *********************************
+#ifdef UHT_STATICS
+#error UHT_STATICS already defined
+#endif
+#define UHT_STATICS Z_Construct_UFunction_UActorAction_SetStaticMeshPivot_Statics
+struct UHT_STATICS
+{
+#if WITH_METADATA
+	static constexpr UECodeGen_Private::FMetaDataPairParam Type_MetaData[] = {
+		{ "CallInEditor", "true" },
+		{ "Category", "StaticMesh" },
+#if !UE_BUILD_SHIPPING
+		{ "Comment", "/**\n\x09 * \xe6\x89\xb9\xe9\x87\x8f\xe8\xae\xbe\xe7\xbd\xae\xe9\x80\x89\xe4\xb8\xad\xe9\x9d\x99\xe6\x80\x81\xe7\xbd\x91\xe6\xa0\xbc\xe4\xbd\x93 Actor \xe7\x9a\x84\xe6\x9e\xa2\xe8\xbd\xb4\xe4\xbd\x8d\xe7\xbd\xae\n\x09 */" },
+#endif
+		{ "DisplayName", "SetStaticMeshPivot" },
+		{ "ModuleRelativePath", "Public/Tools/Right-ClickOperationTool/ActorAction.h" },
+#if !UE_BUILD_SHIPPING
+		{ "ToolTip", "\xe6\x89\xb9\xe9\x87\x8f\xe8\xae\xbe\xe7\xbd\xae\xe9\x80\x89\xe4\xb8\xad\xe9\x9d\x99\xe6\x80\x81\xe7\xbd\x91\xe6\xa0\xbc\xe4\xbd\x93 Actor \xe7\x9a\x84\xe6\x9e\xa2\xe8\xbd\xb4\xe4\xbd\x8d\xe7\xbd\xae" },
+#endif
+	};
+#endif // WITH_METADATA
+
+// ********** Begin Function SetStaticMeshPivot constinit property declarations ********************
+// ********** End Function SetStaticMeshPivot constinit property declarations **********************
+	static const UECodeGen_Private::FFunctionParams FuncParams;
+};
+const UECodeGen_Private::FFunctionParams UHT_STATICS::FuncParams = { { (FTypeConstructFunc*)Z_Construct_UClass_UActorAction, nullptr, "SetStaticMeshPivot", nullptr, 0, 0, RF_Public|RF_Transient|RF_MarkAsNative, (EFunctionFlags)0x00020401, 0, 0, METADATA_PARAMS(UE_ARRAY_COUNT(UHT_STATICS::Type_MetaData), UHT_STATICS::Type_MetaData)},  };
+UFunction* Z_Construct_UFunction_UActorAction_SetStaticMeshPivot(ETypeConstructPhase Phase)
+{
+	static UFunction* ReturnFunction = nullptr;
+	if (!ReturnFunction)
+	{
+		UECodeGen_Private::ConstructUFunction(&ReturnFunction, UHT_STATICS::FuncParams);
+	}
+	return ReturnFunction;
+}
+#undef UHT_STATICS
+DEFINE_FUNCTION(UActorAction::execSetStaticMeshPivot)
+{
+	P_FINISH;
+	P_NATIVE_BEGIN;
+	P_THIS->SetStaticMeshPivot();
+	P_NATIVE_END;
+}
+// ********** End Class UActorAction Function SetStaticMeshPivot ***********************************
+
 // ********** Begin Class UActorAction *************************************************************
 #ifdef UHT_STATICS
 #error UHT_STATICS already defined
@@ -105,10 +152,12 @@ struct UHT_STATICS
 // ********** End Class UActorAction constinit property declarations *******************************
 	static constexpr UE::CodeGen::FClassNativeFunction Funcs[] = {
 		{ .NameUTF8 = UTF8TEXT("AlignSelectedActorsToGround"), .Pointer = &UActorAction::execAlignSelectedActorsToGround },
+		{ .NameUTF8 = UTF8TEXT("SetStaticMeshPivot"), .Pointer = &UActorAction::execSetStaticMeshPivot },
 	};
 	static FTypeConstructFunc* DependentSingletons[];
 	static constexpr FClassFunctionLinkInfo FuncInfo[] = {
-		{ &Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround, "AlignSelectedActorsToGround" }, // 6e714b338061cfb67bfafad699c70d364f856df1
+		{ &Z_Construct_UFunction_UActorAction_AlignSelectedActorsToGround, "AlignSelectedActorsToGround" }, // efb2e62bb292517ab072d4c52fe3207a58989306
+		{ &Z_Construct_UFunction_UActorAction_SetStaticMeshPivot, "SetStaticMeshPivot" }, // e9b4e989483f070fc10c90b6862e9c4c01efe0dc
 	};
 	static_assert(UE_ARRAY_COUNT(FuncInfo) < 2048);
 	static constexpr FCppClassTypeInfoStatic StaticCppClassTypeInfo = {
@@ -188,10 +237,10 @@ UActorAction::~UActorAction() {}
 struct UHT_STATICS
 {
 	static constexpr FClassRegisterCompiledInInfo ClassInfo[] = {
-		{ Z_Construct_UClass_UActorAction, TEXT("UActorAction"), &Z_Registration_Info_UClass_UActorAction, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UActorAction), 3270295382U) },
+		{ Z_Construct_UClass_UActorAction, TEXT("UActorAction"), &Z_Registration_Info_UClass_UActorAction, CONSTRUCT_RELOAD_VERSION_INFO(FClassReloadVersionInfo, sizeof(UActorAction), 3293558966U) },
 	};
 }; // UHT_STATICS 
-static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h__Script_ToolsBox_6b27cbad37919543016226ce8d291be6f129a93b{
+static FRegisterCompiledInInfo Z_CompiledInDeferFile_FID_UEWorkspace_UE5_8Project_SuBaseToolsBox_Plugins_ToolsBox_Source_ToolsBox_Public_Tools_Right_ClickOperationTool_ActorAction_h__Script_ToolsBox_f745ac7c8951273082ef47dadf49394a14419f9a{
 	TEXT("/Script/ToolsBox"),
 	UHT_STATICS::ClassInfo, UE_ARRAY_COUNT(UHT_STATICS::ClassInfo),
 	nullptr, 0,
